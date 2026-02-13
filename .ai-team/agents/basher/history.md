@@ -151,3 +151,27 @@ Created comprehensive integration tests for the data layer services:
 ### 2026-02-14: Team Update — GitHubIssuesService Test Pattern Decision (Decision Merged)
 
 📌 **Team decision captured:** For testing GitHubIssuesService without real API calls, inject mock data directly into the private `cache` property via type casting rather than mocking the HTTP layer. This is simpler and leaves HTTP implementation refactoring-safe. — decided by Basher
+
+### 2026-02-14: E2E MVP Validation (Issue #14)
+
+**Test file:** `src/test/suite/e2e-validation.test.ts` (46 tests)
+
+**What it validates:** All six acceptance criteria for the MVP release:
+
+1. **AC-1: Extension loads without errors** — Extension discoverable by ID, activate() doesn't throw, all commands declared in package.json (showWorkDetails, initSquad, refreshTree), tree view and activity bar container declared.
+
+2. **AC-2: Tree view shows squad members with correct status** — All team.md members appear, labels match roster, working members get `sync~spin` icon, idle get `person`, descriptions show role + status, roles come from team.md not defaults.
+
+3. **AC-3: Clicking member expands to show tasks** — Members are collapsible, getChildren returns task items, titles are meaningful (not raw markdown/pipes), tasks have status badges and tasklist icon, tasks are leaf nodes.
+
+4. **AC-4: Clicking task shows details in webview** — getWorkDetails returns correct data, HTML contains title/description/member info/status badges, markdown tables render as `<table>` (not raw pipes), bold renders as `<strong>`, showWorkDetails command wired up.
+
+5. **AC-5: File changes trigger tree refresh** — refresh method exists, fires onDidChangeTreeData event, invalidates cache, propagates through tree→data provider.
+
+6. **AC-6: Full pipeline integration** — Fixture data flows through all services to tree items, task titles are meaningful, both log extraction paths work, webview HTML is well-formed, tooltips are MarkdownStrings.
+
+**Edge cases tested:** Member with no tasks (Bob), task item children, getTreeItem identity, no-description/no-dates webview, XSS prevention, multiple rapid refreshes.
+
+**Manual test plan:** Created `docs/manual-test-plan.md` with step-by-step verification checklists for all 6 acceptance criteria + known edge cases + sign-off table.
+
+**Test count:** 228 existing → 274 total (46 new tests added, 0 existing tests broken).
