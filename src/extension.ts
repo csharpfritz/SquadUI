@@ -1,9 +1,11 @@
 import * as vscode from 'vscode';
+import { GitHubIssue } from './models';
 import { SquadDataProvider, FileWatcherService, GitHubIssuesService } from './services';
-import { SquadTreeProvider, WorkDetailsWebview } from './views';
+import { SquadTreeProvider, WorkDetailsWebview, IssueDetailWebview } from './views';
 
 let fileWatcher: FileWatcherService | undefined;
 let webview: WorkDetailsWebview | undefined;
+let issueWebview: IssueDetailWebview | undefined;
 
 export function activate(context: vscode.ExtensionContext): void {
     console.log('SquadUI extension is now active');
@@ -43,6 +45,10 @@ export function activate(context: vscode.ExtensionContext): void {
     webview = new WorkDetailsWebview(context.extensionUri);
     context.subscriptions.push({ dispose: () => webview?.dispose() });
 
+    // Create webview for issue details
+    issueWebview = new IssueDetailWebview(context.extensionUri);
+    context.subscriptions.push({ dispose: () => issueWebview?.dispose() });
+
     // Register commands
     context.subscriptions.push(
         vscode.commands.registerCommand('squadui.showWorkDetails', async (taskId: string) => {
@@ -67,8 +73,10 @@ export function activate(context: vscode.ExtensionContext): void {
     );
 
     context.subscriptions.push(
-        vscode.commands.registerCommand('squadui.openIssue', (url: string) => {
-            if (url) {
+        vscode.commands.registerCommand('squadui.openIssue', (url: string, issue?: GitHubIssue) => {
+            if (issue) {
+                issueWebview?.show(issue);
+            } else if (url) {
                 vscode.env.openExternal(vscode.Uri.parse(url));
             }
         })
@@ -83,4 +91,5 @@ export function activate(context: vscode.ExtensionContext): void {
 export function deactivate(): void {
     fileWatcher?.dispose();
     webview?.dispose();
+    issueWebview?.dispose();
 }

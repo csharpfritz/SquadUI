@@ -46,7 +46,7 @@
       },
       {
         "command": "squadui.openIssue",
-        "title": "Open Issue in Browser",
+        "title": "View Issue Details",
         "category": "SquadUI",
         "icon": "$(link-external)"
       }

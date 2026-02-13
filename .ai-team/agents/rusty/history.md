@@ -66,3 +66,14 @@
 ### 2026-02-14: Team Update — SquadDataProvider team.md Fallback (Decision Merged)
 
 📌 **Team decision accepted:** SquadDataProvider now reads team.md as authoritative member roster, falling back to log participants if team.md is missing. This ensures the tree view shows members even on first load with no orchestration logs. — decided by Linus
+
+### 2026-02-14: Completed Issues Section & Issue Detail Webview
+- Added `getClosedIssuesByMember` to `IGitHubIssuesService` interface in `src/models/index.ts`
+- Extended `SquadTreeProvider` with `getClosedIssueItems()` — completed issues shown per member with `$(pass)` icon and `descriptionForeground` muted color
+- Created `src/views/IssueDetailWebview.ts` — webview panel showing issue title, state badge, labels as colored badges, body text, assignee, and "Open in GitHub →" button
+- IssueDetailWebview uses `enableScripts: true` with `postMessage` pattern for the GitHub link (standard VS Code webview approach)
+- Updated `squadui.openIssue` command to accept optional `GitHubIssue` object; shows webview when present, falls back to `openExternal` for URL-only calls
+- Tree items now pass full `GitHubIssue` as second argument to the command
+- CSP: `default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline';`
+- Label badges use GitHub label colors with contrast-aware text color
+- Exported `IssueDetailWebview` from `src/views/index.ts`

@@ -69,7 +69,8 @@ export class SquadTreeProvider implements vscode.TreeDataProvider<SquadTreeItem>
         if (element.itemType === 'member' && element.memberId) {
             const tasks = await this.getTaskItems(element.memberId);
             const issues = await this.getIssueItems(element.memberId);
-            return [...tasks, ...issues];
+            const closedIssues = await this.getClosedIssueItems(element.memberId);
+            return [...tasks, ...issues, ...closedIssues];
         }
 
         return [];
@@ -156,14 +157,59 @@ export class SquadTreeProvider implements vscode.TreeDataProvider<SquadTreeItem>
 
                 item.command = {
                     command: 'squadui.openIssue',
-                    title: 'Open Issue in Browser',
-                    arguments: [issue.htmlUrl]
+                    title: 'View Issue Details',
+                    arguments: [issue.htmlUrl, issue]
                 };
 
                 return item;
             });
         } catch (error) {
             console.warn('SquadUI: Failed to fetch GitHub issues for member', memberId, error);
+            return [];
+        }
+    }
+
+    private async getClosedIssueItems(memberId: string): Promise<SquadTreeItem[]> {
+        if (!this.issuesService) {
+            return [];
+        }
+
+        try {
+            const workspaceRoot = this.dataProvider.getWorkspaceRoot();
+            const issueMap = await this.issuesService.getClosedIssuesByMember(workspaceRoot);
+            const issues = issueMap.get(memberId.toLowerCase()) ?? [];
+
+            return issues.map(issue => {
+                const labelText = issue.labels
+                    .filter(l => !l.name.startsWith('squad:'))
+                    .map(l => l.name)
+                    .join(', ');
+
+                const item = new SquadTreeItem(
+                    `#${issue.number} ${issue.title}`,
+                    vscode.TreeItemCollapsibleState.None,
+                    'issue',
+                    memberId,
+                    String(issue.number)
+                );
+
+                item.iconPath = new vscode.ThemeIcon(
+                    'pass',
+                    new vscode.ThemeColor('descriptionForeground')
+                );
+                item.description = labelText || undefined;
+                item.tooltip = this.getIssueTooltip(issue);
+
+                item.command = {
+                    command: 'squadui.openIssue',
+                    title: 'View Issue Details',
+                    arguments: [issue.htmlUrl, issue]
+                };
+
+                return item;
+            });
+        } catch (error) {
+            console.warn('SquadUI: Failed to fetch closed GitHub issues for member', memberId, error);
             return [];
         }
     }
