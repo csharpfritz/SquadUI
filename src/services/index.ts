@@ -20,3 +20,4 @@ export {
     GitHubIssuesService,
     type GitHubIssuesServiceOptions
 } from './GitHubIssuesService';
+export { SkillCatalogService } from './SkillCatalogService';

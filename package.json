@@ -41,18 +41,18 @@
       {
         "command": "squadui.showWorkDetails",
         "title": "Show Work Details",
-        "category": "SquadUI"
+        "category": "Squad"
       },
       {
         "command": "squadui.refreshTree",
         "title": "Refresh Team View",
-        "category": "SquadUI",
+        "category": "Squad",
         "icon": "$(refresh)"
       },
       {
         "command": "squadui.openIssue",
         "title": "View Issue Details",
-        "category": "SquadUI",
+        "category": "Squad",
         "icon": "$(link-external)"
       },
       {
@@ -63,14 +63,20 @@
       {
         "command": "squadui.addMember",
         "title": "Add Team Member",
-        "category": "SquadUI",
+        "category": "Squad",
         "icon": "$(add)"
       },
       {
         "command": "squadui.viewCharter",
         "title": "View Charter",
-        "category": "SquadUI",
+        "category": "Squad",
         "icon": "$(open-preview)"
+      },
+      {
+        "command": "squadui.removeMember",
+        "title": "Remove Team Member",
+        "category": "Squad",
+        "icon": "$(trash)"
       }
     ],
     "menus": {
@@ -91,9 +97,41 @@
           "command": "squadui.viewCharter",
           "when": "view == squadMembers && viewItem == member",
           "group": "inline"
+        },
+        {
+          "command": "squadui.removeMember",
+          "when": "view == squadMembers && viewItem == member",
+          "group": "inline"
+        },
+        {
+          "command": "squadui.showWorkDetails",
+          "when": "view == squadMembers && viewItem == task",
+          "group": "inline"
+        },
+        {
+          "command": "squadui.openIssue",
+          "when": "view == squadMembers && viewItem == issue",
+          "group": "inline"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "squadui.showWorkDetails",
+          "when": "false"
+        },
+        {
+          "command": "squadui.openIssue",
+          "when": "false"
         }
       ]
-    }
+    },
+    "keybindings": [
+      {
+        "command": "squadui.addMember",
+        "key": "ctrl+shift+s",
+        "mac": "cmd+shift+s"
+      }
+    ]
   },
   "scripts": {
     "vscode:prepublish": "npm run compile",

@@ -4,7 +4,7 @@ import * as fs from 'fs';
 import { GitHubIssue } from './models';
 import { SquadDataProvider, FileWatcherService, GitHubIssuesService } from './services';
 import { SquadTreeProvider, WorkDetailsWebview, IssueDetailWebview } from './views';
-import { registerInitSquadCommand, registerAddMemberCommand } from './commands';
+import { registerInitSquadCommand, registerAddMemberCommand, registerRemoveMemberCommand } from './commands';
 
 let fileWatcher: FileWatcherService | undefined;
 let webview: WorkDetailsWebview | undefined;
@@ -113,6 +113,14 @@ export function activate(context: vscode.ExtensionContext): void {
     // Register add member command
     context.subscriptions.push(
         registerAddMemberCommand(context, () => {
+            dataProvider.refresh();
+            treeProvider.refresh();
+        })
+    );
+
+    // Register remove member command
+    context.subscriptions.push(
+        registerRemoveMemberCommand(context, () => {
             dataProvider.refresh();
             treeProvider.refresh();
         })

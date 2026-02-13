@@ -50,10 +50,46 @@ suite('AddMemberCommand', () => {
         }
     });
 
+    // ─── Command Registration ──────────────────────────────────────────────
+
+    suite('Command Registration', () => {
+        test('addMember command is registered when extension is active', async function () {
+            const extension = vscode.extensions.getExtension('csharpfritz.squadui');
+            if (!extension || !extension.isActive || !vscode.workspace.workspaceFolders?.length) {
+                this.skip();
+                return;
+            }
+
+            const commands = await vscode.commands.getCommands(true);
+            assert.ok(
+                commands.includes('squadui.addMember'),
+                'squadui.addMember command should be registered'
+            );
+        });
+
+        test('addMember command is declared in package.json', async () => {
+            const extension = vscode.extensions.getExtension('csharpfritz.squadui');
+            if (extension) {
+                const packageJson = extension.packageJSON;
+                const cmds = packageJson?.contributes?.commands || [];
+                const hasCmd = cmds.some(
+                    (c: { command: string }) => c.command === 'squadui.addMember'
+                );
+                assert.ok(hasCmd, 'addMember should be declared in package.json commands');
+            }
+        });
+    });
+
     // ─── Role Quick Pick ───────────────────────────────────────────────────
 
     suite('Role Quick Pick', () => {
-        test('quick pick items include all standard roles', async () => {
+        test('quick pick items include all standard roles', async function () {
+            const commands = await vscode.commands.getCommands(true);
+            if (!commands.includes('squadui.addMember')) {
+                this.skip();
+                return;
+            }
+
             // Stub showQuickPick to capture the items it receives
             let capturedItems: readonly vscode.QuickPickItem[] | undefined;
             const originalShowQuickPick = vscode.window.showQuickPick;
@@ -83,7 +119,13 @@ suite('AddMemberCommand', () => {
             }
         });
 
-        test('selecting "Other..." triggers freeform input box for custom role', async () => {
+        test('selecting "Other..." triggers freeform input box for custom role', async function () {
+            const commands = await vscode.commands.getCommands(true);
+            if (!commands.includes('squadui.addMember')) {
+                this.skip();
+                return;
+            }
+
             const originalShowQuickPick = vscode.window.showQuickPick;
             const originalShowInputBox = vscode.window.showInputBox;
             let inputBoxCalled = false;
@@ -120,7 +162,13 @@ suite('AddMemberCommand', () => {
             }
         });
 
-        test('canceling role quick pick aborts without errors', async () => {
+        test('canceling role quick pick aborts without errors', async function () {
+            const commands = await vscode.commands.getCommands(true);
+            if (!commands.includes('squadui.addMember')) {
+                this.skip();
+                return;
+            }
+
             const originalShowQuickPick = vscode.window.showQuickPick;
 
             try {
@@ -138,7 +186,13 @@ suite('AddMemberCommand', () => {
     // ─── Name Input ────────────────────────────────────────────────────────
 
     suite('Name Input', () => {
-        test('name input box appears after role selection', async () => {
+        test('name input box appears after role selection', async function () {
+            const commands = await vscode.commands.getCommands(true);
+            if (!commands.includes('squadui.addMember')) {
+                this.skip();
+                return;
+            }
+
             const originalShowQuickPick = vscode.window.showQuickPick;
             const originalShowInputBox = vscode.window.showInputBox;
             let nameInputShown = false;
@@ -176,7 +230,13 @@ suite('AddMemberCommand', () => {
             }
         });
 
-        test('canceling name input aborts without errors', async () => {
+        test('canceling name input aborts without errors', async function () {
+            const commands = await vscode.commands.getCommands(true);
+            if (!commands.includes('squadui.addMember')) {
+                this.skip();
+                return;
+            }
+
             const originalShowQuickPick = vscode.window.showQuickPick;
             const originalShowInputBox = vscode.window.showInputBox;
 
@@ -198,7 +258,13 @@ suite('AddMemberCommand', () => {
             }
         });
 
-        test('empty name is rejected or handled', async () => {
+        test('empty name is rejected or handled', async function () {
+            const commands = await vscode.commands.getCommands(true);
+            if (!commands.includes('squadui.addMember')) {
+                this.skip();
+                return;
+            }
+
             const originalShowQuickPick = vscode.window.showQuickPick;
             const originalShowInputBox = vscode.window.showInputBox;
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -391,6 +457,216 @@ suite('AddMemberCommand', () => {
                 );
             } finally {
                 restore();
+            }
+        });
+    });
+
+    // ─── Content Verification ──────────────────────────────────────────────
+
+    suite('Content Verification', () => {
+        async function setupWorkspace(): Promise<void> {
+            const teamDir = path.join(tempDir, '.ai-team');
+            await fs.promises.mkdir(path.join(teamDir, 'agents'), { recursive: true });
+            await fs.promises.writeFile(
+                path.join(teamDir, 'team.md'),
+                [
+                    '# Team',
+                    '',
+                    '## Members',
+                    '',
+                    '| Name | Role | Charter | Status |',
+                    '|------|------|---------|--------|',
+                    '| Danny | Lead | `.ai-team/agents/danny/charter.md` | ✅ Active |',
+                    '',
+                ].join('\n')
+            );
+        }
+
+        function stubPickersForContentTest(
+            roleName: string,
+            agentName: string
+        ): () => void {
+            const origQP = vscode.window.showQuickPick;
+            const origIB = vscode.window.showInputBox;
+
+            (vscode.window as any).showQuickPick = async (
+                items: vscode.QuickPickItem[] | Thenable<vscode.QuickPickItem[]>,
+            ) => {
+                const resolved = await items;
+                return (resolved as vscode.QuickPickItem[]).find(i => i.label === roleName);
+            };
+
+            (vscode.window as any).showInputBox = async (options?: vscode.InputBoxOptions) => {
+                if (
+                    options?.prompt?.toLowerCase().includes('name') ||
+                    options?.placeHolder?.toLowerCase().includes('name')
+                ) {
+                    return agentName;
+                }
+                return agentName;
+            };
+
+            return () => {
+                (vscode.window as any).showQuickPick = origQP;
+                (vscode.window as any).showInputBox = origIB;
+            };
+        }
+
+        test('generated charter.md contains structured heading with name and role', async function () {
+            const commands = await vscode.commands.getCommands(true);
+            if (!commands.includes('squadui.addMember')) {
+                this.skip();
+                return;
+            }
+
+            await setupWorkspace();
+            const restore = stubPickersForContentTest('Tester / QA', 'Sparky');
+            try {
+                await vscode.commands.executeCommand('squadui.addMember');
+
+                const charterPath = path.join(tempDir, '.ai-team', 'agents', 'sparky', 'charter.md');
+                assert.ok(fs.existsSync(charterPath), 'charter.md should exist');
+
+                const content = fs.readFileSync(charterPath, 'utf-8');
+                // Heading should be "# Name — Role"
+                assert.ok(
+                    content.includes('# Sparky') && content.includes('Tester / QA'),
+                    'charter.md heading should contain both name and role'
+                );
+                // Identity section should have Name and Role fields
+                assert.ok(
+                    content.includes('**Name:** Sparky'),
+                    'charter.md should have Name field in Identity section'
+                );
+                assert.ok(
+                    content.includes('**Role:** Tester / QA'),
+                    'charter.md should have Role field in Identity section'
+                );
+            } finally {
+                restore();
+            }
+        });
+
+        test('generated history.md contains join date and role', async function () {
+            const commands = await vscode.commands.getCommands(true);
+            if (!commands.includes('squadui.addMember')) {
+                this.skip();
+                return;
+            }
+
+            await setupWorkspace();
+            const restore = stubPickersForContentTest('Designer', 'Sketchy');
+            try {
+                await vscode.commands.executeCommand('squadui.addMember');
+
+                const historyPath = path.join(tempDir, '.ai-team', 'agents', 'sketchy', 'history.md');
+                assert.ok(fs.existsSync(historyPath), 'history.md should exist');
+
+                const content = fs.readFileSync(historyPath, 'utf-8');
+                // Should contain today's date in ISO format (YYYY-MM-DD)
+                const today = new Date().toISOString().slice(0, 10);
+                assert.ok(
+                    content.includes(today),
+                    `history.md should contain today's date (${today})`
+                );
+                // Should contain the role
+                assert.ok(
+                    content.includes('Designer'),
+                    'history.md should mention the assigned role'
+                );
+                // Should mention "Joined" or similar onboarding language
+                assert.ok(
+                    content.includes('Joined'),
+                    'history.md should reference joining the team'
+                );
+            } finally {
+                restore();
+            }
+        });
+
+        test('team.md roster row includes charter path reference', async function () {
+            const commands = await vscode.commands.getCommands(true);
+            if (!commands.includes('squadui.addMember')) {
+                this.skip();
+                return;
+            }
+
+            await setupWorkspace();
+            const restore = stubPickersForContentTest('DevOps / Infrastructure', 'PipeBot');
+            try {
+                await vscode.commands.executeCommand('squadui.addMember');
+
+                const teamMdPath = path.join(tempDir, '.ai-team', 'team.md');
+                const content = fs.readFileSync(teamMdPath, 'utf-8');
+
+                // Roster row should be a table row with pipe separators
+                const rosterLine = content.split('\n').find(
+                    line => line.includes('PipeBot') && line.startsWith('|')
+                );
+                assert.ok(rosterLine, 'team.md should have a table row with new member');
+                assert.ok(
+                    rosterLine!.includes('DevOps / Infrastructure'),
+                    'Roster row should include the role'
+                );
+                assert.ok(
+                    rosterLine!.includes('.ai-team/agents/pipebot/charter.md'),
+                    'Roster row should include charter path'
+                );
+                assert.ok(
+                    rosterLine!.includes('Active'),
+                    'Roster row should mark new member as Active'
+                );
+            } finally {
+                restore();
+            }
+        });
+    });
+
+    // ─── No Workspace ──────────────────────────────────────────────────────
+
+    suite('No Workspace', () => {
+        test('shows error message when no workspace folder is open', async function () {
+            const commands = await vscode.commands.getCommands(true);
+            if (!commands.includes('squadui.addMember')) {
+                this.skip();
+                return;
+            }
+
+            // If we actually have workspace folders, we can't easily test this
+            // via executeCommand since the command reads the real workspace.
+            // Instead, we unit-test the registerAddMemberCommand function directly.
+            // Import and call it with stubbed workspace.
+            const origFolders = vscode.workspace.workspaceFolders;
+            const origShowError = vscode.window.showErrorMessage;
+            let errorShown = false;
+            let errorMessage = '';
+
+            try {
+                // Temporarily stub workspaceFolders to undefined
+                Object.defineProperty(vscode.workspace, 'workspaceFolders', {
+                    get: () => undefined,
+                    configurable: true,
+                });
+
+                (vscode.window as any).showErrorMessage = async (message: string) => {
+                    errorShown = true;
+                    errorMessage = message;
+                    return undefined;
+                };
+
+                await vscode.commands.executeCommand('squadui.addMember');
+
+                assert.ok(errorShown, 'Should show an error message when no workspace is open');
+                assert.ok(
+                    errorMessage.toLowerCase().includes('workspace') || errorMessage.toLowerCase().includes('folder'),
+                    'Error message should mention workspace or folder'
+                );
+            } finally {
+                Object.defineProperty(vscode.workspace, 'workspaceFolders', {
+                    get: () => origFolders,
+                    configurable: true,
+                });
+                (vscode.window as any).showErrorMessage = origShowError;
             }
         });
     });

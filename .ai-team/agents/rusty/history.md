@@ -134,3 +134,19 @@
 - Shows warning if charter file doesn't exist
 - Wired to tree view: clicking a member item triggers the command via `item.command`
 - Inline action button added to `view/item/context` menu with `$(open-preview)` icon, scoped to `viewItem == member`
+
+### 2026-02-14: Remove Team Member Command (#25)
+- Created `src/commands/removeMemberCommand.ts` — QuickPick + confirmation flow to remove a member
+- Parses `team.md` Members table, filters out Scribe/Ralph/@copilot (non-removable)
+- On confirm: moves `.ai-team/agents/{slug}/` to `.ai-team/agents/_alumni/{slug}/`, removes roster row
+- Follows same factory pattern as `addMemberCommand` — `registerRemoveMemberCommand()` returns `vscode.Disposable`
+- Registered in `package.json` with `$(trash)` icon, `"category": "Squad"`
+- Context menu entry on member items (`viewItem == member`) for right-click removal
+- Exported from `src/commands/index.ts`, wired in `src/extension.ts`
+
+### 2026-02-14: Command Palette Consistency (#27)
+- Unified all command categories to `"Squad"` (was `"SquadUI"` for most commands)
+- Palette display is now consistent: "Squad: Add Team Member", "Squad: Remove Team Member", etc.
+- `showWorkDetails` and `openIssue` hidden from command palette (`"when": "false"`) since they require context arguments
+- Context menus added for all item types: member (View Charter, Remove Member), task (Show Work Details), issue (View Issue Details)
+- Keybinding `Ctrl+Shift+S` / `Cmd+Shift+S` added for `squadui.addMember`

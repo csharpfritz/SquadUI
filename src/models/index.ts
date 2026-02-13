@@ -125,6 +125,31 @@ export interface TeamRoster {
     owner?: string;
 }
 
+// ─── Skill Catalog Models ──────────────────────────────────────────────────
+
+/**
+ * Represents a skill available for import or already installed.
+ */
+export interface Skill {
+    /** Display name of the skill */
+    name: string;
+
+    /** Short description of what the skill does */
+    description: string;
+
+    /** Where this skill was discovered */
+    source: 'awesome-copilot' | 'skills.sh' | 'local';
+
+    /** URL to the skill's source (GitHub repo, skills.sh page, etc.) */
+    url?: string;
+
+    /** How confident we are in the parsed data quality */
+    confidence?: 'low' | 'medium' | 'high';
+
+    /** Raw skill content (markdown body), populated on download */
+    content?: string;
+}
+
 // ─── GitHub Issues Models ──────────────────────────────────────────────────
 
 /**

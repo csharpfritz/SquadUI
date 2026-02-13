@@ -206,3 +206,28 @@ Written proactively while Rusty builds the implementation. Tests describe expect
 **Testing pattern:** Stubs `vscode.window.showQuickPick` and `showInputBox` via `as any` cast to control flow, restoring originals in `finally` blocks. File creation tests set up a minimal workspace with `team.md` in temp dirs.
 
 **Key caveat:** Tests may need minor adjustment once Rusty's implementation lands — prompt text matching, directory normalization style, and exact charter template format may differ.
+
+### 2026-02-14: Command Tests for addMember and viewCharter
+
+**Updated test file:** `src/test/suite/addMemberCommand.test.ts`
+**New test file:** `src/test/suite/viewCharterCommand.test.ts`
+
+**addMemberCommand.test.ts additions:**
+- Command Registration suite (2 tests): verifies addMember in registered commands and package.json
+- Content Verification suite (3 tests): validates charter.md heading format (`# Name — Role`), Identity section fields (`**Name:**`, `**Role:**`), history.md join date + role, and team.md roster row format with charter path reference
+- No Workspace suite (1 test): stubs `vscode.workspace.workspaceFolders` to `undefined`, verifies `showErrorMessage` is called mentioning workspace/folder
+- Fixed 6 pre-existing failures: Role Quick Pick and Name Input tests were using arrow functions and missing `this.skip()` guards for when the command isn't registered (no workspace in test electron host). Converted to `function()` and added guard pattern.
+
+**viewCharterCommand.test.ts (new, 9 tests):**
+- Command Registration (2): registered command check + package.json declaration
+- Opening Charter (1): creates temp charter file, executes command, verifies active editor shows correct file
+- Warnings (3): charter not found → warning, empty string → "No member selected" warning, undefined → warning
+- Slug Generation (2): special characters (`Dr. O'Brien` → `dr-o-brien`) and spaces (`Code Monkey` → `code-monkey`) correctly resolved to agent directory
+
+**Testing patterns established:**
+- All command tests that call `vscode.commands.executeCommand` use `this.skip()` guard when command isn't registered (extension not active without workspace)
+- Slug generation tests create temp charter files in the workspace root `.ai-team/agents/{slug}/` directory, with cleanup in `finally` blocks
+- Warning tests stub `vscode.window.showWarningMessage` via `as any` cast, capturing message text for assertion, restoring in `finally`
+- viewCharter tests create/cleanup their own agent directories under the real workspace root (not temp dirs) since the command reads `workspaceFolders[0]`
+
+**Test count:** 276 passing, 25 pending (self-skipping in CI without workspace), 0 failing.

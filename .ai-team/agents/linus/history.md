@@ -95,3 +95,26 @@ Orchestration log entries that use a metadata table format (no `## Summary` or `
 4. First paragraph fallback via `extractSummaryFallback()` — now skips lines starting with `|` (table rows)
 
 Both new methods are public for testability. Added 14 tests in `orchestrationLogService.test.ts` covering extraction, edge cases, and integration with `parseLogFile()`.
+
+### 2026-02-14: SkillCatalogService — External Skill Browsing and Import
+
+Created `src/services/SkillCatalogService.ts` (issue #38) — a unified service for browsing and downloading skills from two external catalogs:
+
+**Architecture decisions:**
+- Used raw HTTPS (`https.get`) with redirect-following, matching the `GitHubIssuesService` pattern — no external dependencies, no `vscode` imports
+- awesome-copilot source fetches raw README from `raw.githubusercontent.com` and parses `- [Name](URL) - Description` list items (high confidence)
+- skills.sh source parses HTML with regex-based extraction (anchor links + nearby text + JSON-LD structured data), confidence varies by extraction quality
+- Network errors are swallowed in public methods — return empty arrays, never throw
+- Deduplication by name (case-insensitive), preferring awesome-copilot version when duplicates exist
+
+**Key files:**
+- `src/services/SkillCatalogService.ts` — the service (no VS Code dependency)
+- `src/models/index.ts` — `Skill` interface added above the GitHub Issues section
+- `src/services/index.ts` — barrel export added
+- Skills install to `.ai-team/skills/{slug}/SKILL.md`
+
+**Patterns established:**
+- `parseAwesomeReadme()` and `parseSkillsShHtml()` are public for testability, following the existing convention for `extractOutcomeFromTable()` etc.
+- `httpsGet()` follows redirects (up to 5) and times out at 15s
+- `getInstalledSkills()` is synchronous (fs reads), while `fetchCatalog()` and `searchSkills()` are async (network)
+- Slug generation strips non-alphanumeric chars and joins with hyphens
