@@ -16,6 +16,7 @@
 | Rusty | Extension Dev | `.ai-team/agents/rusty/charter.md` | ✅ Active |
 | Linus | Backend Dev | `.ai-team/agents/linus/charter.md` | ✅ Active |
 | Basher | Tester | `.ai-team/agents/basher/charter.md` | ✅ Active |
+| Livingston | DevOps / CI | `.ai-team/agents/livingston/charter.md` | ✅ Active |
 | Scribe | Session Logger | `.ai-team/agents/scribe/charter.md` | 📋 Silent |
 | Ralph | Work Monitor | — | 🔄 Monitor |
 
