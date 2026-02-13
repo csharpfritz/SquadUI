@@ -1,0 +1,397 @@
+/**
+ * Service for reading and parsing orchestration log files.
+ * Logs are stored in `.ai-team/log/` or `.ai-team/orchestration-log/` directories.
+ */
+
+import * as fs from 'fs';
+import * as path from 'path';
+import { OrchestrationLogEntry, Task, MemberStatus } from '../models';
+
+/**
+ * Service for discovering and parsing orchestration log files.
+ * Handles malformed/missing files gracefully.
+ */
+export class OrchestrationLogService {
+    /** Log directory names to search (in order of preference) */
+    private static readonly LOG_DIRECTORIES = ['orchestration-log', 'log'];
+
+    /**
+     * Discovers all log files in the orchestration-log directory.
+     * Searches for .md files in `.ai-team/orchestration-log/` or `.ai-team/log/`.
+     * 
+     * @param teamRoot - Root directory containing the .ai-team folder
+     * @returns Array of absolute paths to log files
+     */
+    async discoverLogFiles(teamRoot: string): Promise<string[]> {
+        const aiTeamDir = path.join(teamRoot, '.ai-team');
+        
+        // Try each log directory in order
+        for (const dirName of OrchestrationLogService.LOG_DIRECTORIES) {
+            const logDir = path.join(aiTeamDir, dirName);
+            
+            try {
+                const exists = await this.directoryExists(logDir);
+                if (!exists) {
+                    continue;
+                }
+
+                const files = await fs.promises.readdir(logDir);
+                const mdFiles = files
+                    .filter(file => file.endsWith('.md'))
+                    .map(file => path.join(logDir, file))
+                    .sort(); // Sort chronologically (filenames are YYYY-MM-DD prefixed)
+
+                if (mdFiles.length > 0) {
+                    return mdFiles;
+                }
+            } catch (error) {
+                // Directory doesn't exist or isn't readable, try next
+                continue;
+            }
+        }
+
+        // No log files found in any directory
+        return [];
+    }
+
+    /**
+     * Parses a single log file into an OrchestrationLogEntry.
+     * 
+     * Expected format:
+     * ```
+     * # {Topic Title}
+     * 
+     * **Date:** {YYYY-MM-DD}
+     * **Participants:** {Name1}, {Name2}
+     * 
+     * ## Summary
+     * {Summary text}
+     * 
+     * ## Decisions
+     * - {Decision 1}
+     * - {Decision 2}
+     * 
+     * ## Outcomes
+     * - {Outcome 1}
+     * - {Outcome 2}
+     * 
+     * ## Related Issues
+     * - #{issue_number}
+     * ```
+     * 
+     * @param filePath - Absolute path to the log file
+     * @returns Parsed log entry
+     * @throws Error if file cannot be read
+     */
+    async parseLogFile(filePath: string): Promise<OrchestrationLogEntry> {
+        const content = await fs.promises.readFile(filePath, 'utf-8');
+        const filename = path.basename(filePath);
+
+        // Extract date and topic from filename: YYYY-MM-DD-topic.md
+        const filenameMatch = filename.match(/^(\d{4}-\d{2}-\d{2})-(.+)\.md$/);
+        const date = filenameMatch?.[1] ?? this.extractDateFromContent(content) ?? new Date().toISOString().split('T')[0];
+        const topic = filenameMatch?.[2] ?? this.extractTitleFromContent(content) ?? 'unknown';
+
+        return {
+            timestamp: this.extractTimestamp(content, date),
+            date,
+            topic,
+            participants: this.extractParticipants(content),
+            summary: this.extractSection(content, 'Summary') ?? this.extractSummaryFallback(content),
+            decisions: this.extractListSection(content, 'Decisions'),
+            outcomes: this.extractListSection(content, 'Outcomes'),
+            relatedIssues: this.extractRelatedIssues(content),
+        };
+    }
+
+    /**
+     * Parses all log files in the orchestration-log directory.
+     * 
+     * @param teamRoot - Root directory containing the .ai-team folder
+     * @returns Array of parsed log entries, sorted by date (newest first)
+     */
+    async parseAllLogs(teamRoot: string): Promise<OrchestrationLogEntry[]> {
+        const logFiles = await this.discoverLogFiles(teamRoot);
+        const entries: OrchestrationLogEntry[] = [];
+
+        for (const filePath of logFiles) {
+            try {
+                const entry = await this.parseLogFile(filePath);
+                entries.push(entry);
+            } catch (error) {
+                // Skip malformed files, log warning in production
+                console.warn(`Failed to parse log file ${filePath}:`, error);
+            }
+        }
+
+        // Sort by date descending (newest first)
+        return entries.sort((a, b) => b.date.localeCompare(a.date));
+    }
+
+    /**
+     * Derives member states from log entries.
+     * Members who appear in recent entries are considered 'working',
+     * others default to 'idle'.
+     * 
+     * @param entries - Parsed log entries
+     * @returns Map of member name to their current state
+     */
+    getMemberStates(entries: OrchestrationLogEntry[]): Map<string, MemberStatus> {
+        const states = new Map<string, MemberStatus>();
+
+        if (entries.length === 0) {
+            return states;
+        }
+
+        // Get all unique participants across all entries
+        const allParticipants = new Set<string>();
+        for (const entry of entries) {
+            for (const participant of entry.participants) {
+                allParticipants.add(participant);
+            }
+        }
+
+        // Find the most recent entry
+        const sortedEntries = [...entries].sort((a, b) => b.date.localeCompare(a.date));
+        const mostRecentEntry = sortedEntries[0];
+        const mostRecentParticipants = new Set(mostRecentEntry.participants);
+
+        // Members in the most recent log are 'working', others are 'idle'
+        for (const participant of allParticipants) {
+            states.set(participant, mostRecentParticipants.has(participant) ? 'working' : 'idle');
+        }
+
+        return states;
+    }
+
+    /**
+     * Extracts active tasks from log entries.
+     * Tasks are derived from related issues and outcomes.
+     * 
+     * @param entries - Parsed log entries
+     * @returns Array of active tasks
+     */
+    getActiveTasks(entries: OrchestrationLogEntry[]): Task[] {
+        const tasks: Task[] = [];
+        const seenTaskIds = new Set<string>();
+
+        // Sort entries by date descending to process most recent first
+        const sortedEntries = [...entries].sort((a, b) => b.date.localeCompare(a.date));
+
+        for (const entry of sortedEntries) {
+            // Extract tasks from related issues
+            if (entry.relatedIssues) {
+                for (const issueRef of entry.relatedIssues) {
+                    const taskId = issueRef.replace('#', '').trim();
+                    if (taskId && !seenTaskIds.has(taskId)) {
+                        seenTaskIds.add(taskId);
+
+                        // Determine assignee from participants (first participant for now)
+                        const assignee = entry.participants[0] ?? 'unknown';
+
+                        tasks.push({
+                            id: taskId,
+                            title: `Issue #${taskId}`,
+                            description: entry.summary,
+                            status: 'in_progress',
+                            assignee,
+                            startedAt: new Date(entry.date),
+                        });
+                    }
+                }
+            }
+
+            // Extract tasks from outcomes that reference issues
+            if (entry.outcomes) {
+                for (const outcome of entry.outcomes) {
+                    const issueMatches = outcome.match(/#(\d+)/g);
+                    if (issueMatches) {
+                        for (const match of issueMatches) {
+                            const taskId = match.replace('#', '');
+                            if (!seenTaskIds.has(taskId)) {
+                                seenTaskIds.add(taskId);
+
+                                const assignee = entry.participants[0] ?? 'unknown';
+                                const isCompleted = outcome.toLowerCase().includes('completed') || 
+                                                   outcome.toLowerCase().includes('done') ||
+                                                   outcome.toLowerCase().includes('✅');
+
+                                tasks.push({
+                                    id: taskId,
+                                    title: `Issue #${taskId}`,
+                                    description: outcome,
+                                    status: isCompleted ? 'completed' : 'in_progress',
+                                    assignee,
+                                    startedAt: new Date(entry.date),
+                                    completedAt: isCompleted ? new Date(entry.date) : undefined,
+                                });
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        return tasks;
+    }
+
+    // ─── Private Helper Methods ────────────────────────────────────────────
+
+    private async directoryExists(dirPath: string): Promise<boolean> {
+        try {
+            const stat = await fs.promises.stat(dirPath);
+            return stat.isDirectory();
+        } catch {
+            return false;
+        }
+    }
+
+    private extractTimestamp(content: string, fallbackDate: string): string {
+        // Look for timestamp in content
+        const timestampMatch = content.match(/\*\*(?:Timestamp|Time):\*\*\s*(.+)/i);
+        if (timestampMatch) {
+            return timestampMatch[1].trim();
+        }
+
+        // Fall back to date with midnight time
+        return `${fallbackDate}T00:00:00Z`;
+    }
+
+    private extractDateFromContent(content: string): string | null {
+        const dateMatch = content.match(/\*\*Date:\*\*\s*(\d{4}-\d{2}-\d{2})/i);
+        return dateMatch?.[1] ?? null;
+    }
+
+    private extractTitleFromContent(content: string): string | null {
+        const titleMatch = content.match(/^#\s+(.+)$/m);
+        if (titleMatch) {
+            // Convert title to slug
+            return titleMatch[1]
+                .toLowerCase()
+                .replace(/[^a-z0-9\s-]/g, '')
+                .replace(/\s+/g, '-')
+                .substring(0, 50);
+        }
+        return null;
+    }
+
+    private extractParticipants(content: string): string[] {
+        // Try "**Participants:**" format
+        const participantsMatch = content.match(/\*\*Participants?:\*\*\s*(.+)/i);
+        if (participantsMatch) {
+            return participantsMatch[1]
+                .split(/[,;]/)
+                .map(p => p.trim())
+                .filter(p => p.length > 0);
+        }
+
+        // Try "**Who worked:**" format
+        const whoWorkedMatch = content.match(/\*\*Who worked:\*\*\s*(.+)/i);
+        if (whoWorkedMatch) {
+            return whoWorkedMatch[1]
+                .split(/[,;]/)
+                .map(p => p.trim())
+                .filter(p => p.length > 0);
+        }
+
+        // Try bullet list under "## Who worked" section
+        const whoWorkedSection = this.extractSection(content, 'Who worked');
+        if (whoWorkedSection) {
+            return this.extractListItems(whoWorkedSection);
+        }
+
+        return [];
+    }
+
+    private extractSection(content: string, sectionName: string): string | null {
+        // Match section header and capture content until next section or end
+        const sectionRegex = new RegExp(
+            `##\\s+${sectionName}\\s*\\n([\\s\\S]*?)(?=\\n##\\s|$)`,
+            'i'
+        );
+        const match = content.match(sectionRegex);
+        return match?.[1]?.trim() ?? null;
+    }
+
+    private extractListSection(content: string, sectionName: string): string[] | undefined {
+        const sectionContent = this.extractSection(content, sectionName);
+        if (!sectionContent) {
+            return undefined;
+        }
+
+        const items = this.extractListItems(sectionContent);
+        return items.length > 0 ? items : undefined;
+    }
+
+    private extractListItems(content: string): string[] {
+        const items: string[] = [];
+        const lines = content.split('\n');
+
+        for (const line of lines) {
+            // Match lines starting with -, *, or numbered lists
+            const listMatch = line.match(/^\s*[-*]\s+(.+)$/) || line.match(/^\s*\d+\.\s+(.+)$/);
+            if (listMatch) {
+                items.push(listMatch[1].trim());
+            }
+        }
+
+        return items;
+    }
+
+    private extractSummaryFallback(content: string): string {
+        // If no Summary section, use the first paragraph after the title
+        const lines = content.split('\n');
+        let inParagraph = false;
+        const paragraphLines: string[] = [];
+
+        for (const line of lines) {
+            const trimmed = line.trim();
+            
+            // Skip title and metadata lines
+            if (trimmed.startsWith('#') || trimmed.startsWith('**')) {
+                continue;
+            }
+
+            // Skip section headers
+            if (trimmed.startsWith('##')) {
+                break;
+            }
+
+            // Collect paragraph content
+            if (trimmed.length > 0) {
+                inParagraph = true;
+                paragraphLines.push(trimmed);
+            } else if (inParagraph) {
+                // End of paragraph
+                break;
+            }
+        }
+
+        return paragraphLines.join(' ') || 'No summary available';
+    }
+
+    private extractRelatedIssues(content: string): string[] | undefined {
+        const issues: string[] = [];
+
+        // Try dedicated section first
+        const issuesSection = this.extractSection(content, 'Related Issues');
+        if (issuesSection) {
+            const issueMatches = issuesSection.match(/#\d+/g);
+            if (issueMatches) {
+                issues.push(...issueMatches);
+            }
+        }
+
+        // Also scan whole content for issue references if section was empty
+        if (issues.length === 0) {
+            const contentMatches = content.match(/#\d+/g);
+            if (contentMatches) {
+                // Deduplicate
+                const unique = [...new Set(contentMatches)];
+                issues.push(...unique);
+            }
+        }
+
+        return issues.length > 0 ? issues : undefined;
+    }
+}

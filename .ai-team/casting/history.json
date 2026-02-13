@@ -1,0 +1,21 @@
+{
+  "universe_usage_history": [
+    {
+      "assignment_id": "2026-02-13-squadui",
+      "universe": "Ocean's Eleven",
+      "timestamp": "2026-02-13T12:16:15.631Z"
+    }
+  ],
+  "assignment_cast_snapshots": {
+    "2026-02-13-squadui": {
+      "universe": "Ocean's Eleven",
+      "agent_map": {
+        "danny": "Danny",
+        "rusty": "Rusty",
+        "linus": "Linus",
+        "basher": "Basher"
+      },
+      "created_at": "2026-02-13T12:16:15.631Z"
+    }
+  }
+}
