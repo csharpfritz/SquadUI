@@ -34,15 +34,15 @@ jobs:
       - name: Run tests
         run: xvfb-run -a npm test
 
-      - name: Verify tag version matches package.json
+      - name: Sync package.json version from tag
         run: |
           TAG_VERSION="${GITHUB_REF_NAME#v}"
           PKG_VERSION=$(node -p "require('./package.json').version")
           if [ "$TAG_VERSION" != "$PKG_VERSION" ]; then
-            echo "::error::Tag version ($TAG_VERSION) does not match package.json version ($PKG_VERSION)"
-            exit 1
+            echo "Updating package.json version: $PKG_VERSION → $TAG_VERSION"
+            node -e "const fs=require('fs'); const p=JSON.parse(fs.readFileSync('package.json','utf8')); p.version='$TAG_VERSION'; fs.writeFileSync('package.json',JSON.stringify(p,null,2)+'\n');"
           fi
-          echo "Version verified: $TAG_VERSION"
+          echo "Version: $TAG_VERSION"
 
       - name: Install vsce
         run: npm install -g @vscode/vsce
