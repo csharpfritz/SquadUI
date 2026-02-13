@@ -16,3 +16,7 @@ export {
     type CopilotCapabilities,
     type ExtendedTeamRoster
 } from './TeamMdService';
+export {
+    GitHubIssuesService,
+    type GitHubIssuesServiceOptions
+} from './GitHubIssuesService';

@@ -38,7 +38,7 @@ All future tree views and commands should register under the `squadui` container
 ## CI Pipeline Configuration
 
 **Author:** Livingston (DevOps/CI)
-**Date:** 2025-01
+**Date:** 2025-07-19
 **Issue:** #22
 
 ### Decision
@@ -49,12 +49,15 @@ The CI pipeline uses Node.js 18.x with the following stages:
 3. `npm run compile` — TypeScript compilation
 4. `npm test` — VS Code extension tests
 
+Additionally, `.github/workflows/ci.yml` includes `concurrency` group with `cancel-in-progress: true` so duplicate CI runs on the same branch cancel each other.
+
 ### Rationale
 
 - Node 18 is stable LTS and widely supported
 - `npm ci` ensures reproducible builds from lockfile
 - Pipeline fails fast on lint errors before spending time on compilation
 - Test artifacts uploaded for debugging failed runs
+- Concurrency control prevents wasted CI minutes when multiple pushes happen in quick succession on the same branch or PR
 
 ### Location
 
@@ -593,3 +596,11 @@ Parser needs to:
 ### For Linus
 
 This diagnosis identifies the exact code paths. The fix requires creating `TeamMdService` and integrating it as the primary member source in `SquadDataProvider`.
+
+---
+
+## 2026-02-14: SquadDataProvider uses team.md as authoritative roster
+
+**By:** Linus
+**What:** `SquadDataProvider.getSquadMembers()` now reads team.md first via `TeamMdService`, then overlays orchestration log status on top. If team.md is missing, it falls back to the original log-participant discovery behavior.
+**Why:** Without this, projects with a team.md but no orchestration logs showed an empty tree view (#19). The roster should always come from team.md — it's the canonical source of who's on the team. Orchestration logs only tell us *what they're doing*, not *who they are*. This separation of concerns makes the data layer more resilient and the UI more useful on first load.
