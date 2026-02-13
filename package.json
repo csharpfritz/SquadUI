@@ -54,6 +54,11 @@
         "title": "View Issue Details",
         "category": "SquadUI",
         "icon": "$(link-external)"
+      },
+      {
+        "command": "squadui.initSquad",
+        "title": "Initialize",
+        "category": "Squad"
       }
     ],
     "menus": {
