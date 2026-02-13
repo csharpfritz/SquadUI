@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import { GitHubIssue } from './models';
 import { SquadDataProvider, FileWatcherService, GitHubIssuesService } from './services';
 import { SquadTreeProvider, WorkDetailsWebview, IssueDetailWebview } from './views';
-import { registerInitSquadCommand } from './commands';
+import { registerInitSquadCommand, registerAddMemberCommand } from './commands';
 
 let fileWatcher: FileWatcherService | undefined;
 let webview: WorkDetailsWebview | undefined;
@@ -86,6 +86,14 @@ export function activate(context: vscode.ExtensionContext): void {
     // Register squad init command
     context.subscriptions.push(
         registerInitSquadCommand(context, () => {
+            dataProvider.refresh();
+            treeProvider.refresh();
+        })
+    );
+
+    // Register add member command
+    context.subscriptions.push(
+        registerAddMemberCommand(context, () => {
             dataProvider.refresh();
             treeProvider.refresh();
         })

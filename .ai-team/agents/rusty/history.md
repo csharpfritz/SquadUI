@@ -115,3 +115,13 @@
 - CSS uses VS Code CSS variables for theme-aware table styling
 - `isSeparator` regex requires at least one `-` character to avoid false positives on data rows containing only pipes and spaces
 - 10 new tests added to `webview.test.ts` covering all renderMarkdown scenarios
+
+### 2026-02-14: Add Team Member Command (#squadui.addMember)
+- Created `src/commands/addMemberCommand.ts` — new command for adding team members via QuickPick + InputBox flow
+- Flow: role QuickPick (8 standard roles + "Other..." freeform) → name InputBox → creates `.ai-team/agents/{slug}/charter.md` and `history.md` → appends to `team.md` roster → triggers tree refresh
+- Charter/history templates match existing agent file structure (identity, boundaries, voice sections)
+- `toSlug()` normalizes names to lowercase kebab-case for directory names
+- Duplicate guard: checks if agent directory already exists before creating
+- Registered in `package.json` with `$(add)` icon in `view/title` navigation group for the `squadMembers` panel
+- Follows same registration pattern as `initSquadCommand` — factory function returning `vscode.Disposable`, callback for post-action refresh
+- team.md insertion finds end of Members table by tracking last `|`-prefixed data row after `## Members` heading

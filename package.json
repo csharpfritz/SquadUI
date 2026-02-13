@@ -59,10 +59,21 @@
         "command": "squadui.initSquad",
         "title": "Initialize",
         "category": "Squad"
+      },
+      {
+        "command": "squadui.addMember",
+        "title": "Add Team Member",
+        "category": "SquadUI",
+        "icon": "$(add)"
       }
     ],
     "menus": {
       "view/title": [
+        {
+          "command": "squadui.addMember",
+          "when": "view == squadMembers",
+          "group": "navigation"
+        },
         {
           "command": "squadui.refreshTree",
           "when": "view == squadMembers",

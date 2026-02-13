@@ -175,3 +175,34 @@ Created comprehensive integration tests for the data layer services:
 **Manual test plan:** Created `docs/manual-test-plan.md` with step-by-step verification checklists for all 6 acceptance criteria + known edge cases + sign-off table.
 
 **Test count:** 228 existing → 274 total (46 new tests added, 0 existing tests broken).
+
+### 2026-02-14: Proactive Tests for addMemberCommand (Issue #25)
+
+**Test file:** `src/test/suite/addMemberCommand.test.ts` (13 tests)
+
+Written proactively while Rusty builds the implementation. Tests describe expected behavior from requirements and will self-skip (`this.skip()`) if the `squadui.addMember` command isn't registered yet.
+
+**Role Quick Pick tests (3):**
+- Verifies quick pick includes all 9 standard roles (Lead, Frontend Dev, Backend Dev, Full-Stack Dev, Tester / QA, Designer, DevOps / Infrastructure, Technical Writer, Other...)
+- Selecting "Other..." triggers a freeform input box for custom role entry
+- Canceling the quick pick aborts gracefully without errors
+
+**Name Input tests (3):**
+- Name input box appears after role selection with prompt/placeholder mentioning "name"
+- Canceling name input aborts gracefully
+- Empty/whitespace-only names are rejected via `validateInput` (if present)
+
+**File Creation tests (3):**
+- `charter.md` created in `.ai-team/agents/{lowercase-name}/` with agent name and role
+- `history.md` created alongside `charter.md`
+- `team.md` roster updated with new member row including charter path reference
+
+**Edge Case tests (4):**
+- Agent name with spaces is normalized to lowercase directory name (hyphens, underscores, or concatenated)
+- Adding an agent that already exists either warns or preserves existing files (no silent overwrite)
+- Custom role via "Other..." flow produces correct charter content
+- Tests use temp directories under `test-fixtures/temp-add-member/` with teardown cleanup
+
+**Testing pattern:** Stubs `vscode.window.showQuickPick` and `showInputBox` via `as any` cast to control flow, restoring originals in `finally` blocks. File creation tests set up a minimal workspace with `team.md` in temp dirs.
+
+**Key caveat:** Tests may need minor adjustment once Rusty's implementation lands — prompt text matching, directory normalization style, and exact charter template format may differ.
