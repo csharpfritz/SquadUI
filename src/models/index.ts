@@ -195,7 +195,7 @@ export type MemberIssueMap = Map<string, GitHubIssue[]>;
 
 /**
  * Contract for a service that provides GitHub issues mapped to squad members.
- * Linus is building GitHubIssuesService (#18) to implement this.
+ * GitHubIssuesService (#18) implements this interface.
  */
 export interface IGitHubIssuesService {
     /**

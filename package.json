@@ -43,6 +43,12 @@
         "title": "Refresh Team View",
         "category": "SquadUI",
         "icon": "$(refresh)"
+      },
+      {
+        "command": "squadui.openIssue",
+        "title": "Open Issue in Browser",
+        "category": "SquadUI",
+        "icon": "$(link-external)"
       }
     ],
     "menus": {

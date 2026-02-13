@@ -1,20 +1,20 @@
 /**
- * Tree data provider for displaying squad members and their tasks.
+ * Tree data provider for displaying squad members, their tasks, and GitHub issues.
  */
 
 import * as vscode from 'vscode';
-import { SquadMember, Task } from '../models';
+import { SquadMember, Task, GitHubIssue, IGitHubIssuesService } from '../models';
 import { SquadDataProvider } from '../services/SquadDataProvider';
 
 /**
  * Represents an item in the squad tree view.
- * Can be either a squad member (parent) or a task (child).
+ * Can be a squad member (parent), a task (child), or a GitHub issue (child).
  */
 export class SquadTreeItem extends vscode.TreeItem {
     constructor(
         public readonly label: string,
         public readonly collapsibleState: vscode.TreeItemCollapsibleState,
-        public readonly itemType: 'member' | 'task',
+        public readonly itemType: 'member' | 'task' | 'issue',
         public readonly memberId?: string,
         public readonly taskId?: string
     ) {
@@ -25,13 +25,21 @@ export class SquadTreeItem extends vscode.TreeItem {
 
 /**
  * Provides tree data for the squad members view.
- * Top-level items are squad members, children are their assigned tasks.
+ * Top-level items are squad members, children are their assigned tasks and GitHub issues.
  */
 export class SquadTreeProvider implements vscode.TreeDataProvider<SquadTreeItem> {
     private _onDidChangeTreeData = new vscode.EventEmitter<SquadTreeItem | undefined | null | void>();
     readonly onDidChangeTreeData = this._onDidChangeTreeData.event;
+    private issuesService: IGitHubIssuesService | undefined;
 
     constructor(private dataProvider: SquadDataProvider) {}
+
+    /**
+     * Sets the GitHub issues service. Called when the service becomes available.
+     */
+    setIssuesService(service: IGitHubIssuesService): void {
+        this.issuesService = service;
+    }
 
     /**
      * Fires the tree data change event to refresh the view.
@@ -51,17 +59,17 @@ export class SquadTreeProvider implements vscode.TreeDataProvider<SquadTreeItem>
     /**
      * Returns children for the given element.
      * If no element, returns squad members (root level).
-     * If element is a member, returns their tasks.
+     * If element is a member, returns their tasks and issues.
      */
     async getChildren(element?: SquadTreeItem): Promise<SquadTreeItem[]> {
         if (!element) {
-            // Root level: return squad members
             return this.getSquadMemberItems();
         }
 
         if (element.itemType === 'member' && element.memberId) {
-            // Member level: return tasks for this member
-            return this.getTaskItems(element.memberId);
+            const tasks = await this.getTaskItems(element.memberId);
+            const issues = await this.getIssueItems(element.memberId);
+            return [...tasks, ...issues];
         }
 
         return [];
@@ -78,12 +86,10 @@ export class SquadTreeProvider implements vscode.TreeDataProvider<SquadTreeItem>
                 member.name
             );
 
-            // Set icon based on status
             item.iconPath = new vscode.ThemeIcon(
                 member.status === 'working' ? 'sync~spin' : 'person'
             );
             
-            // Show role and status in description
             item.description = `${member.role} • ${member.status}`;
             item.tooltip = this.getMemberTooltip(member);
 
@@ -107,7 +113,6 @@ export class SquadTreeProvider implements vscode.TreeDataProvider<SquadTreeItem>
             item.description = task.status;
             item.tooltip = this.getTaskTooltip(task);
             
-            // Wire click to show work details
             item.command = {
                 command: 'squadui.showWorkDetails',
                 title: 'Show Work Details',
@@ -116,6 +121,51 @@ export class SquadTreeProvider implements vscode.TreeDataProvider<SquadTreeItem>
 
             return item;
         });
+    }
+
+    private async getIssueItems(memberId: string): Promise<SquadTreeItem[]> {
+        if (!this.issuesService) {
+            return [];
+        }
+
+        try {
+            const workspaceRoot = this.dataProvider.getWorkspaceRoot();
+            const issueMap = await this.issuesService.getIssuesByMember(workspaceRoot);
+            const issues = issueMap.get(memberId) ?? [];
+
+            return issues.map(issue => {
+                const labelText = issue.labels
+                    .filter(l => !l.name.startsWith('squad:'))
+                    .map(l => l.name)
+                    .join(', ');
+
+                const item = new SquadTreeItem(
+                    `#${issue.number} ${issue.title}`,
+                    vscode.TreeItemCollapsibleState.None,
+                    'issue',
+                    memberId,
+                    String(issue.number)
+                );
+
+                item.iconPath = new vscode.ThemeIcon(
+                    'issues',
+                    new vscode.ThemeColor(issue.state === 'open' ? 'charts.green' : 'charts.purple')
+                );
+                item.description = labelText || undefined;
+                item.tooltip = this.getIssueTooltip(issue);
+
+                item.command = {
+                    command: 'squadui.openIssue',
+                    title: 'Open Issue in Browser',
+                    arguments: [issue.htmlUrl]
+                };
+
+                return item;
+            });
+        } catch {
+            // Issues service may fail (no token, network, etc.) — degrade gracefully
+            return [];
+        }
     }
 
     private getMemberTooltip(member: SquadMember): vscode.MarkdownString {
@@ -136,6 +186,20 @@ export class SquadTreeProvider implements vscode.TreeDataProvider<SquadTreeItem>
         if (task.description) {
             md.appendMarkdown(`${task.description}`);
         }
+        return md;
+    }
+
+    private getIssueTooltip(issue: GitHubIssue): vscode.MarkdownString {
+        const md = new vscode.MarkdownString();
+        md.appendMarkdown(`**#${issue.number}: ${issue.title}**\n\n`);
+        md.appendMarkdown(`State: ${issue.state}\n\n`);
+        if (issue.labels.length > 0) {
+            md.appendMarkdown(`Labels: ${issue.labels.map(l => l.name).join(', ')}\n\n`);
+        }
+        if (issue.assignee) {
+            md.appendMarkdown(`Assignee: ${issue.assignee}\n\n`);
+        }
+        md.appendMarkdown(`[Open on GitHub](${issue.htmlUrl})`);
         return md;
     }
 }
