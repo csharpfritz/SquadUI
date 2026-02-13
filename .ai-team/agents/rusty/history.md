@@ -191,3 +191,7 @@
 - `squadui.viewSkill` — opens SKILL.md in editor (inline in extension.ts)
 - `squadui.removeSkill` — deletes skill directory with confirmation dialog (inline in extension.ts)
 - Both context-only commands hidden from command palette (`"when": "false"`)
+
+### 2026-02-14: Team Update — Skill UI Patterns (Decision Merged)
+
+📌 **Team decision captured:** SkillCatalogService instantiated directly in SquadTreeProvider (no VS Code deps). Skills appear as top-level collapsible node. Source badges (📦 awesome-copilot, 🏆 skills.sh, 🎯 local) in descriptions. Commands (viewSkill, removeSkill) registered inline and hidden from palette. — decided by Rusty
