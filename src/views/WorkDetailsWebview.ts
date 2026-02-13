@@ -324,7 +324,7 @@ export class WorkDetailsWebview {
 
         const isSeparator = (line: string): boolean => {
             const trimmed = line.trim();
-            return /^\|[\s\-:|]+\|$/.test(trimmed) && /\-/.test(trimmed);
+            return /^\|[\s\-:|]+\|$/.test(trimmed) && /-/.test(trimmed);
         };
 
         // Check if second line is a separator row

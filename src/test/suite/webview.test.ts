@@ -85,7 +85,7 @@ class TestableWebviewContent {
 
         const isSeparator = (line: string): boolean => {
             const trimmed = line.trim();
-            return /^\|[\s\-:|]+\|$/.test(trimmed) && /\-/.test(trimmed);
+            return /^\|[\s\-:|]+\|$/.test(trimmed) && /-/.test(trimmed);
         };
 
         const hasSeparator = lines.length >= 2 && isSeparator(lines[1]);

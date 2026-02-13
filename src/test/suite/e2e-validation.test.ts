@@ -64,7 +64,7 @@ class TestableWebviewRenderer {
         const parseCells = (line: string): string[] =>
             line.trim().replace(/^\|/, '').replace(/\|$/, '').split('|').map(c => c.trim());
         const isSeparator = (line: string): boolean =>
-            /^\|[\s\-:|]+\|$/.test(line.trim()) && /\-/.test(line);
+            /^\|[\s\-:|]+\|$/.test(line.trim()) && /-/.test(line);
 
         const hasSeparator = lines.length >= 2 && isSeparator(lines[1]);
         const headerCells = parseCells(lines[0]);
