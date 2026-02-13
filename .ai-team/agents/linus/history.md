@@ -136,3 +136,29 @@ Key design decisions:
 - Single-page fetch (no pagination loop) — 50 is enough for recent history and avoids extra API calls
 - Separate cache allows open and closed issues to have independent lifecycles
 - Existing open issue methods left completely untouched
+
+### 2026-02-14: Flexible Issue Matching Strategies
+
+Extended `GitHubIssuesService` with multi-strategy issue-to-member matching:
+- **squad:{member} labels** (existing) — still the primary strategy
+- **Assignee matching** — maps GitHub assignee usernames to squad member names via `memberAliases` config
+- **Any-label matching** — matches any label name (case-insensitive) against member names
+
+Key design decisions:
+- `resolveStrategies()` defaults to `['labels', 'assignees']` when no config present — preserves backward compatibility while adding assignee matching as fallback
+- Results from all active strategies are unioned and deduplicated by issue number per member via `addIssueToBucket()` helper
+- Reverse alias map (GitHub username → squad member name) is built once per call, not per-issue
+- Both `getIssuesByMember` and `getClosedIssuesByMember` use the same strategy resolution
+
+Extended `TeamMdService` to parse:
+- `Matching` field from Issue Source table → `string[]` of strategy names
+- `### Member Aliases` table → `Map<string, string>` (squad name → GitHub username)
+- Both fields are optional; service returns `undefined` when not present
+
+Extended `IssueSourceConfig` model with:
+- `matching?: string[]` — which strategies to use
+- `memberAliases?: Map<string, string>` — squad name → GitHub username mapping
+
+Extended `ExtendedTeamRoster` with:
+- `issueMatching?: string[]` — parsed from team.md Issue Source
+- `memberAliases?: Map<string, string>` — parsed from team.md Member Aliases table
