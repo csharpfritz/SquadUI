@@ -8,14 +8,6 @@ import * as vscode from 'vscode';
 suite('Extension Test Suite', () => {
     vscode.window.showInformationMessage('Starting extension tests.');
 
-    // Helper to activate extension if not already active
-    async function ensureExtensionActivated(): Promise<void> {
-        const extension = vscode.extensions.getExtension('csharpfritz.squadui');
-        if (extension && !extension.isActive) {
-            await extension.activate();
-        }
-    }
-
     suite('Extension Activation', () => {
         test('extension is present', () => {
             const extension = vscode.extensions.getExtension('csharpfritz.squadui');
