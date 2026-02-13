@@ -64,8 +64,11 @@ export class SquadDataProvider {
         if (roster && roster.members.length > 0) {
             // Primary path: team.md defines the roster, logs overlay status
             members = roster.members.map(member => {
-                const status = memberStates.get(member.name) ?? 'idle';
+                const logStatus = memberStates.get(member.name) ?? 'idle';
                 const currentTask = tasks.find(t => t.assignee === member.name && t.status === 'in_progress');
+                // Override 'working' to 'idle' if the member has no in-progress tasks
+                // (all their work is completed — they shouldn't show as spinning)
+                const status = (logStatus === 'working' && !currentTask) ? 'idle' : logStatus;
                 return {
                     name: member.name,
                     role: member.role,
@@ -84,8 +87,9 @@ export class SquadDataProvider {
 
             members = [];
             for (const name of memberNames) {
-                const status = memberStates.get(name) ?? 'idle';
+                const logStatus = memberStates.get(name) ?? 'idle';
                 const currentTask = tasks.find(t => t.assignee === name && t.status === 'in_progress');
+                const status = (logStatus === 'working' && !currentTask) ? 'idle' : logStatus;
                 members.push({
                     name,
                     role: 'Squad Member',

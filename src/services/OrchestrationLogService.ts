@@ -516,7 +516,9 @@ export class OrchestrationLogService {
      * Format: `- **AgentName:** description text`
      */
     private extractWhatWasDone(content: string): { agent: string; description: string }[] | undefined {
-        const section = this.extractSection(content, 'What Was Done');
+        // Try "What Was Done" first, then fall back to "Summary" for per-agent bullets
+        const section = this.extractSection(content, 'What Was Done')
+            ?? this.extractSection(content, 'Summary');
         if (!section) {
             return undefined;
         }
@@ -525,11 +527,14 @@ export class OrchestrationLogService {
         const lines = section.split('\n');
 
         for (const line of lines) {
-            // Match: - **AgentName:** description (colon may be inside or outside bold markers)
+            // Match: - **AgentName:** description or - **AgentName (WI-01):** description
+            // Colon may be inside or outside bold markers
             const match = line.match(/^\s*[-*]\s+\*\*(.+?):?\*\*:?\s*(.+?)\r?$/);
             if (match) {
+                // Strip parenthetical suffixes like "(WI-01/02)" from agent name
+                const agent = match[1].replace(/\s*\(.*?\)\s*$/, '').trim();
                 items.push({
-                    agent: match[1].trim(),
+                    agent,
                     description: match[2].trim(),
                 });
             }
