@@ -27,6 +27,12 @@ export interface CopilotCapabilities {
 export interface ExtendedTeamRoster extends TeamRoster {
     /** @copilot capability profile if present */
     copilotCapabilities?: CopilotCapabilities;
+
+    /** Issue matching strategies from Issue Source config */
+    issueMatching?: string[];
+
+    /** Squad member name → GitHub username mapping */
+    memberAliases?: Map<string, string>;
 }
 
 /**
@@ -68,13 +74,24 @@ export class TeamMdService {
         const repository = this.extractRepository(content);
         const owner = this.extractOwner(content);
         const copilotCapabilities = this.extractCopilotCapabilities(content);
+        const issueMatching = this.extractIssueMatching(content);
+        const memberAliases = this.extractMemberAliases(content);
 
-        return {
+        const roster: ExtendedTeamRoster = {
             members,
             repository,
             owner,
             copilotCapabilities,
         };
+
+        if (issueMatching) {
+            roster.issueMatching = issueMatching;
+        }
+        if (memberAliases && memberAliases.size > 0) {
+            roster.memberAliases = memberAliases;
+        }
+
+        return roster;
     }
 
     // ─── Private Helper Methods ────────────────────────────────────────────
@@ -374,5 +391,68 @@ export class TeamMdService {
         }
 
         return found ? result : null;
+    }
+
+    /**
+     * Extracts the Matching field from the Issue Source table.
+     * Parses comma-separated strategy names (e.g., "labels, assignees").
+     */
+    private extractIssueMatching(content: string): string[] | undefined {
+        const matchingMatch = content.match(/\*\*Matching\*\*\s*\|\s*([^\n|]+)/i);
+        if (!matchingMatch) {
+            return undefined;
+        }
+
+        const raw = matchingMatch[1].trim();
+        if (!raw || raw === '—' || raw === '-') {
+            return undefined;
+        }
+
+        return raw.split(',').map(s => s.trim().toLowerCase()).filter(s => s.length > 0);
+    }
+
+    /**
+     * Extracts the Member Aliases table from team.md.
+     * Expected format:
+     * ### Member Aliases
+     * | Squad Member | GitHub Username |
+     * |-------------|----------------|
+     * | Danny | csharpfritz |
+     */
+    private extractMemberAliases(content: string): Map<string, string> | undefined {
+        const section = this.extractSection(content, 'Member Aliases')
+            ?? this.extractSubSectionFromContent(content, 'Member Aliases');
+        if (!section) {
+            return undefined;
+        }
+
+        const table = this.parseMarkdownTable(section);
+        if (table.length === 0) {
+            return undefined;
+        }
+
+        const aliases = new Map<string, string>();
+        for (const row of table) {
+            const memberName = row.get('squad member') ?? row.get('name');
+            const githubUsername = row.get('github username') ?? row.get('username');
+
+            if (memberName && githubUsername && githubUsername !== '—' && githubUsername !== '-') {
+                aliases.set(memberName.toLowerCase(), githubUsername.toLowerCase());
+            }
+        }
+
+        return aliases.size > 0 ? aliases : undefined;
+    }
+
+    /**
+     * Extracts a subsection (### heading) from the full content.
+     */
+    private extractSubSectionFromContent(content: string, subsectionName: string): string | null {
+        const sectionRegex = new RegExp(
+            `###\\s+${subsectionName}\\s*\\n([\\s\\S]*?)(?=\\n##\\s|\\n###\\s|$)`,
+            'i'
+        );
+        const match = content.match(sectionRegex);
+        return match?.[1]?.trim() ?? null;
     }
 }
