@@ -70,7 +70,7 @@ suite('Extension Test Suite', () => {
             const extension = vscode.extensions.getExtension('csharpfritz.squadui');
             if (extension) {
                 const packageJson = extension.packageJSON;
-                const views = packageJson?.contributes?.views?.squadView || [];
+                const views = packageJson?.contributes?.views?.squadui || [];
                 const hasSquadMembersView = views.some((v: { id: string }) => v.id === 'squadMembers');
                 assert.ok(hasSquadMembersView, 'squadMembers view should be declared');
             }
