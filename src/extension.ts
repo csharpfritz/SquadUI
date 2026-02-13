@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { SquadDataProvider, FileWatcherService } from './services';
+import { SquadDataProvider, FileWatcherService, GitHubIssuesService } from './services';
 import { SquadTreeProvider, WorkDetailsWebview } from './views';
 
 let fileWatcher: FileWatcherService | undefined;
@@ -28,6 +28,11 @@ export function activate(context: vscode.ExtensionContext): void {
 
     // Create tree view provider
     const treeProvider = new SquadTreeProvider(dataProvider);
+
+    // Wire up GitHub Issues service
+    const issuesService = new GitHubIssuesService();
+    treeProvider.setIssuesService(issuesService);
+
     const treeView = vscode.window.createTreeView('squadMembers', {
         treeDataProvider: treeProvider,
         showCollapseAll: true
