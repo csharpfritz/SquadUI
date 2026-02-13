@@ -77,3 +77,12 @@
 - CSP: `default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline';`
 - Label badges use GitHub label colors with contrast-aware text color
 - Exported `IssueDetailWebview` from `src/views/index.ts`
+
+### 2026-02-14: Squad Init Command (#24)
+- Created `src/commands/` directory — first command module in the extension
+- `src/commands/initSquadCommand.ts` exports `registerInitSquadCommand(context, onInitComplete)` factory
+- Uses VS Code integrated terminal (not child_process) for full user visibility — this is the preferred pattern for CLI-wrapping commands in VS Code extensions
+- `onDidCloseTerminal` listener handles post-init refresh — disposes itself after firing once
+- Command registered as `squadui.initSquad` with category "Squad" (not "SquadUI") per Danny's architecture plan
+- Barrel export pattern via `src/commands/index.ts`
+- Extension.ts wiring: callback does both `dataProvider.refresh()` and `treeProvider.refresh()` to clear cache and re-render
