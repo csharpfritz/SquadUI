@@ -607,71 +607,6 @@ This diagnosis identifies the exact code paths. The fix requires creating `TeamM
 
 ---
 
-## 2026-02-14: IGitHubIssuesService interface contract for tree view integration
-
-**By:** Rusty
-**What:** Defined `IGitHubIssuesService` interface in `src/models/index.ts` with a single method `getIssuesByMember(workspaceRoot: string): Promise<MemberIssueMap>`. The tree provider depends on this interface, not the concrete `GitHubIssuesService` class.
-**Why:** Decouples the tree view from the issues service implementation. Allows the tree to compile and work without the service (graceful degradation). When Linus's #18 lands, the concrete service just needs to implement this interface and be wired via `treeProvider.setIssuesService()`.
-
----
-
-## 2026-02-14: Issue icons use $(issues) codicon with ThemeColor tinting
-
-**By:** Rusty
-**What:** Issues in the tree view use the `$(issues)` codicon with `charts.green` color for open issues and `charts.purple` for closed. Tasks continue to use `$(tasklist)` with no color override.
-**Why:** Makes issues visually distinct from orchestration tasks at a glance. Uses VS Code's built-in theme colors so it adapts to any color theme. The `charts.*` colors are well-established in the VS Code palette.
-
----
-
-## 2026-02-14: Squad labels filtered from issue description display
-
-**By:** Rusty
-**What:** When rendering issue labels in the tree item description, labels starting with `squad:` are excluded.
-**Why:** The `squad:{member}` label is used for routing/mapping issues to members — it's structural, not informational. Showing it in the UI would be redundant since the issue already appears under that member's node.
-
----
-
-## Issue Detail Webview — Architecture Decision
-
-**Author:** Rusty (Extension Dev)
-**Date:** 2026-02-14
-**Status:** Proposed
-
-### Context
-
-Users requested two features: (1) showing completed/closed issues in the tree view under each member, and (2) viewing issue content in a VS Code webview instead of always opening the browser.
-
-### Decisions
-
-#### 1. Completed Issues Use Muted Icon
-
-**Decision:** Completed issues use `$(pass)` icon with `descriptionForeground` color to visually distinguish them from open issues (which use `$(issues)` with `charts.green`).
-
-**Rationale:** The `pass` (checkmark) icon clearly communicates "done" status. Using `descriptionForeground` makes them visually recede compared to active open issues, keeping focus on current work.
-
-#### 2. Issue Webview Uses postMessage for External Links
-
-**Decision:** `IssueDetailWebview` enables scripts and uses `acquireVsCodeApi().postMessage()` to send the GitHub URL back to the extension host, which calls `vscode.env.openExternal()`.
-
-**Rationale:** VS Code webviews don't allow arbitrary `<a href>` navigation for security. The postMessage pattern is the standard VS Code way to handle external links from webviews. `enableScripts: true` is required but CSP is still locked down.
-
-#### 3. Command Accepts Optional Full Issue Object
-
-**Decision:** `squadui.openIssue` command accepts `(url: string, issue?: GitHubIssue)`. When `issue` is provided, it opens the webview; otherwise falls back to `openExternal`.
-
-**Rationale:** Backward-compatible — any existing callers passing only a URL still work. Tree items now pass the full issue object as a second argument for richer display.
-
-#### 4. No Markdown Rendering in Issue Body
-
-**Decision:** Issue body is rendered as escaped plain text with `white-space: pre-wrap`.
-
-**Rationale:** Markdown rendering requires either a markdown library or `enableHtml` in the webview, both adding complexity and security surface. Plain text is sufficient for MVP. Can be upgraded later.
-
-### Impact
-
-- New file: `src/views/IssueDetailWebview.ts`
-- Modified: `src/views/SquadTreeProvider.ts`, `src/extension.ts`, `src/views/index.ts`, `package.json`
-- Interface change: `IGitHubIssuesService` now has `getClosedIssuesByMember` (coordinated with Linus)
 ## 2026-02-13: Acceptance test fixtures isolated in dedicated directory
 
 **By:** Basher
@@ -734,8 +669,8 @@ Rusty needs closed issues to display completed work history in the tree view. Th
 
 ## Release Pipeline
 
-**Author:** Livingston (DevOps/CI)
-**Date:** 2025-07-19
+**Author:** Livingston (DevOps/CI)  
+**Date:** 2025-07-19  
 **Status:** Proposed
 
 ### Context
@@ -772,48 +707,6 @@ Created `.github/workflows/release.yml` with the following design:
 
 ---
 
-## GitHub Issues Service Architecture
-
-**By:** Linus
-**Date:** 2026-02-13
-**What:** GitHubIssuesService uses Node's built-in `https` module with optional auth token, 5-minute cache TTL, and `squad:{member}` label convention for issue-to-member mapping.
-**Why:** Using `https` avoids polyfill complexity for fetch in a CommonJS VS Code extension. Optional auth lets the service work immediately without setup while supporting authenticated flows later. The `squad:` label prefix is a simple, human-readable convention that works with GitHub's existing label system.
-
----
-
-## Closed Issues Fetching Strategy
-
-**Author:** Linus (Backend Dev)
-**Date:** 2026-02-14
-
-### Context
-
-Rusty needs closed issues to display completed work history in the tree view. The `GitHubIssuesService` only fetched open issues. We need to add closed issue support without disrupting the existing open issues flow.
-
-### Decisions
-
-#### 1. Separate Cache for Closed Issues
-
-**Decision:** Closed issues use their own `closedCache` field, separate from the open issues `cache`.
-
-**Rationale:** Open and closed issues have different access patterns. Open issues are the primary view and refreshed frequently. Closed issues are historical context — accessed less often. Separate caches prevent a closed issues fetch from invalidating the more valuable open issues cache.
-
-#### 2. 50-Issue Limit, No Pagination
-
-**Decision:** Fetch at most 50 closed issues in a single API call, sorted by `updated_at` descending.
-
-**Rationale:** Closed issues are for recent history, not full audit trail. 50 gives a meaningful window without burning API rate limits or adding latency from multiple paginated calls. The GitHub API's `per_page` max is 100, so 50 leaves headroom.
-
-#### 3. Case-Insensitive Member Matching
-
-**Decision:** Use `.toLowerCase()` on squad label names when grouping by member, consistent with the open issues method.
-
-**Rationale:** We just fixed a case-sensitivity bug in the open issues path. Applying the same pattern here prevents the same bug from appearing in the new code path.
-
-### Impact
-
-- `IGitHubIssuesService` now has a `getClosedIssuesByMember` method — any consumer of this interface gains access to closed issues
-- Cache invalidation clears both open and closed caches — no partial staleness
 ## Issue Detail Webview — Architecture Decision
 
 **Author:** Rusty (Extension Dev)
