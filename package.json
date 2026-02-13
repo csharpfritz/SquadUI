@@ -77,12 +77,35 @@
         "title": "Remove Team Member",
         "category": "Squad",
         "icon": "$(trash)"
+      },
+      {
+        "command": "squadui.addSkill",
+        "title": "Add Skill",
+        "category": "Squad",
+        "icon": "$(book)"
+      },
+      {
+        "command": "squadui.viewSkill",
+        "title": "View Skill",
+        "category": "Squad",
+        "icon": "$(open-preview)"
+      },
+      {
+        "command": "squadui.removeSkill",
+        "title": "Remove Skill",
+        "category": "Squad",
+        "icon": "$(trash)"
       }
     ],
     "menus": {
       "view/title": [
         {
           "command": "squadui.addMember",
+          "when": "view == squadMembers",
+          "group": "navigation"
+        },
+        {
+          "command": "squadui.addSkill",
           "when": "view == squadMembers",
           "group": "navigation"
         },
@@ -112,6 +135,16 @@
           "command": "squadui.openIssue",
           "when": "view == squadMembers && viewItem == issue",
           "group": "inline"
+        },
+        {
+          "command": "squadui.viewSkill",
+          "when": "view == squadMembers && viewItem == skill",
+          "group": "inline"
+        },
+        {
+          "command": "squadui.removeSkill",
+          "when": "view == squadMembers && viewItem == skill",
+          "group": "inline"
         }
       ],
       "commandPalette": [
@@ -121,6 +154,14 @@
         },
         {
           "command": "squadui.openIssue",
+          "when": "false"
+        },
+        {
+          "command": "squadui.viewSkill",
+          "when": "false"
+        },
+        {
+          "command": "squadui.removeSkill",
           "when": "false"
         }
       ]
