@@ -95,7 +95,10 @@ export class OrchestrationLogService {
             date,
             topic,
             participants: this.extractParticipants(content),
-            summary: this.extractSection(content, 'Summary') ?? this.extractSummaryFallback(content),
+            summary: this.extractSection(content, 'Summary')
+                ?? this.extractOutcomeFromTable(content)
+                ?? this.extractHeadingTitle(content)
+                ?? this.extractSummaryFallback(content),
             decisions: this.extractListSection(content, 'Decisions'),
             outcomes: this.extractListSection(content, 'Outcomes'),
             relatedIssues: this.extractRelatedIssues(content),
@@ -441,6 +444,11 @@ export class OrchestrationLogService {
                 break;
             }
 
+            // Skip table rows and separator rows
+            if (trimmed.startsWith('|')) {
+                continue;
+            }
+
             // Collect paragraph content
             if (trimmed.length > 0) {
                 inParagraph = true;
@@ -452,6 +460,33 @@ export class OrchestrationLogService {
         }
 
         return paragraphLines.join(' ') || 'No summary available';
+    }
+
+    /**
+     * Extracts the Outcome value from a metadata table.
+     * Matches `| **Outcome** | {value} |` rows.
+     */
+    extractOutcomeFromTable(content: string): string | null {
+        const match = content.match(/\|\s*\*\*Outcome\*\*\s*\|\s*(.+?)\s*\|/i);
+        if (!match) {
+            return null;
+        }
+        // Strip markdown formatting (bold, code spans)
+        return match[1].replace(/\*\*/g, '').replace(/`/g, '').trim() || null;
+    }
+
+    /**
+     * Extracts the title text from a heading line, preferring text after an em dash.
+     * E.g. `### 2026-02-13T14:15 — Design system architecture` → "Design system architecture"
+     */
+    extractHeadingTitle(content: string): string | null {
+        const match = content.match(/^#{1,6}\s+.+?\s*—\s*(.+)$/m);
+        if (match) {
+            return match[1].trim();
+        }
+        // Fall back to full heading text (without the `###` prefix)
+        const headingMatch = content.match(/^#{1,6}\s+(.+)$/m);
+        return headingMatch?.[1]?.trim() ?? null;
     }
 
     private extractRelatedIssues(content: string): string[] | undefined {

@@ -51,6 +51,88 @@ class TestableWebviewContent {
         return text.replace(/[&<>"']/g, char => map[char]);
     }
 
+    renderMarkdown(text: string): string {
+        const lines = text.split('\n');
+        const result: string[] = [];
+        let i = 0;
+
+        while (i < lines.length) {
+            if (lines[i].trim().startsWith('|')) {
+                const tableLines: string[] = [];
+                while (i < lines.length && lines[i].trim().startsWith('|')) {
+                    tableLines.push(lines[i]);
+                    i++;
+                }
+                result.push(this.renderTable(tableLines));
+            } else {
+                result.push(this.renderInline(this.escapeHtml(lines[i])));
+                i++;
+            }
+        }
+
+        return result.join('<br>');
+    }
+
+    renderTable(lines: string[]): string {
+        if (lines.length === 0) { return ''; }
+
+        const parseCells = (line: string): string[] => {
+            return line.trim()
+                .replace(/^\|/, '').replace(/\|$/, '')
+                .split('|')
+                .map(cell => cell.trim());
+        };
+
+        const isSeparator = (line: string): boolean => {
+            const trimmed = line.trim();
+            return /^\|[\s\-:|]+\|$/.test(trimmed) && /\-/.test(trimmed);
+        };
+
+        const hasSeparator = lines.length >= 2 && isSeparator(lines[1]);
+        const headerCells = parseCells(lines[0]);
+
+        let html = '<table class="md-table">';
+
+        if (hasSeparator) {
+            html += '<thead><tr>';
+            for (const cell of headerCells) {
+                html += `<th>${this.renderInline(this.escapeHtml(cell))}</th>`;
+            }
+            html += '</tr></thead><tbody>';
+
+            for (let j = 2; j < lines.length; j++) {
+                if (isSeparator(lines[j])) { continue; }
+                const cells = parseCells(lines[j]);
+                html += '<tr>';
+                for (let k = 0; k < headerCells.length; k++) {
+                    html += `<td>${this.renderInline(this.escapeHtml(cells[k] ?? ''))}</td>`;
+                }
+                html += '</tr>';
+            }
+            html += '</tbody>';
+        } else {
+            html += '<tbody>';
+            for (const line of lines) {
+                const cells = parseCells(line);
+                html += '<tr>';
+                for (const cell of cells) {
+                    html += `<td>${this.renderInline(this.escapeHtml(cell))}</td>`;
+                }
+                html += '</tr>';
+            }
+            html += '</tbody>';
+        }
+
+        html += '</table>';
+        return html;
+    }
+
+    renderInline(escaped: string): string {
+        escaped = escaped.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+        escaped = escaped.replace(/`(.+?)`/g, '<code>$1</code>');
+        return escaped;
+    }
+
     generateHtml(workDetails: WorkDetails): string {
         const { task, member } = workDetails;
         const statusBadge = this.getStatusBadge(task.status);
@@ -73,7 +155,7 @@ class TestableWebviewContent {
     <div class="section">
         <div class="section-title">Description</div>
         ${task.description 
-            ? `<div class="description">${this.escapeHtml(task.description)}</div>`
+            ? `<div class="description">${this.renderMarkdown(task.description)}</div>`
             : `<div class="no-description">No description provided</div>`
         }
     </div>
@@ -317,6 +399,85 @@ suite('WorkDetailsWebview Test Suite', () => {
 
             assert.ok(html.includes('badge-idle'));
             assert.ok(html.includes('Idle'));
+        });
+    });
+
+    suite('renderMarkdown', () => {
+        test('converts markdown table to HTML table', () => {
+            const md = '| Name | Role |\n|------|------|\n| Danny | Lead |';
+            const html = webviewContent.renderMarkdown(md);
+
+            assert.ok(html.includes('<table class="md-table">'));
+            assert.ok(html.includes('<thead>'));
+            assert.ok(html.includes('<th>Name</th>'));
+            assert.ok(html.includes('<th>Role</th>'));
+            assert.ok(html.includes('<tbody>'));
+            assert.ok(html.includes('<td>Danny</td>'));
+            assert.ok(html.includes('<td>Lead</td>'));
+            assert.ok(html.includes('</table>'));
+        });
+
+        test('converts bold text', () => {
+            const html = webviewContent.renderMarkdown('This is **bold** text');
+            assert.ok(html.includes('<strong>bold</strong>'));
+        });
+
+        test('converts inline code', () => {
+            const html = webviewContent.renderMarkdown('Use `npm install` here');
+            assert.ok(html.includes('<code>npm install</code>'));
+        });
+
+        test('converts newlines to br for non-table text', () => {
+            const html = webviewContent.renderMarkdown('Line one\nLine two');
+            assert.ok(html.includes('Line one<br>Line two'));
+        });
+
+        test('escapes HTML in table cells', () => {
+            const md = '| Header |\n|--------|\n| <script> |';
+            const html = webviewContent.renderMarkdown(md);
+
+            assert.ok(!html.includes('<script>'));
+            assert.ok(html.includes('&lt;script&gt;'));
+        });
+
+        test('handles table with no header separator', () => {
+            const md = '| A | B |\n| C | D |';
+            const html = webviewContent.renderMarkdown(md);
+
+            assert.ok(html.includes('<table class="md-table">'));
+            assert.ok(!html.includes('<thead>'));
+            assert.ok(html.includes('<td>A</td>'));
+            assert.ok(html.includes('<td>D</td>'));
+        });
+
+        test('handles empty cells', () => {
+            const md = '| A | |\n|---|---|\n| | B |';
+            const html = webviewContent.renderMarkdown(md);
+
+            assert.ok(html.includes('<th>A</th>'));
+            assert.ok(html.includes('<td>B</td>'));
+        });
+
+        test('handles single-column table', () => {
+            const md = '| Solo |\n|------|\n| Val |';
+            const html = webviewContent.renderMarkdown(md);
+
+            assert.ok(html.includes('<th>Solo</th>'));
+            assert.ok(html.includes('<td>Val</td>'));
+        });
+
+        test('handles mixed table and text', () => {
+            const md = 'Before table\n| H1 |\n|----|\n| V1 |\nAfter table';
+            const html = webviewContent.renderMarkdown(md);
+
+            assert.ok(html.includes('Before table'));
+            assert.ok(html.includes('<table class="md-table">'));
+            assert.ok(html.includes('After table'));
+        });
+
+        test('plain text returns escaped with no extra tags', () => {
+            const html = webviewContent.renderMarkdown('Just plain text');
+            assert.strictEqual(html, 'Just plain text');
         });
     });
 });

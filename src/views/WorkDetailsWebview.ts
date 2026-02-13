@@ -144,6 +144,24 @@ export class WorkDetailsWebview {
             color: var(--vscode-foreground);
             white-space: pre-wrap;
         }
+        .md-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 8px 0;
+            font-size: 13px;
+        }
+        .md-table th, .md-table td {
+            border: 1px solid var(--vscode-panel-border, #333);
+            padding: 6px 10px;
+            text-align: left;
+        }
+        .md-table th {
+            background: var(--vscode-editor-background, #1e1e1e);
+            font-weight: 600;
+        }
+        .md-table td {
+            background: var(--vscode-sideBar-background, #252526);
+        }
         .no-description {
             color: var(--vscode-descriptionForeground);
             font-style: italic;
@@ -202,7 +220,7 @@ export class WorkDetailsWebview {
     <div class="section">
         <div class="section-title">Description</div>
         ${task.description 
-            ? `<div class="description">${this.escapeHtml(task.description)}</div>`
+            ? `<div class="description">${this.renderMarkdown(task.description)}</div>`
             : `<div class="no-description">No description provided</div>`
         }
     </div>
@@ -265,6 +283,97 @@ export class WorkDetailsWebview {
             .map(part => part.charAt(0).toUpperCase())
             .slice(0, 2)
             .join('');
+    }
+
+    /**
+     * Lightweight markdown-to-HTML converter for task descriptions.
+     * Handles tables, bold, inline code, and line breaks.
+     */
+    private renderMarkdown(text: string): string {
+        const lines = text.split('\n');
+        const result: string[] = [];
+        let i = 0;
+
+        while (i < lines.length) {
+            // Detect markdown table block (lines starting with |)
+            if (lines[i].trim().startsWith('|')) {
+                const tableLines: string[] = [];
+                while (i < lines.length && lines[i].trim().startsWith('|')) {
+                    tableLines.push(lines[i]);
+                    i++;
+                }
+                result.push(this.renderTable(tableLines));
+            } else {
+                result.push(this.renderInline(this.escapeHtml(lines[i])));
+                i++;
+            }
+        }
+
+        return result.join('<br>');
+    }
+
+    private renderTable(lines: string[]): string {
+        if (lines.length === 0) { return ''; }
+
+        const parseCells = (line: string): string[] => {
+            return line.trim()
+                .replace(/^\|/, '').replace(/\|$/, '')
+                .split('|')
+                .map(cell => cell.trim());
+        };
+
+        const isSeparator = (line: string): boolean => {
+            const trimmed = line.trim();
+            return /^\|[\s\-:|]+\|$/.test(trimmed) && /\-/.test(trimmed);
+        };
+
+        // Check if second line is a separator row
+        const hasSeparator = lines.length >= 2 && isSeparator(lines[1]);
+        const headerCells = parseCells(lines[0]);
+
+        let html = '<table class="md-table">';
+
+        if (hasSeparator) {
+            html += '<thead><tr>';
+            for (const cell of headerCells) {
+                html += `<th>${this.renderInline(this.escapeHtml(cell))}</th>`;
+            }
+            html += '</tr></thead><tbody>';
+
+            for (let j = 2; j < lines.length; j++) {
+                if (isSeparator(lines[j])) { continue; }
+                const cells = parseCells(lines[j]);
+                html += '<tr>';
+                for (let k = 0; k < headerCells.length; k++) {
+                    html += `<td>${this.renderInline(this.escapeHtml(cells[k] ?? ''))}</td>`;
+                }
+                html += '</tr>';
+            }
+            html += '</tbody>';
+        } else {
+            // No separator — treat all rows as body
+            html += '<tbody>';
+            for (const line of lines) {
+                const cells = parseCells(line);
+                html += '<tr>';
+                for (const cell of cells) {
+                    html += `<td>${this.renderInline(this.escapeHtml(cell))}</td>`;
+                }
+                html += '</tr>';
+            }
+            html += '</tbody>';
+        }
+
+        html += '</table>';
+        return html;
+    }
+
+    private renderInline(escaped: string): string {
+        // Bold: **text** (already HTML-escaped, so no < > inside)
+        escaped = escaped.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+        // Inline code: `text`
+        escaped = escaped.replace(/`(.+?)`/g, '<code>$1</code>');
+        return escaped;
     }
 
     private escapeHtml(text: string): string {

@@ -86,3 +86,13 @@
 - (3) Squad labels (squad:*) filtered from issue description display since they're structural, not informational 
 - (4) Issue detail webview uses postMessage pattern for external links; command accepts optional full issue object for backward compatibility 
 - decided by Rusty
+
+### 2026-02-13: Markdown Rendering in WorkDetailsWebview
+- Added `renderMarkdown()` private method to `WorkDetailsWebview` — lightweight markdown-to-HTML converter (no npm deps)
+- Handles markdown tables (`| col |` + `|---|` separator → `<table class="md-table">` with `<thead>`/`<tbody>`)
+- Handles bold (`**text**` → `<strong>`), inline code (`` `text` `` → `<code>`), and line breaks (`\n` → `<br>`)
+- HTML content is still escaped before wrapping in tags (XSS prevention preserved)
+- Edge cases covered: tables without header separator (all rows as `<td>`), empty cells, single-column tables, mixed table/text content
+- CSS uses VS Code CSS variables for theme-aware table styling
+- `isSeparator` regex requires at least one `-` character to avoid false positives on data rows containing only pipes and spaces
+- 10 new tests added to `webview.test.ts` covering all renderMarkdown scenarios

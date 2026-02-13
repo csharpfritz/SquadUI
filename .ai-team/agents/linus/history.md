@@ -172,3 +172,14 @@ The `**Agent routed**` participant extraction regex now strips trailing pipe cha
 ### 2026-02-13: OrchestrationLogEntry.whatWasDone Field
 
 Added optional `whatWasDone` field to `OrchestrationLogEntry` in `src/models/index.ts`. Contains `{ agent: string; description: string }[]` parsed from the `## What Was Done` section. Populated during `parseLogFile()`, consumed by `getActiveTasks()`. No impact on existing code — the field is optional.
+
+### 2026-02-13: Table-Format Log Entry Extraction
+
+Orchestration log entries that use a metadata table format (no `## Summary` or `## What Was Done` sections) were producing tasks with raw markdown table text as the title. Fixed with a four-part priority chain for summary extraction:
+
+1. `## Summary` section (existing, for session logs)
+2. `**Outcome**` table field via `extractOutcomeFromTable()` — new method that matches `| **Outcome** | {value} |` rows and strips markdown formatting
+3. Heading title after em dash via `extractHeadingTitle()` — new method that matches `### timestamp — title` and returns the text after the em dash
+4. First paragraph fallback via `extractSummaryFallback()` — now skips lines starting with `|` (table rows)
+
+Both new methods are public for testability. Added 14 tests in `orchestrationLogService.test.ts` covering extraction, edge cases, and integration with `parseLogFile()`.
