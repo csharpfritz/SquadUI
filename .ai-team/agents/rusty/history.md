@@ -195,3 +195,7 @@
 ### 2026-02-14: Team Update — Skill UI Patterns (Decision Merged)
 
 📌 **Team decision captured:** SkillCatalogService instantiated directly in SquadTreeProvider (no VS Code deps). Skills appear as top-level collapsible node. Source badges (📦 awesome-copilot, 🏆 skills.sh, 🎯 local) in descriptions. Commands (viewSkill, removeSkill) registered inline and hidden from palette. — decided by Rusty
+
+### 2026-02-14: Team Update — Tree Tests Must Filter by Item Type
+
+📌 **Team decision captured:** Root-level tree tests must filter by `itemType === 'member'` when asserting member properties. Skills section node is now a root-level item alongside members. Future tree node sections (Issues, History) will add more root nodes—tests should always filter by type rather than assume fixed root count. — decided by Basher
