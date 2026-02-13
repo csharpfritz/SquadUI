@@ -1,5 +1,3 @@
-out
-node_modules
 .vscode-test
 *.vsix
 .git
@@ -8,3 +6,8 @@ node_modules
 tsconfig.json
 src/**
 **/*.map
+node_modules
+test-fixtures
+docs
+.ai-team
+.github
