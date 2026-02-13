@@ -33,6 +33,13 @@ export class SquadDataProvider {
     }
 
     /**
+     * Returns the workspace root path used by this provider.
+     */
+    getWorkspaceRoot(): string {
+        return this.teamRoot;
+    }
+
+    /**
      * Returns all squad members with their current status.
      * Always reads from team.md first (authoritative roster), then overlays
      * status and tasks from orchestration logs. Falls back to log-participant

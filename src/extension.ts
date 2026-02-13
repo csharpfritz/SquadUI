@@ -61,6 +61,14 @@ export function activate(context: vscode.ExtensionContext): void {
         })
     );
 
+    context.subscriptions.push(
+        vscode.commands.registerCommand('squadui.openIssue', (url: string) => {
+            if (url) {
+                vscode.env.openExternal(vscode.Uri.parse(url));
+            }
+        })
+    );
+
     // Connect file watcher to tree refresh
     fileWatcher.onFileChange(() => {
         treeProvider.refresh();
