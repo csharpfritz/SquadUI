@@ -121,3 +121,18 @@ Models added to `src/models/index.ts`:
 - `GitHubIssue`: number, title, body, state, labels, assignee, htmlUrl, createdAt, updatedAt
 - `GitHubLabel`: name, color
 - `IssueSourceConfig`: repository, owner, repo, filters
+
+### 2026-02-14: GitHubIssuesService — Closed Issues Support
+
+Extended `GitHubIssuesService` with closed issue fetching for completed work history:
+- `getClosedIssues(workspaceRoot, forceRefresh?)`: Fetches `state=closed` issues from GitHub API, limited to 50 most recently updated (single page, no pagination)
+- `getClosedIssuesByMember(workspaceRoot)`: Groups closed issues by squad member using `squad:{name}` label convention with case-insensitive matching
+- Separate `closedCache` keeps closed issue data independent from the open issues cache
+- `invalidateCache()` and `invalidateAll()` clear both open and closed caches
+- Added `getClosedIssuesByMember` to `IGitHubIssuesService` interface in `src/models/index.ts`
+
+Key design decisions:
+- 50-issue limit on closed issues keeps API calls fast and avoids excessive data for history display
+- Single-page fetch (no pagination loop) — 50 is enough for recent history and avoids extra API calls
+- Separate cache allows open and closed issues to have independent lifecycles
+- Existing open issue methods left completely untouched

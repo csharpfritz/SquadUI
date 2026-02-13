@@ -199,8 +199,14 @@ export type MemberIssueMap = Map<string, GitHubIssue[]>;
  */
 export interface IGitHubIssuesService {
     /**
-     * Returns issues mapped to squad members by label convention (squad:{name}).
+     * Returns open issues mapped to squad members by label convention (squad:{name}).
      * @param workspaceRoot - Workspace root for reading issue source config
      */
     getIssuesByMember(workspaceRoot: string): Promise<MemberIssueMap>;
+
+    /**
+     * Returns recently closed issues mapped to squad members by label convention (squad:{name}).
+     * @param workspaceRoot - Workspace root for reading issue source config
+     */
+    getClosedIssuesByMember(workspaceRoot: string): Promise<MemberIssueMap>;
 }

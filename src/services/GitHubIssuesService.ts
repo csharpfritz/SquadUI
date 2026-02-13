@@ -49,6 +49,7 @@ export class GitHubIssuesService {
     private apiBaseUrl: string;
 
     private cache: IssueCache | null = null;
+    private closedCache: IssueCache | null = null;
     private issueSourceCache: IssueSourceConfig | null = null;
 
     constructor(options: GitHubIssuesServiceOptions = {}) {
@@ -154,10 +155,57 @@ export class GitHubIssuesService {
     }
 
     /**
+     * Fetches recently closed issues from the connected repository.
+     * Limited to 50 most recently updated for performance.
+     * Results are cached separately from open issues.
+     *
+     * @param workspaceRoot - Root directory containing .ai-team/team.md
+     * @param forceRefresh - Bypass cache and fetch fresh data
+     * @returns Array of closed GitHub issues, or empty array if no Issue Source configured
+     */
+    async getClosedIssues(workspaceRoot: string, forceRefresh = false): Promise<GitHubIssue[]> {
+        if (!forceRefresh && this.closedCache && !this.isClosedCacheExpired()) {
+            return this.closedCache.issues;
+        }
+
+        const config = await this.getIssueSource(workspaceRoot);
+        if (!config) {
+            return [];
+        }
+
+        const issues = await this.fetchClosedIssuesFromApi(config);
+        this.closedCache = { issues, fetchedAt: Date.now() };
+        return issues;
+    }
+
+    /**
+     * Returns recently closed issues mapped to squad members by label convention (squad:{name}).
+     * Only includes members with at least one closed issue.
+     */
+    async getClosedIssuesByMember(workspaceRoot: string): Promise<Map<string, GitHubIssue[]>> {
+        const issues = await this.getClosedIssues(workspaceRoot);
+        const byMember = new Map<string, GitHubIssue[]>();
+
+        for (const issue of issues) {
+            for (const label of issue.labels) {
+                if (label.name.startsWith(SQUAD_LABEL_PREFIX)) {
+                    const member = label.name.substring(SQUAD_LABEL_PREFIX.length).toLowerCase();
+                    const existing = byMember.get(member) ?? [];
+                    existing.push(issue);
+                    byMember.set(member, existing);
+                }
+            }
+        }
+
+        return byMember;
+    }
+
+    /**
      * Invalidates the issue cache, forcing a fresh fetch on next access.
      */
     invalidateCache(): void {
         this.cache = null;
+        this.closedCache = null;
     }
 
     /**
@@ -166,6 +214,7 @@ export class GitHubIssuesService {
      */
     invalidateAll(): void {
         this.cache = null;
+        this.closedCache = null;
         this.issueSourceCache = null;
     }
 
@@ -185,6 +234,13 @@ export class GitHubIssuesService {
             return true;
         }
         return Date.now() - this.cache.fetchedAt > this.cacheTtlMs;
+    }
+
+    private isClosedCacheExpired(): boolean {
+        if (!this.closedCache) {
+            return true;
+        }
+        return Date.now() - this.closedCache.fetchedAt > this.cacheTtlMs;
     }
 
     /**
@@ -227,6 +283,32 @@ export class GitHubIssuesService {
         }
 
         return allIssues;
+    }
+
+    /**
+     * Fetches recently closed issues from the GitHub REST API.
+     * Returns at most 50 issues, sorted by most recently updated.
+     */
+    private async fetchClosedIssuesFromApi(config: IssueSourceConfig): Promise<GitHubIssue[]> {
+        const perPage = 50;
+        const path = `/repos/${config.owner}/${config.repo}/issues?state=closed&sort=updated&direction=desc&per_page=${perPage}&page=1`;
+
+        let raw: GitHubApiIssue[];
+        try {
+            raw = await this.apiGet<GitHubApiIssue[]>(path);
+        } catch (error) {
+            throw error;
+        }
+
+        const issues: GitHubIssue[] = [];
+        for (const item of raw) {
+            if (item.pull_request) {
+                continue;
+            }
+            issues.push(this.mapApiIssue(item));
+        }
+
+        return issues;
     }
 
     /**
