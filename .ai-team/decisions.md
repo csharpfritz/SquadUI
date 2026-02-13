@@ -772,3 +772,97 @@ Users requested two features: (1) showing completed/closed issues in the tree vi
 **By:** Rusty
 **What:** When rendering issue labels in the tree item description, labels starting with `squad:` are excluded.
 **Why:** The `squad:{member}` label is used for routing/mapping issues to members — it's structural, not informational. Showing it in the UI would be redundant since the issue already appears under that member's node.
+
+---
+
+## Log Discovery: Union of All Directories
+
+**Author:** Linus (Backend Dev)
+**Date:** 2026-02-13
+
+### Context
+
+`OrchestrationLogService.discoverLogFiles()` was returning early from the first directory that contained files. In repos like MyFirstTextGame, `orchestration-log/` has routing metadata and `log/` has session logs with participants and issue references. Only reading one directory meant tasks from the other were invisible to SquadUI.
+
+### Decisions
+
+#### 1. Union Discovery — Read All Log Directories
+
+**Decision:** `discoverLogFiles()` collects files from ALL configured log directories and returns their union, sorted alphabetically.
+
+**Rationale:** Both directories contain meaningful data. The orchestration-log entries have routing info (which agent was dispatched), while log entries have session details (participants, decisions, outcomes, related issues). SquadUI needs both to show a complete picture.
+
+#### 2. Dual Filename Format Support
+
+**Decision:** The filename regex accepts both `YYYY-MM-DD-topic.md` and `YYYY-MM-DDThhmm-topic.md` via `(?:T\d{4})?`.
+
+**Rationale:** The `orchestration-log/` directory uses a `T`-separated timestamp in filenames (e.g., `2026-02-10T2022-fury.md`). Without this, date extraction falls back to content parsing or defaults to today's date — both less reliable.
+
+#### 3. Agent Routed Participant Extraction
+
+**Decision:** `extractParticipants()` falls back to extracting from `| **Agent routed** | Name (Role) |` table format when `**Participants:**` and `**Who worked:**` are absent.
+
+**Rationale:** Orchestration-log entries use a markdown table format with `**Agent routed**` instead of the inline `**Participants:**` format. The role suffix in parentheses (e.g., "Fury (Lead)") is stripped to return just the name, consistent with how participants are used elsewhere.
+
+### Impact
+
+- Files from both `orchestration-log/` and `log/` now appear in SquadUI
+- No changes to public API — all fixes are internal to existing methods
+- All 203 existing tests continue to pass
+
+---
+
+## Prose-Based Task Extraction in OrchestrationLogService
+
+**Author:** Linus (Backend Dev)
+**Date:** 2026-02-13
+
+### Context
+
+`getActiveTasks()` only created tasks from `#NNN` issue references. Real-world repos like MyFirstTextGame have no issue references — they describe work as prose in session log sections ("What Was Done", "Who Worked", "Outcomes") and orchestration log fields ("Agent routed", "Outcome").
+
+### Decisions
+
+#### 1. Two-Pass Extraction: Issues First, Then Prose
+
+**Decision:** The `#NNN` extraction runs as a first pass over all entries. The prose extraction runs as a second pass, only for entries that produced zero issue-based tasks and have participants.
+
+**Rationale:** Preserves existing behavior for repos that use GitHub issues. Prose extraction is additive — it fills the gap for repos that don't use issue numbers. No existing tests or behavior change.
+
+#### 2. "What Was Done" Items Have Highest Prose Priority
+
+**Decision:** Within the prose pass, entries with a `## What Was Done` section are processed before entries that fall to the synthetic fallback path.
+
+**Rationale:** "What Was Done" bullets contain per-agent attributed work items (`- **Banner:** Built full engine...`). These are richer than a synthetic task generated from the first participant + summary. Processing them first prevents ID collisions where a less-specific synthetic task would claim the `{date}-{agent}` ID before the more descriptive one.
+
+#### 3. Deterministic Task IDs: `{date}-{agent-slug}`
+
+**Decision:** Prose-derived tasks use `{date}-{agent-slug}` as their ID (e.g., `2026-02-10-banner`).
+
+**Rationale:** Stable across re-parses (deterministic). Avoids collisions between different agents on the same date. Avoids collisions with numeric `#NNN` issue IDs. Human-readable in debug output.
+
+#### 4. "What Was Done" Items Are Always Status: completed
+
+**Decision:** Tasks parsed from `## What Was Done` bullets are always marked `completed` with `completedAt` set to the entry date.
+
+**Rationale:** These bullets are past-tense descriptions of done work ("Built full engine", "Wrote 131 tests"). The section name itself — "What Was Done" — implies completion.
+
+#### 5. Completion Signal Detection for Synthetic Tasks
+
+**Decision:** Synthetic fallback tasks check for completion keywords ("Completed", "Done", "✅", "pass", "succeeds") in the combined summary + outcomes text.
+
+**Rationale:** Orchestration log outcomes like "Completed — Full engine with 13 models, 9 services" clearly signal done work. Matching these keywords gives reasonable status inference without requiring structured status fields.
+
+#### 6. whatWasDone Field Added to OrchestrationLogEntry
+
+**Decision:** Added optional `whatWasDone: { agent: string; description: string }[]` field to the `OrchestrationLogEntry` interface.
+
+**Rationale:** The Task interface was intentionally not changed (existing fields are sufficient). The log entry interface needed a place to store parsed "What Was Done" data between `parseLogFile()` and `getActiveTasks()`. The field is optional, so all existing code that constructs or reads log entries is unaffected.
+
+### Impact
+
+- `OrchestrationLogEntry` has a new optional field — no breaking change
+- `Task` interface unchanged
+- All 203 existing tests pass without modification
+- Repos with `#NNN` references see zero behavior change
+- Repos with only prose descriptions now produce meaningful tasks
