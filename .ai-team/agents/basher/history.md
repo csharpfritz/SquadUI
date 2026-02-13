@@ -95,3 +95,7 @@ Created comprehensive integration tests for the data layer services:
 **Recommendation:** Create `TeamMdService` to parse team.md as primary member source. Overlay activity status from logs.
 
 **Diagnosis written to:** `.ai-team/decisions/inbox/basher-empty-tree-diagnosis.md`
+
+### 2026-02-14: Team Update — SquadDataProvider team.md Fallback Pattern (Decision Merged)
+
+📌 **Team decision accepted:** SquadDataProvider now reads team.md as authoritative member roster, falling back to log participants if team.md is missing. This implements the recommendation from the empty tree view diagnosis. — decided by Linus

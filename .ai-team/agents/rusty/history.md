@@ -47,3 +47,11 @@
   - FileWatcherService invalidates cache and triggers tree refresh
   - Task tree items have click command to show webview
 - Activation event `onView:squadMembers` already configured
+
+### 2026-02-14: Team Update — CI Pipeline Enhanced (Decision Merged)
+
+📌 **Team decision merged:** CI pipeline now uses Node 18.x with concurrency control to prevent duplicate runs on the same branch. — decided by Livingston
+
+### 2026-02-14: Team Update — SquadDataProvider team.md Fallback (Decision Merged)
+
+📌 **Team decision accepted:** SquadDataProvider now reads team.md as authoritative member roster, falling back to log participants if team.md is missing. This ensures the tree view shows members even on first load with no orchestration logs. — decided by Linus
