@@ -33,7 +33,7 @@ jobs:
         run: npm run compile
 
       - name: Run tests
-        run: npm test
+        run: xvfb-run -a npm test
         continue-on-error: false
 
       - name: Upload test results
