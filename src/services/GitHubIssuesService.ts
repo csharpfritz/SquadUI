@@ -293,12 +293,7 @@ export class GitHubIssuesService {
         const perPage = 50;
         const path = `/repos/${config.owner}/${config.repo}/issues?state=closed&sort=updated&direction=desc&per_page=${perPage}&page=1`;
 
-        let raw: GitHubApiIssue[];
-        try {
-            raw = await this.apiGet<GitHubApiIssue[]>(path);
-        } catch (error) {
-            throw error;
-        }
+        const raw = await this.apiGet<GitHubApiIssue[]>(path);
 
         const issues: GitHubIssue[] = [];
         for (const item of raw) {
