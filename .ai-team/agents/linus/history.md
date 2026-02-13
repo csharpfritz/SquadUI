@@ -137,6 +137,17 @@ Key design decisions:
 - Separate cache allows open and closed issues to have independent lifecycles
 - Existing open issue methods left completely untouched
 
+### 2026-02-13: Team Update — Issues Service Interface Contract
+
+📌 **Team decision merged (2026-02-13):** `IGitHubIssuesService` interface decouples tree view from issues service implementation, enabling graceful degradation and late binding. — decided by Rusty
+
+### 2026-02-13: Team Update — Issue Icons & Display Filtering
+
+📌 **Team decision merged (2026-02-13):** Issues use `$(issues)` codicon with theme color tinting (green for open, purple for closed). Squad labels are filtered from display to avoid redundancy since they're structural metadata. — decided by Rusty
+
+### 2026-02-13: Team Update — Release Pipeline Workflow
+
+📌 **Team decision merged (2026-02-13):** Release pipeline (`release.yml`) is self-contained with its own CI steps, tag-based trigger, version verification gate, and marketplace publish via VSCE_PAT secret. — decided by Livingston
 ### 2026-02-14: Flexible Issue Matching Strategies
 
 Extended `GitHubIssuesService` with multi-strategy issue-to-member matching:

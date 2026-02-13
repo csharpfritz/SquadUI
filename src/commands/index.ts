@@ -1,0 +1,1 @@
+export { registerInitSquadCommand } from './initSquadCommand';

@@ -78,6 +78,25 @@
 - Label badges use GitHub label colors with contrast-aware text color
 - Exported `IssueDetailWebview` from `src/views/index.ts`
 
+### 2026-02-13: Team Update — Interface Contract for Issues Service
+
+📌 **Team decision merged (2026-02-13):** `IGitHubIssuesService` interface decouples tree view from issues service implementation, enabling graceful degradation and late binding. — decided by Rusty
+
+### 2026-02-13: Team Update — Issue Icons & Filtering
+
+📌 **Team decision merged (2026-02-13):** Issues use `$(issues)` codicon with theme color tinting (green for open, purple for closed). Squad labels are filtered from issue display to avoid redundancy. — decided by Rusty
+
+### 2026-02-13: Team Update — Release Pipeline Workflow
+
+📌 **Team decision merged (2026-02-13):** Release pipeline (`release.yml`) is self-contained with its own CI steps, tag-based trigger, version verification gate, and marketplace publish via VSCE_PAT secret. — decided by Livingston
+
+### 2026-02-13: Team Update — GitHub Issues Service uses https & squad: labels
+
+📌 **Team decision merged (2026-02-13):** GitHubIssuesService uses Node.js `https` module with optional auth token and 5-minute cache TTL. Squad labels use `squad:{member}` convention for issue-to-member mapping. — decided by Linus
+
+### 2026-02-13: Team Update — Closed Issues Fetching Strategy
+
+📌 **Team decision merged (2026-02-13):** Closed issues use separate cache, 50-issue limit (no pagination), and case-insensitive member matching. `getClosedIssuesByMember` added to service interface. — decided by Linus
 ### 2026-02-14: Team Update — GitHub Issues & Webview Architecture Decisions (Decision Merged)
 
 📌 **Team decisions captured:** 
