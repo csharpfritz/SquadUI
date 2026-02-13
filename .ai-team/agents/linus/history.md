@@ -85,3 +85,16 @@ Key parsing decisions:
 - Runtime status is determined by OrchestrationLogService
 - Coordinator entries in the table are skipped (separate section)
 - CopilotCapabilities extracts 🟢 good fit, 🟡 needs review, 🔴 not suitable lists
+
+### 2026-02-14: SquadDataProvider team.md Fallback Pattern
+
+`SquadDataProvider.getSquadMembers()` uses a two-tier member resolution strategy:
+1. **Primary:** `TeamMdService.parseTeamMd()` provides the authoritative roster with real roles from team.md
+2. **Overlay:** `OrchestrationLogService.getMemberStates()` overlays working/idle status from logs
+3. **Fallback:** If team.md is missing or has no members, derives members from log participants with generic 'Squad Member' role
+
+Key design choices:
+- team.md members always appear even with zero log activity (status defaults to 'idle')
+- Roles from team.md are preserved (not overwritten with generic text)
+- The fallback path preserves backward compatibility with projects that have logs but no team.md
+- Both services are instantiated in the constructor; team.md is read fresh on each cache-miss call to `getSquadMembers()`
