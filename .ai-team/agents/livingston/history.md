@@ -35,3 +35,7 @@
 - **Marketplace publish:** `vsce publish -p ${{ secrets.VSCE_PAT }}` — requires `VSCE_PAT` repository secret
 - **Permissions:** `contents: write` for release creation
 - **Key decision:** Self-contained CI steps in release workflow avoids coupling to `ci.yml` changes; release always gets a full quality gate
+
+### 2026-02-13: Team Update — Issues Service & Closed Issues Support
+
+📌 **Team decision merged (2026-02-13):** GitHubIssuesService uses Node.js `https` module with optional auth token and 5-minute cache. Closed issues use separate cache, 50-issue limit (no pagination), case-insensitive member matching. — decided by Linus
