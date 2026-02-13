@@ -47,3 +47,15 @@
   - FileWatcherService invalidates cache and triggers tree refresh
   - Task tree items have click command to show webview
 - Activation event `onView:squadMembers` already configured
+
+### 2026-02-14: GitHub Issues in Tree View (#20)
+- Extended `SquadTreeItem.itemType` to `'member' | 'task' | 'issue'`
+- `SquadTreeProvider.setIssuesService()` enables late-binding of the issues service
+- Issues rendered with `$(issues)` codicon — green for open, purple for closed via `ThemeColor`
+- Tasks use `$(tasklist)`, issues use `$(issues)` — visually distinct child types
+- `IGitHubIssuesService` interface defined in `src/models/index.ts` as the contract for issue providers
+- `MemberIssueMap` type: `Map<string, GitHubIssue[]>` keyed by member name
+- `squadui.openIssue` command registered — uses `vscode.env.openExternal(vscode.Uri.parse(url))`
+- `SquadDataProvider.getWorkspaceRoot()` added to expose team root path
+- Graceful degradation pattern: `getIssueItems()` catches errors and returns `[]` when service unavailable
+- Squad labels (`squad:{name}`) filtered out of issue description text to avoid redundancy
