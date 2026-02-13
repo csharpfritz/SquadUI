@@ -274,10 +274,11 @@ suite('SquadDataProvider', () => {
     });
 
     suite('getSquadMembers()', () => {
-        test('returns squad members from log entries', async () => {
+        test('returns squad members from team.md roster', async () => {
             const members = await provider.getSquadMembers();
             
-            assert.ok(members.length > 0, 'Should return at least one member');
+            // team.md fixture has 5 members
+            assert.ok(members.length >= 5, 'Should return all members from team.md');
         });
 
         test('members have name and status', async () => {
@@ -289,11 +290,18 @@ suite('SquadDataProvider', () => {
             }
         });
 
-        test('members have role defaulting to Squad Member', async () => {
+        test('members have roles from team.md when available', async () => {
             const members = await provider.getSquadMembers();
             
             for (const member of members) {
-                assert.strictEqual(member.role, 'Squad Member');
+                assert.ok(member.role, 'Member should have a role');
+                assert.ok(member.role.length > 0, 'Role should not be empty');
+            }
+
+            // With team.md present, roles should come from the file
+            const danny = members.find(m => m.name === 'Danny');
+            if (danny) {
+                assert.strictEqual(danny.role, 'Lead', 'Danny role should come from team.md');
             }
         });
 
@@ -506,6 +514,7 @@ suite('Edge Cases', () => {
         const provider = new SquadDataProvider(emptyDir);
         const members = await provider.getSquadMembers();
         
+        // No team.md and no logs = no members
         assert.deepStrictEqual(members, []);
     });
 
@@ -519,5 +528,99 @@ suite('Edge Cases', () => {
         
         assert.deepStrictEqual(members, []);
         assert.deepStrictEqual(tasks, []);
+    });
+
+    test('SquadDataProvider populates members from team.md when no logs exist', async () => {
+        const teamOnlyDir = path.join(tempDir, 'team-only');
+        const aiTeamDir = path.join(teamOnlyDir, '.ai-team');
+        await fs.promises.mkdir(aiTeamDir, { recursive: true });
+        await fs.promises.writeFile(path.join(aiTeamDir, 'team.md'), [
+            '# Team',
+            '',
+            '## Members',
+            '',
+            '| Name | Role | Charter | Status |',
+            '|------|------|---------|--------|',
+            '| Alice | Engineer | `.ai-team/agents/alice/charter.md` | ✅ Active |',
+            '| Bob | Designer | `.ai-team/agents/bob/charter.md` | ✅ Active |',
+        ].join('\n'));
+
+        const provider = new SquadDataProvider(teamOnlyDir);
+        const members = await provider.getSquadMembers();
+
+        assert.strictEqual(members.length, 2, 'Should have 2 members from team.md');
+        assert.ok(members.find(m => m.name === 'Alice'), 'Should include Alice');
+        assert.ok(members.find(m => m.name === 'Bob'), 'Should include Bob');
+    });
+
+    test('SquadDataProvider shows members as idle when no logs exist', async () => {
+        const teamOnlyDir = path.join(tempDir, 'team-idle');
+        const aiTeamDir = path.join(teamOnlyDir, '.ai-team');
+        await fs.promises.mkdir(aiTeamDir, { recursive: true });
+        await fs.promises.writeFile(path.join(aiTeamDir, 'team.md'), [
+            '# Team',
+            '',
+            '## Members',
+            '',
+            '| Name | Role | Charter | Status |',
+            '|------|------|---------|--------|',
+            '| Alice | Engineer | `.ai-team/agents/alice/charter.md` | ✅ Active |',
+        ].join('\n'));
+
+        const provider = new SquadDataProvider(teamOnlyDir);
+        const members = await provider.getSquadMembers();
+
+        assert.strictEqual(members.length, 1);
+        assert.strictEqual(members[0].status, 'idle', 'Member should be idle with no log activity');
+        assert.strictEqual(members[0].currentTask, undefined, 'Member should have no task');
+    });
+
+    test('SquadDataProvider preserves roles from team.md', async () => {
+        const teamOnlyDir = path.join(tempDir, 'team-roles');
+        const aiTeamDir = path.join(teamOnlyDir, '.ai-team');
+        await fs.promises.mkdir(aiTeamDir, { recursive: true });
+        await fs.promises.writeFile(path.join(aiTeamDir, 'team.md'), [
+            '# Team',
+            '',
+            '## Members',
+            '',
+            '| Name | Role | Charter | Status |',
+            '|------|------|---------|--------|',
+            '| Alice | Lead | `.ai-team/agents/alice/charter.md` | ✅ Active |',
+            '| Bob | Backend Dev | `.ai-team/agents/bob/charter.md` | ✅ Active |',
+        ].join('\n'));
+
+        const provider = new SquadDataProvider(teamOnlyDir);
+        const members = await provider.getSquadMembers();
+
+        const alice = members.find(m => m.name === 'Alice');
+        const bob = members.find(m => m.name === 'Bob');
+        assert.strictEqual(alice?.role, 'Lead');
+        assert.strictEqual(bob?.role, 'Backend Dev');
+    });
+
+    test('SquadDataProvider falls back to log participants when team.md missing', async () => {
+        const logOnlyDir = path.join(tempDir, 'log-only');
+        const logDir = path.join(logOnlyDir, '.ai-team', 'orchestration-log');
+        await fs.promises.mkdir(logDir, { recursive: true });
+        await fs.promises.writeFile(path.join(logDir, '2026-03-01-test.md'), [
+            '# Test Session',
+            '',
+            '**Participants:** Charlie, Diana',
+            '',
+            '## Summary',
+            'Test session.',
+        ].join('\n'));
+
+        const provider = new SquadDataProvider(logOnlyDir);
+        const members = await provider.getSquadMembers();
+
+        assert.strictEqual(members.length, 2, 'Should derive 2 members from log');
+        assert.ok(members.find(m => m.name === 'Charlie'), 'Should include Charlie');
+        assert.ok(members.find(m => m.name === 'Diana'), 'Should include Diana');
+        // Fallback uses generic role
+        for (const member of members) {
+            assert.strictEqual(member.role, 'Squad Member');
+        }
     });
 });
