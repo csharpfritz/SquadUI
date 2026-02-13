@@ -4,6 +4,11 @@
   "description": "Visualize Squad team members and their tasks",
   "version": "0.1.0",
   "publisher": "csharpfritz",
+  "icon": "images/icon.png",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/csharpfritz/SquadUI"
+  },
   "engines": {
     "vscode": "^1.85.0"
   },
