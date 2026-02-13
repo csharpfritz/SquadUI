@@ -122,6 +122,26 @@
 - Charter/history templates match existing agent file structure (identity, boundaries, voice sections)
 - `toSlug()` normalizes names to lowercase kebab-case for directory names
 - Duplicate guard: checks if agent directory already exists before creating
+
+### 2026-02-14: Team Update — Add Member Command UX Pattern (Decision Merged)
+
+📌 **Team decision captured:** `squadui.addMember` uses QuickPick (role) → InputBox (name) flow, creates `.ai-team/agents/{slug}/` charter/history files, appends to `team.md` roster, includes "Other..." for custom roles. — decided by Rusty
+
+### 2026-02-14: Team Update — Lightweight Markdown Rendering (Decision Merged)
+
+📌 **Team decision captured:** `WorkDetailsWebview.renderMarkdown()` converts markdown tables/bold/inline-code to HTML with full XSS escaping. No npm dependencies. Can be extracted to shared utility if `IssueDetailWebview` needs it. — decided by Rusty
+
+### 2026-02-14: Team Update — Remove Member Command & Palette Consistency (Decision Merged)
+
+📌 **Team decision captured:** Implemented `squadui.removeMember` with alumni archival, unified all commands to "Squad" category (was mixed "SquadUI"/"Squad"), added context menus for tree items, hid context-dependent commands from palette. — decided by Rusty
+
+### 2026-02-14: Team Update — Default Issue Matching & Member Aliases (Decision Merged)
+
+📌 **Team decision captured:** GitHubIssuesService defaults to `['labels', 'assignees']` when no Matching config present. Member Aliases table lives in team.md under Issue Source section. — decided by Linus
+
+### 2026-02-14: Team Update — Command Test Skip-Guard Pattern (Decision Merged)
+
+📌 **Team decision captured:** All command tests using `executeCommand` must check registration first with `this.skip()` guard (not arrow functions). Tests self-skip gracefully in CI environments without workspace. — decided by Basher
 - Registered in `package.json` with `$(add)` icon in `view/title` navigation group for the `squadMembers` panel
 - Follows same registration pattern as `initSquadCommand` — factory function returning `vscode.Disposable`, callback for post-action refresh
 - team.md insertion finds end of Members table by tracking last `|`-prefixed data row after `## Members` heading
@@ -150,3 +170,24 @@
 - `showWorkDetails` and `openIssue` hidden from command palette (`"when": "false"`) since they require context arguments
 - Context menus added for all item types: member (View Charter, Remove Member), task (Show Work Details), issue (View Issue Details)
 - Keybinding `Ctrl+Shift+S` / `Cmd+Shift+S` added for `squadui.addMember`
+
+### 2026-02-14: Add Skill Command (#40)
+- Created `src/commands/addSkillCommand.ts` — multi-step QuickPick flow for importing skills from external catalogs
+- Flow: source selection (awesome-copilot / skills.sh / search all) → browse or search skills → confirm & install
+- Uses `SkillCatalogService.fetchCatalog()` and `searchSkills()` for catalog browsing/searching
+- Downloads via `SkillCatalogService.downloadSkill()` with progress notification
+- Registered as `squadui.addSkill` with `$(book)` icon in view/title toolbar
+- Follows same factory pattern as `addMemberCommand` — `registerAddSkillCommand()` returns `vscode.Disposable`
+- Exported from `src/commands/index.ts`, wired in `src/extension.ts`
+
+### 2026-02-14: Skills in Tree View (#37)
+- Extended `SquadTreeItem.itemType` union to include `'skill'`
+- Added top-level "Skills" node (collapsible) below team members in the tree
+- Children are installed skills read via `SkillCatalogService.getInstalledSkills()`
+- Each skill item shows: label (name), description (source badge), `$(book)` icon, tooltip with description + confidence
+- Source badges: 📦 awesome-copilot, 🏆 skills.sh, 🎯 local
+- `SkillCatalogService` instantiated directly in the tree provider (no VS Code deps)
+- Context menu for skill items (`viewItem == skill`): View Skill, Remove Skill
+- `squadui.viewSkill` — opens SKILL.md in editor (inline in extension.ts)
+- `squadui.removeSkill` — deletes skill directory with confirmation dialog (inline in extension.ts)
+- Both context-only commands hidden from command palette (`"when": "false"`)

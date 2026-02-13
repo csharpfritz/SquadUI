@@ -77,6 +77,22 @@ Task IDs are deterministic: `{date}-{agent-slug}` (e.g., `2026-02-10-banner`). T
 
 `extractParticipants()` gained a table-format fallback for the `## Who Worked` section. Real-world session logs (e.g., MyFirstTextGame) use a markdown table (`| Agent | Role |`) instead of bullet lists or inline `**Participants:**` lines. The `extractTableFirstColumn()` helper parses table rows, skips header/separator rows, and returns agent names from the first column.
 
+### 2026-02-14: Team Update — SkillCatalogService Uses Graceful Degradation (Decision Merged)
+
+📌 **Team decision captured:** `SkillCatalogService` fetches from awesome-copilot + skills.sh using Node's `https` module. All methods swallow network errors and return empty arrays. Deduplicates toward awesome-copilot version. No npm dependencies. — decided by Linus
+
+### 2026-02-14: Team Update — Table-Format Log Summary Extraction (Decision Merged)
+
+📌 **Team decision captured:** Summary field extraction priority chain: (1) ## Summary section, (2) | **Outcome** | value | table field, (3) Heading title after em dash, (4) First prose paragraph. Prevents table markdown leakage into tree view. — decided by Linus
+
+### 2026-02-14: Team Update — Default Issue Matching & Member Aliases (Decision Merged)
+
+📌 **Team decision captured:** GitHubIssuesService defaults to `['labels', 'assignees']` when no Matching config. Member Aliases table parsed from team.md Issue Source section. — decided by Linus
+
+### 2026-02-14: Team Update — E2E Validation Test Strategy (Decision Merged)
+
+📌 **Team decision captured:** E2E tests use TestableWebviewRenderer pattern for HTML validation without live webview panels. Tests organized by acceptance criteria (AC-1 through AC-6) for direct traceability. Manual test plan covers visual/interactive behavior. — decided by Basher
+
 ### 2026-02-13: Agent Routed Pipe Cleanup
 
 The `**Agent routed**` participant extraction regex now strips trailing pipe characters (`|`) in addition to `(Role)` suffixes. The orchestration-log table format includes trailing pipes that were leaking into participant names.

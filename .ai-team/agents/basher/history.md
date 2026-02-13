@@ -231,3 +231,11 @@ Written proactively while Rusty builds the implementation. Tests describe expect
 - viewCharter tests create/cleanup their own agent directories under the real workspace root (not temp dirs) since the command reads `workspaceFolders[0]`
 
 **Test count:** 276 passing, 25 pending (self-skipping in CI without workspace), 0 failing.
+
+### 2026-02-14: Team Update — Command Test Skip-Guard Pattern (Decision Merged)
+
+📌 **Team decision captured:** All command tests using `executeCommand` must use skip-guard pattern — check registration with `this.skip()` (function syntax, not arrow). Tests self-skip gracefully in CI environments without workspace. — decided by Basher
+
+### 2026-02-14: Team Update — E2E Validation Test Strategy (Decision Merged)
+
+📌 **Team decision captured:** E2E tests use TestableWebviewRenderer pattern for HTML validation without live webview panels. Tests organized by acceptance criteria (AC-1 through AC-6) for direct traceability. Manual test plan covers visual/interactive behavior. — decided by Basher
