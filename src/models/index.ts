@@ -185,6 +185,12 @@ export interface IssueSourceConfig {
 
     /** Filter string from team.md (e.g., "all open") */
     filters?: string;
+
+    /** Which matching strategies to use (default: all strategies) */
+    matching?: string[];
+
+    /** Map of squad member name → GitHub username for assignee matching */
+    memberAliases?: Map<string, string>;
 }
 
 // ─── GitHub Issues Service Contract ────────────────────────────────────────

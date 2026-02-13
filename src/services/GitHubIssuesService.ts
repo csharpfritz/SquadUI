@@ -87,6 +87,8 @@ export class GitHubIssuesService {
             repository: `${owner}/${repoName}`,
             owner,
             repo: repoName,
+            matching: roster.issueMatching,
+            memberAliases: roster.memberAliases,
         };
 
         return this.issueSourceCache;
@@ -134,19 +136,55 @@ export class GitHubIssuesService {
 
     /**
      * Returns a map of member name → assigned issues.
+     * Uses configured matching strategies (labels, assignees, any-label).
+     * Results from all active strategies are combined (union, deduplicated).
      * Only includes members with at least one issue.
      */
     async getIssuesByMember(workspaceRoot: string): Promise<Map<string, GitHubIssue[]>> {
         const issues = await this.getIssues(workspaceRoot);
+        const config = await this.getIssueSource(workspaceRoot);
+        const strategies = this.resolveStrategies(config?.matching);
+        const aliases = config?.memberAliases;
+
+        // Build reverse alias map: GitHub username → squad member name
+        const usernameToMember = new Map<string, string>();
+        if (aliases) {
+            for (const [memberName, ghUsername] of aliases) {
+                usernameToMember.set(ghUsername.toLowerCase(), memberName.toLowerCase());
+            }
+        }
+
         const byMember = new Map<string, GitHubIssue[]>();
+        const seen = new Map<string, Set<number>>(); // member → set of issue numbers
 
         for (const issue of issues) {
-            for (const label of issue.labels) {
-                if (label.name.startsWith(SQUAD_LABEL_PREFIX)) {
-                    const member = label.name.substring(SQUAD_LABEL_PREFIX.length).toLowerCase();
-                    const existing = byMember.get(member) ?? [];
-                    existing.push(issue);
-                    byMember.set(member, existing);
+            // Strategy: squad:{member} labels
+            if (strategies.includes('labels')) {
+                for (const label of issue.labels) {
+                    if (label.name.startsWith(SQUAD_LABEL_PREFIX)) {
+                        const member = label.name.substring(SQUAD_LABEL_PREFIX.length).toLowerCase();
+                        this.addIssueToBucket(byMember, seen, member, issue);
+                    }
+                }
+            }
+
+            // Strategy: assignee matching via memberAliases
+            if (strategies.includes('assignees') && issue.assignee) {
+                const assigneeLower = issue.assignee.toLowerCase();
+                const memberName = usernameToMember.get(assigneeLower);
+                if (memberName) {
+                    this.addIssueToBucket(byMember, seen, memberName, issue);
+                }
+            }
+
+            // Strategy: any label matching a member name (case-insensitive)
+            if (strategies.includes('any-label')) {
+                for (const label of issue.labels) {
+                    const labelLower = label.name.toLowerCase();
+                    // Skip squad: prefixed labels — those are handled by the labels strategy
+                    if (!labelLower.startsWith(SQUAD_LABEL_PREFIX)) {
+                        this.addIssueToBucket(byMember, seen, labelLower, issue);
+                    }
                 }
             }
         }
@@ -179,20 +217,50 @@ export class GitHubIssuesService {
     }
 
     /**
-     * Returns recently closed issues mapped to squad members by label convention (squad:{name}).
+     * Returns recently closed issues mapped to squad members.
+     * Uses configured matching strategies (labels, assignees, any-label).
      * Only includes members with at least one closed issue.
      */
     async getClosedIssuesByMember(workspaceRoot: string): Promise<Map<string, GitHubIssue[]>> {
         const issues = await this.getClosedIssues(workspaceRoot);
+        const config = await this.getIssueSource(workspaceRoot);
+        const strategies = this.resolveStrategies(config?.matching);
+        const aliases = config?.memberAliases;
+
+        const usernameToMember = new Map<string, string>();
+        if (aliases) {
+            for (const [memberName, ghUsername] of aliases) {
+                usernameToMember.set(ghUsername.toLowerCase(), memberName.toLowerCase());
+            }
+        }
+
         const byMember = new Map<string, GitHubIssue[]>();
+        const seen = new Map<string, Set<number>>();
 
         for (const issue of issues) {
-            for (const label of issue.labels) {
-                if (label.name.startsWith(SQUAD_LABEL_PREFIX)) {
-                    const member = label.name.substring(SQUAD_LABEL_PREFIX.length).toLowerCase();
-                    const existing = byMember.get(member) ?? [];
-                    existing.push(issue);
-                    byMember.set(member, existing);
+            if (strategies.includes('labels')) {
+                for (const label of issue.labels) {
+                    if (label.name.startsWith(SQUAD_LABEL_PREFIX)) {
+                        const member = label.name.substring(SQUAD_LABEL_PREFIX.length).toLowerCase();
+                        this.addIssueToBucket(byMember, seen, member, issue);
+                    }
+                }
+            }
+
+            if (strategies.includes('assignees') && issue.assignee) {
+                const assigneeLower = issue.assignee.toLowerCase();
+                const memberName = usernameToMember.get(assigneeLower);
+                if (memberName) {
+                    this.addIssueToBucket(byMember, seen, memberName, issue);
+                }
+            }
+
+            if (strategies.includes('any-label')) {
+                for (const label of issue.labels) {
+                    const labelLower = label.name.toLowerCase();
+                    if (!labelLower.startsWith(SQUAD_LABEL_PREFIX)) {
+                        this.addIssueToBucket(byMember, seen, labelLower, issue);
+                    }
                 }
             }
         }
@@ -228,6 +296,43 @@ export class GitHubIssuesService {
     }
 
     // ─── Private Methods ───────────────────────────────────────────────────
+
+    /**
+     * Resolves which matching strategies to use.
+     * If config specifies strategies, use those. Otherwise default to labels + assignees
+     * for backward compatibility with repos that have squad labels, plus assignee
+     * matching as a fallback for repos that don't.
+     */
+    private resolveStrategies(matching?: string[]): string[] {
+        if (matching && matching.length > 0) {
+            return matching;
+        }
+        return ['labels', 'assignees'];
+    }
+
+    /**
+     * Adds an issue to a member's bucket, deduplicating by issue number.
+     */
+    private addIssueToBucket(
+        byMember: Map<string, GitHubIssue[]>,
+        seen: Map<string, Set<number>>,
+        member: string,
+        issue: GitHubIssue
+    ): void {
+        let memberSeen = seen.get(member);
+        if (!memberSeen) {
+            memberSeen = new Set<number>();
+            seen.set(member, memberSeen);
+        }
+        if (memberSeen.has(issue.number)) {
+            return;
+        }
+        memberSeen.add(issue.number);
+
+        const existing = byMember.get(member) ?? [];
+        existing.push(issue);
+        byMember.set(member, existing);
+    }
 
     private isCacheExpired(): boolean {
         if (!this.cache) {
