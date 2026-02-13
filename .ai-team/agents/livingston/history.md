@@ -35,3 +35,7 @@
 - **Marketplace publish:** `vsce publish -p ${{ secrets.VSCE_PAT }}` — requires `VSCE_PAT` repository secret
 - **Permissions:** `contents: write` for release creation
 - **Key decision:** Self-contained CI steps in release workflow avoids coupling to `ci.yml` changes; release always gets a full quality gate
+
+### 2026-02-14: Team Update — Release Pipeline Architecture (Decision Merged)
+
+📌 **Team decision captured:** Release pipeline is self-contained with full CI gates (lint/compile/test). Version verification fails fast if tag doesn't match package.json. Separate workflows prevent coupling. Pre-release flag for versions < 1.0.0. — decided by Livingston

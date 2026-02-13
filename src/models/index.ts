@@ -90,6 +90,9 @@ export interface OrchestrationLogEntry {
 
     /** Related GitHub issue numbers, if any */
     relatedIssues?: string[];
+
+    /** Parsed "What Was Done" items: agent-attributed work descriptions */
+    whatWasDone?: { agent: string; description: string }[];
 }
 
 /**

@@ -77,3 +77,12 @@
 - CSP: `default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline';`
 - Label badges use GitHub label colors with contrast-aware text color
 - Exported `IssueDetailWebview` from `src/views/index.ts`
+
+### 2026-02-14: Team Update — GitHub Issues & Webview Architecture Decisions (Decision Merged)
+
+📌 **Team decisions captured:** 
+- (1) IGitHubIssuesService interface contract for tree view decoupling from concrete implementation 
+- (2) Issue icons use $(issues) codicon with ThemeColor (charts.green open, charts.purple closed) 
+- (3) Squad labels (squad:*) filtered from issue description display since they're structural, not informational 
+- (4) Issue detail webview uses postMessage pattern for external links; command accepts optional full issue object for backward compatibility 
+- decided by Rusty

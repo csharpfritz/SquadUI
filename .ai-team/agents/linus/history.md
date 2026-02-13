@@ -162,3 +162,38 @@ Extended `IssueSourceConfig` model with:
 Extended `ExtendedTeamRoster` with:
 - `issueMatching?: string[]` — parsed from team.md Issue Source
 - `memberAliases?: Map<string, string>` — parsed from team.md Member Aliases table
+### 2026-02-14: Team Update — Closed Issues Architecture Decision (Decision Merged)
+
+📌 **Team decision captured:** Closed issues use a separate `closedCache` field independent from open issues. Fetch at most 50 (single page, no pagination) sorted by updated_at descending. Use case-insensitive member matching via `squad:{name}` labels. — decided by Linus
+
+### 2026-02-13: OrchestrationLogService — Multi-Directory Discovery and Format Tolerance
+
+`discoverLogFiles()` now returns the union of files from ALL configured log directories (`orchestration-log/` and `log/`), not just the first one that has files. Real-world repos like MyFirstTextGame use both directories — `orchestration-log/` contains routing metadata with `**Agent routed**` fields, while `log/` contains session logs with `**Participants:**` and issue references.
+
+The filename regex in `parseLogFile()` now handles both `YYYY-MM-DD-topic.md` and `YYYY-MM-DDThhmm-topic.md` formats via the optional group `(?:T\d{4})?`. The orchestration-log directory uses the `T`-separated timestamp format.
+
+`extractParticipants()` now has a fallback for the `**Agent routed**` table field format used in orchestration-log entries (e.g., `| **Agent routed** | Fury (Lead) |`). The regex matches the markdown table pipe delimiter and strips the `(Role)` suffix to extract just the agent name.
+
+### 2026-02-13: Prose-Based Task Extraction in getActiveTasks()
+
+`getActiveTasks()` now extracts tasks from two sources: `#NNN` issue references (original behavior, untouched) and prose work descriptions (new).
+
+The prose extraction runs in a second pass, only for log entries that (a) produced no `#NNN` tasks and (b) have participants. Two paths within the prose pass:
+
+1. **"What Was Done" section** (highest priority): Parses `- **AgentName:** description` bullets. Each becomes a task with the agent as assignee, a truncated title from the description, and `completed` status (past-tense prose = done work). Parsed via `extractWhatWasDone()`.
+
+2. **Synthetic fallback**: If no "What Was Done" section exists, creates a single task per entry using the first participant as assignee and the summary as title. Status is determined by `isCompletionSignal()` checking for "Completed", "Done", "✅", "pass", "succeeds" in outcomes/summary text.
+
+Task IDs are deterministic: `{date}-{agent-slug}` (e.g., `2026-02-10-banner`). The "What Was Done" path runs before the synthetic fallback to prevent ID collisions — richer per-agent data wins over single-participant synthetic tasks.
+
+### 2026-02-13: Who Worked Table Parsing
+
+`extractParticipants()` gained a table-format fallback for the `## Who Worked` section. Real-world session logs (e.g., MyFirstTextGame) use a markdown table (`| Agent | Role |`) instead of bullet lists or inline `**Participants:**` lines. The `extractTableFirstColumn()` helper parses table rows, skips header/separator rows, and returns agent names from the first column.
+
+### 2026-02-13: Agent Routed Pipe Cleanup
+
+The `**Agent routed**` participant extraction regex now strips trailing pipe characters (`|`) in addition to `(Role)` suffixes. The orchestration-log table format includes trailing pipes that were leaking into participant names.
+
+### 2026-02-13: OrchestrationLogEntry.whatWasDone Field
+
+Added optional `whatWasDone` field to `OrchestrationLogEntry` in `src/models/index.ts`. Contains `{ agent: string; description: string }[]` parsed from the `## What Was Done` section. Populated during `parseLogFile()`, consumed by `getActiveTasks()`. No impact on existing code — the field is optional.
