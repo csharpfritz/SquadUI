@@ -167,6 +167,23 @@ export interface GitHubIssue {
     updatedAt: string;
 }
 
+/**
+ * Configuration for the Issue Source, parsed from team.md.
+ */
+export interface IssueSourceConfig {
+    /** Repository in "owner/repo" format */
+    repository: string;
+
+    /** Owner portion of the repository */
+    owner: string;
+
+    /** Repo name portion */
+    repo: string;
+
+    /** Filter string from team.md (e.g., "all open") */
+    filters?: string;
+}
+
 // ─── GitHub Issues Service Contract ────────────────────────────────────────
 
 /**
