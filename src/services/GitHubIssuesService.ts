@@ -142,7 +142,7 @@ export class GitHubIssuesService {
         for (const issue of issues) {
             for (const label of issue.labels) {
                 if (label.name.startsWith(SQUAD_LABEL_PREFIX)) {
-                    const member = label.name.substring(SQUAD_LABEL_PREFIX.length);
+                    const member = label.name.substring(SQUAD_LABEL_PREFIX.length).toLowerCase();
                     const existing = byMember.get(member) ?? [];
                     existing.push(issue);
                     byMember.set(member, existing);

@@ -131,7 +131,7 @@ export class SquadTreeProvider implements vscode.TreeDataProvider<SquadTreeItem>
         try {
             const workspaceRoot = this.dataProvider.getWorkspaceRoot();
             const issueMap = await this.issuesService.getIssuesByMember(workspaceRoot);
-            const issues = issueMap.get(memberId) ?? [];
+            const issues = issueMap.get(memberId.toLowerCase()) ?? [];
 
             return issues.map(issue => {
                 const labelText = issue.labels
@@ -162,8 +162,8 @@ export class SquadTreeProvider implements vscode.TreeDataProvider<SquadTreeItem>
 
                 return item;
             });
-        } catch {
-            // Issues service may fail (no token, network, etc.) — degrade gracefully
+        } catch (error) {
+            console.warn('SquadUI: Failed to fetch GitHub issues for member', memberId, error);
             return [];
         }
     }
