@@ -75,3 +75,23 @@ Created comprehensive integration tests for the data layer services:
 
 - `mocks/vscode.ts` - VS Code API mocks (EventEmitter, TreeItem, etc.)
 - `mocks/squadDataProvider.ts` - Mock data provider with test fixtures
+
+### 2026-02-13: Empty Tree View Root Cause Analysis (Issue #19)
+
+**Problem:** Tree view shows no content when `.ai-team/orchestration-log/` folder is empty.
+
+**Root Cause:** `SquadDataProvider.getSquadMembers()` builds the member list exclusively from orchestration log participants. No logs = no participants = empty tree.
+
+**Data Flow Traced:**
+1. `extension.ts` → creates `SquadDataProvider(workspaceRoot)`
+2. `SquadTreeProvider.getSquadMemberItems()` → calls `dataProvider.getSquadMembers()`
+3. `getSquadMembers()` → calls `orchestrationService.parseAllLogs()`
+4. `parseAllLogs()` → calls `discoverLogFiles()` → returns `[]` (empty folder)
+5. Member list built from empty entries → returns `[]`
+6. Tree renders nothing
+
+**Design Gap:** The canonical team roster lives in `.ai-team/team.md`, not orchestration logs. Logs track activity, not membership.
+
+**Recommendation:** Create `TeamMdService` to parse team.md as primary member source. Overlay activity status from logs.
+
+**Diagnosis written to:** `.ai-team/decisions/inbox/basher-empty-tree-diagnosis.md`

@@ -11,3 +11,8 @@ export {
     type CacheInvalidator
 } from './FileWatcherService';
 export { SquadDataProvider } from './SquadDataProvider';
+export {
+    TeamMdService,
+    type CopilotCapabilities,
+    type ExtendedTeamRoster
+} from './TeamMdService';

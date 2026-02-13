@@ -10,6 +10,7 @@ How to decide who handles what.
 | Architecture & decisions | Danny | Scope, trade-offs, code review, integration strategy |
 | Data services & integrations | Linus | Parsing .ai-team files, GitHub API, file watchers |
 | Testing & quality | Basher | Unit tests, integration tests, edge cases |
+| CI/CD & DevOps | Livingston | GitHub Actions, pipelines, release automation |
 | Code review | Danny | Review PRs, check quality, suggest improvements |
 | Scope & priorities | Danny | What to build next, trade-offs, decisions |
 | Async issue work (bugs, tests, small features) | @copilot 🤖 | Well-defined tasks matching capability profile |
