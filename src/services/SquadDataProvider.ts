@@ -1,17 +1,24 @@
 /**
  * Service for aggregating and providing squad data to the UI layer.
  * Caches parsed data internally and exposes a clean API for the webview.
+ *
+ * Member resolution order:
+ * 1. team.md (authoritative roster via TeamMdService)
+ * 2. Orchestration logs overlay status/tasks on top
+ * 3. If team.md is missing, falls back to log-participant discovery
  */
 
 import { SquadMember, Task, WorkDetails, OrchestrationLogEntry } from '../models';
 import { OrchestrationLogService } from './OrchestrationLogService';
+import { TeamMdService } from './TeamMdService';
 
 /**
  * Provides squad data to the UI layer.
- * Aggregates data from OrchestrationLogService with caching.
+ * Aggregates data from TeamMdService (primary) and OrchestrationLogService (overlay).
  */
 export class SquadDataProvider {
     private orchestrationService: OrchestrationLogService;
+    private teamMdService: TeamMdService;
     private teamRoot: string;
 
     // Cached data
@@ -22,10 +29,15 @@ export class SquadDataProvider {
     constructor(teamRoot: string) {
         this.teamRoot = teamRoot;
         this.orchestrationService = new OrchestrationLogService();
+        this.teamMdService = new TeamMdService();
     }
 
     /**
      * Returns all squad members with their current status.
+     * Always reads from team.md first (authoritative roster), then overlays
+     * status and tasks from orchestration logs. Falls back to log-participant
+     * discovery if team.md is missing.
+     *
      * Data is cached after first call until refresh() is invoked.
      */
     async getSquadMembers(): Promise<SquadMember[]> {
@@ -37,26 +49,43 @@ export class SquadDataProvider {
         const memberStates = this.orchestrationService.getMemberStates(entries);
         const tasks = await this.getTasks();
 
-        // Build member list from all participants across log entries
-        const members: SquadMember[] = [];
-        const memberNames = new Set<string>();
+        // Try team.md as authoritative roster first
+        const roster = await this.teamMdService.parseTeamMd(this.teamRoot);
 
-        for (const entry of entries) {
-            for (const participant of entry.participants) {
-                memberNames.add(participant);
-            }
-        }
+        let members: SquadMember[];
 
-        for (const name of memberNames) {
-            const status = memberStates.get(name) ?? 'idle';
-            const currentTask = tasks.find(t => t.assignee === name && t.status === 'in_progress');
-
-            members.push({
-                name,
-                role: 'Squad Member', // Role info would come from team.md parsing
-                status,
-                currentTask,
+        if (roster && roster.members.length > 0) {
+            // Primary path: team.md defines the roster, logs overlay status
+            members = roster.members.map(member => {
+                const status = memberStates.get(member.name) ?? 'idle';
+                const currentTask = tasks.find(t => t.assignee === member.name && t.status === 'in_progress');
+                return {
+                    name: member.name,
+                    role: member.role,
+                    status,
+                    currentTask,
+                };
             });
+        } else {
+            // Fallback: derive members from log participants (legacy behavior)
+            const memberNames = new Set<string>();
+            for (const entry of entries) {
+                for (const participant of entry.participants) {
+                    memberNames.add(participant);
+                }
+            }
+
+            members = [];
+            for (const name of memberNames) {
+                const status = memberStates.get(name) ?? 'idle';
+                const currentTask = tasks.find(t => t.assignee === name && t.status === 'in_progress');
+                members.push({
+                    name,
+                    role: 'Squad Member',
+                    status,
+                    currentTask,
+                });
+            }
         }
 
         this.cachedMembers = members;
