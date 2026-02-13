@@ -136,3 +136,7 @@ Key design decisions:
 - Single-page fetch (no pagination loop) — 50 is enough for recent history and avoids extra API calls
 - Separate cache allows open and closed issues to have independent lifecycles
 - Existing open issue methods left completely untouched
+
+### 2026-02-14: Team Update — Closed Issues Architecture Decision (Decision Merged)
+
+📌 **Team decision captured:** Closed issues use a separate `closedCache` field independent from open issues. Fetch at most 50 (single page, no pagination) sorted by updated_at descending. Use case-insensitive member matching via `squad:{name}` labels. — decided by Linus

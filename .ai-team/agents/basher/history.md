@@ -147,3 +147,7 @@ Created comprehensive integration tests for the data layer services:
 - All tooltips are `MarkdownString` instances
 
 **Pattern:** Acceptance fixtures are isolated in their own directory to avoid interference with other tests that use `test-fixtures/` root fixtures.
+
+### 2026-02-14: Team Update — GitHubIssuesService Test Pattern Decision (Decision Merged)
+
+📌 **Team decision captured:** For testing GitHubIssuesService without real API calls, inject mock data directly into the private `cache` property via type casting rather than mocking the HTTP layer. This is simpler and leaves HTTP implementation refactoring-safe. — decided by Basher
