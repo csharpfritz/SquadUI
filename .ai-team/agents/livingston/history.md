@@ -39,3 +39,6 @@
 ### 2026-02-13: Team Update — Issues Service & Closed Issues Support
 
 📌 **Team decision merged (2026-02-13):** GitHubIssuesService uses Node.js `https` module with optional auth token and 5-minute cache. Closed issues use separate cache, 50-issue limit (no pagination), case-insensitive member matching. — decided by Linus
+### 2026-02-14: Team Update — Release Pipeline Architecture (Decision Merged)
+
+📌 **Team decision captured:** Release pipeline is self-contained with full CI gates (lint/compile/test). Version verification fails fast if tag doesn't match package.json. Separate workflows prevent coupling. Pre-release flag for versions < 1.0.0. — decided by Livingston

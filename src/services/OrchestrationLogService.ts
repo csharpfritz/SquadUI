@@ -25,7 +25,9 @@ export class OrchestrationLogService {
     async discoverLogFiles(teamRoot: string): Promise<string[]> {
         const aiTeamDir = path.join(teamRoot, '.ai-team');
         
-        // Try each log directory in order
+        // Collect files from ALL log directories (union)
+        const allFiles: string[] = [];
+
         for (const dirName of OrchestrationLogService.LOG_DIRECTORIES) {
             const logDir = path.join(aiTeamDir, dirName);
             
@@ -38,20 +40,16 @@ export class OrchestrationLogService {
                 const files = await fs.promises.readdir(logDir);
                 const mdFiles = files
                     .filter(file => file.endsWith('.md'))
-                    .map(file => path.join(logDir, file))
-                    .sort(); // Sort chronologically (filenames are YYYY-MM-DD prefixed)
+                    .map(file => path.join(logDir, file));
 
-                if (mdFiles.length > 0) {
-                    return mdFiles;
-                }
+                allFiles.push(...mdFiles);
             } catch (error) {
                 // Directory doesn't exist or isn't readable, try next
                 continue;
             }
         }
 
-        // No log files found in any directory
-        return [];
+        return allFiles.sort();
     }
 
     /**
@@ -87,8 +85,8 @@ export class OrchestrationLogService {
         const content = await fs.promises.readFile(filePath, 'utf-8');
         const filename = path.basename(filePath);
 
-        // Extract date and topic from filename: YYYY-MM-DD-topic.md
-        const filenameMatch = filename.match(/^(\d{4}-\d{2}-\d{2})-(.+)\.md$/);
+        // Extract date and topic from filename: YYYY-MM-DD-topic.md or YYYY-MM-DDThhmm-topic.md
+        const filenameMatch = filename.match(/^(\d{4}-\d{2}-\d{2})(?:T\d{4})?-(.+)\.md$/);
         const date = filenameMatch?.[1] ?? this.extractDateFromContent(content) ?? new Date().toISOString().split('T')[0];
         const topic = filenameMatch?.[2] ?? this.extractTitleFromContent(content) ?? 'unknown';
 
@@ -101,6 +99,7 @@ export class OrchestrationLogService {
             decisions: this.extractListSection(content, 'Decisions'),
             outcomes: this.extractListSection(content, 'Outcomes'),
             relatedIssues: this.extractRelatedIssues(content),
+            whatWasDone: this.extractWhatWasDone(content),
         };
     }
 
@@ -178,13 +177,20 @@ export class OrchestrationLogService {
         // Sort entries by date descending to process most recent first
         const sortedEntries = [...entries].sort((a, b) => b.date.localeCompare(a.date));
 
-        for (const entry of sortedEntries) {
+        // Track which entries produced #NNN tasks, so we know where to try prose extraction
+        const entriesWithIssueTasks = new Set<number>();
+
+        for (let i = 0; i < sortedEntries.length; i++) {
+            const entry = sortedEntries[i];
+            let entryProducedIssueTasks = false;
+
             // Extract tasks from related issues
             if (entry.relatedIssues) {
                 for (const issueRef of entry.relatedIssues) {
                     const taskId = issueRef.replace('#', '').trim();
                     if (taskId && !seenTaskIds.has(taskId)) {
                         seenTaskIds.add(taskId);
+                        entryProducedIssueTasks = true;
 
                         // Determine assignee from participants (first participant for now)
                         const assignee = entry.participants[0] ?? 'unknown';
@@ -210,6 +216,7 @@ export class OrchestrationLogService {
                             const taskId = match.replace('#', '');
                             if (!seenTaskIds.has(taskId)) {
                                 seenTaskIds.add(taskId);
+                                entryProducedIssueTasks = true;
 
                                 const assignee = entry.participants[0] ?? 'unknown';
                                 const isCompleted = outcome.toLowerCase().includes('completed') || 
@@ -229,6 +236,68 @@ export class OrchestrationLogService {
                         }
                     }
                 }
+            }
+
+            if (entryProducedIssueTasks) {
+                entriesWithIssueTasks.add(i);
+            }
+        }
+
+        // Second pass: extract prose-based tasks for entries that produced no #NNN tasks.
+        // Process "What Was Done" entries first (richer, per-agent data), then synthetic fallback.
+        const proseEntries = sortedEntries
+            .map((entry, i) => ({ entry, i }))
+            .filter(({ entry, i }) => !entriesWithIssueTasks.has(i) && entry.participants.length > 0);
+
+        // Path 1: "What Was Done" section — per-agent work items (highest priority)
+        for (const { entry } of proseEntries) {
+            if (!entry.whatWasDone || entry.whatWasDone.length === 0) {
+                continue;
+            }
+            for (const item of entry.whatWasDone) {
+                const taskId = this.generateProseTaskId(entry.date, item.agent);
+                if (!seenTaskIds.has(taskId)) {
+                    seenTaskIds.add(taskId);
+                    tasks.push({
+                        id: taskId,
+                        title: this.truncateTitle(item.description),
+                        description: item.description,
+                        status: 'completed',
+                        assignee: item.agent,
+                        startedAt: new Date(entry.date),
+                        completedAt: new Date(entry.date),
+                    });
+                }
+            }
+        }
+
+        // Path 2: Entries without "What Was Done" — synthetic task from summary + participant
+        for (const { entry } of proseEntries) {
+            if (entry.whatWasDone && entry.whatWasDone.length > 0) {
+                continue;
+            }
+            if (!entry.summary || entry.participants.length === 0) {
+                continue;
+            }
+
+            const assignee = entry.participants[0];
+            const taskId = this.generateProseTaskId(entry.date, assignee);
+            if (!seenTaskIds.has(taskId)) {
+                seenTaskIds.add(taskId);
+
+                const outcomeText = (entry.outcomes ?? []).join(' ');
+                const combinedText = [entry.summary, outcomeText].join(' ');
+                const isCompleted = this.isCompletionSignal(combinedText);
+
+                tasks.push({
+                    id: taskId,
+                    title: this.truncateTitle(entry.summary),
+                    description: entry.summary,
+                    status: isCompleted ? 'completed' : 'in_progress',
+                    assignee,
+                    startedAt: new Date(entry.date),
+                    completedAt: isCompleted ? new Date(entry.date) : undefined,
+                });
             }
         }
 
@@ -294,9 +363,24 @@ export class OrchestrationLogService {
                 .filter(p => p.length > 0);
         }
 
-        // Try bullet list under "## Who worked" section
-        const whoWorkedSection = this.extractSection(content, 'Who worked');
+        // Try "**Agent routed:**" format (orchestration-log entries)
+        const agentRoutedMatch = content.match(/\*\*Agent routed\*\*\s*\|\s*(.+)/i);
+        if (agentRoutedMatch) {
+            // Format: "Name (Role) |" — extract just the name, strip role and trailing pipes
+            return agentRoutedMatch[1]
+                .split(/[,;]/)
+                .map(p => p.replace(/\s*\(.*?\)\s*/g, '').replace(/\|/g, '').trim())
+                .filter(p => p.length > 0);
+        }
+
+        // Try bullet list or table under "## Who Worked" section
+        const whoWorkedSection = this.extractSection(content, 'Who Worked');
         if (whoWorkedSection) {
+            // Try table format first: | Agent | Role |
+            const tableParticipants = this.extractTableFirstColumn(whoWorkedSection);
+            if (tableParticipants.length > 0) {
+                return tableParticipants;
+            }
             return this.extractListItems(whoWorkedSection);
         }
 
@@ -393,5 +477,102 @@ export class OrchestrationLogService {
         }
 
         return issues.length > 0 ? issues : undefined;
+    }
+
+    /**
+     * Extracts agent names from the first column of a markdown table.
+     * Skips header row and separator row (|---|).
+     */
+    private extractTableFirstColumn(tableContent: string): string[] {
+        const names: string[] = [];
+        const lines = tableContent.split('\n');
+
+        for (const line of lines) {
+            const trimmed = line.trim();
+            // Skip non-table lines, header separators
+            if (!trimmed.startsWith('|') || trimmed.match(/^\|[\s-]+\|/)) {
+                continue;
+            }
+            const cells = trimmed.split('|').map(c => c.trim()).filter(c => c.length > 0);
+            if (cells.length >= 1) {
+                const name = cells[0];
+                // Skip header rows (common headers: "Agent", "Name", "Member")
+                if (/^(agent|name|member|who)$/i.test(name)) {
+                    continue;
+                }
+                // Skip bullet-prefixed entries (these are list items, not table data)
+                if (name.startsWith('-') || name.startsWith('*')) {
+                    continue;
+                }
+                names.push(name);
+            }
+        }
+
+        return names;
+    }
+
+    /**
+     * Parses the "## What Was Done" section into agent-attributed work items.
+     * Format: `- **AgentName:** description text`
+     */
+    private extractWhatWasDone(content: string): { agent: string; description: string }[] | undefined {
+        // Try "What Was Done" first, then fall back to "Summary" for per-agent bullets
+        const section = this.extractSection(content, 'What Was Done')
+            ?? this.extractSection(content, 'Summary');
+        if (!section) {
+            return undefined;
+        }
+
+        const items: { agent: string; description: string }[] = [];
+        const lines = section.split('\n');
+
+        for (const line of lines) {
+            // Match: - **AgentName:** description or - **AgentName (WI-01):** description
+            // Colon may be inside or outside bold markers
+            const match = line.match(/^\s*[-*]\s+\*\*(.+?):?\*\*:?\s*(.+?)\r?$/);
+            if (match) {
+                // Strip parenthetical suffixes like "(WI-01/02)" from agent name
+                const agent = match[1].replace(/\s*\(.*?\)\s*$/, '').trim();
+                items.push({
+                    agent,
+                    description: match[2].trim(),
+                });
+            }
+        }
+
+        return items.length > 0 ? items : undefined;
+    }
+
+    /**
+     * Checks if outcome text signals completion.
+     */
+    private isCompletionSignal(text: string): boolean {
+        const lower = text.toLowerCase();
+        return lower.includes('completed') ||
+               lower.includes('done') ||
+               lower.includes('✅') ||
+               lower.includes('pass') ||
+               lower.includes('succeeds');
+    }
+
+    /**
+     * Generates a deterministic task ID from date and agent name.
+     * Format: {date}-{agent-slug} (e.g., "2026-02-10-banner")
+     */
+    private generateProseTaskId(date: string, agentName: string): string {
+        const slug = agentName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+        return `${date}-${slug}`;
+    }
+
+    /**
+     * Truncates text to a max length, breaking at word boundaries.
+     */
+    private truncateTitle(text: string, maxLength: number = 60): string {
+        if (text.length <= maxLength) {
+            return text;
+        }
+        const truncated = text.substring(0, maxLength);
+        const lastSpace = truncated.lastIndexOf(' ');
+        return (lastSpace > maxLength * 0.5 ? truncated.substring(0, lastSpace) : truncated) + '…';
     }
 }

@@ -97,3 +97,11 @@
 ### 2026-02-13: Team Update — Closed Issues Fetching Strategy
 
 📌 **Team decision merged (2026-02-13):** Closed issues use separate cache, 50-issue limit (no pagination), and case-insensitive member matching. `getClosedIssuesByMember` added to service interface. — decided by Linus
+### 2026-02-14: Team Update — GitHub Issues & Webview Architecture Decisions (Decision Merged)
+
+📌 **Team decisions captured:** 
+- (1) IGitHubIssuesService interface contract for tree view decoupling from concrete implementation 
+- (2) Issue icons use $(issues) codicon with ThemeColor (charts.green open, charts.purple closed) 
+- (3) Squad labels (squad:*) filtered from issue description display since they're structural, not informational 
+- (4) Issue detail webview uses postMessage pattern for external links; command accepts optional full issue object for backward compatibility 
+- decided by Rusty

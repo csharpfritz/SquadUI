@@ -99,3 +99,55 @@ Created comprehensive integration tests for the data layer services:
 ### 2026-02-14: Team Update — SquadDataProvider team.md Fallback Pattern (Decision Merged)
 
 📌 **Team decision accepted:** SquadDataProvider now reads team.md as authoritative member roster, falling back to log participants if team.md is missing. This implements the recommendation from the empty tree view diagnosis. — decided by Linus
+
+### 2026-02-14: v0.2.0 Service Tests (Issue #23)
+
+**New test files created:**
+
+1. **`src/test/suite/teamMdService.test.ts`** (30 tests):
+   - Tests `parseTeamMd()` and `parseContent()` across multiple formats
+   - Covers all status badge emoji variants (✅, 📋, 🔄, 🤖, 🔨)
+   - Tests @copilot capability extraction (auto-assign, inline, detailed formats)
+   - Edge cases: special characters, empty content, large rosters, coordinator filtering
+
+2. **`src/test/suite/squadDataProviderFallback.test.ts`** (13 tests):
+   - Primary path: team.md as authoritative roster with log status overlay
+   - Fallback path: log-participant discovery when team.md missing
+   - Integration tests: full team.md-only data flow through SquadDataProvider
+   - Validates refresh() re-reads updated team.md
+
+3. **`src/test/suite/gitHubIssuesService.test.ts`** (17 tests):
+   - `getIssueSource()`: parses owner/repo and github.com/owner/repo formats
+   - Squad label filtering: case-insensitive matching via `squad:{name}` labels
+   - Cache management: invalidation, TTL expiry, token rotation
+   - Constructor options: custom TTL, API URL, token
+
+**Key testing patterns established:**
+- GitHubIssuesService tests inject data into private `cache` property via type casting to avoid real API calls
+- Temp directories created per-test in `test-fixtures/temp-*` with teardown cleanup
+- Tests create their own team.md content inline rather than relying on shared fixtures when testing specific formats
+
+**Fixture note:** The test-fixtures/team.md has `**Owner:** TestOwner` where the `extractOwner()` regex captures content after `**Owner:**` to `(` or end of match group — on Windows with CRLF line endings this includes trailing content. Tests use `.startsWith()` for robustness.
+
+### 2026-02-13: Acceptance Test — Full Data Pipeline (Orchestration Logs → Tree View)
+
+**Test file:** `src/test/suite/acceptance.test.ts` (25 tests)
+
+**What it validates:** The complete integration from fixture files through OrchestrationLogService → SquadDataProvider → SquadTreeProvider. No service mocks — only VS Code APIs come from the test electron host.
+
+**Dedicated fixtures:** `test-fixtures/acceptance-scenario/` with its own team.md (3 members: Alice/Lead, Bob/Backend Dev, Carol/Tester) and two orchestration log files creating a known state where Carol is "working" (most recent log) and Alice/Bob are "idle".
+
+**Task assignment model:** `getActiveTasks()` assigns tasks to the first participant listed in a log entry. If Alice and Bob are both participants but Alice is listed first, only Alice gets the tasks. Bob shows up in the tree with zero task children. This is intentional current behavior, not a bug.
+
+**Tree item contract verified:**
+- Root nodes = all team.md members, with `itemType: 'member'`, collapsible
+- Task children have `itemType: 'task'`, `ThemeIcon('tasklist')`, `squadui.showWorkDetails` command with task ID arg
+- Working members get `sync~spin` icon, idle get `person`
+- Member descriptions follow `{role} • {status}` format
+- All tooltips are `MarkdownString` instances
+
+**Pattern:** Acceptance fixtures are isolated in their own directory to avoid interference with other tests that use `test-fixtures/` root fixtures.
+
+### 2026-02-14: Team Update — GitHubIssuesService Test Pattern Decision (Decision Merged)
+
+📌 **Team decision captured:** For testing GitHubIssuesService without real API calls, inject mock data directly into the private `cache` property via type casting rather than mocking the HTTP layer. This is simpler and leaves HTTP implementation refactoring-safe. — decided by Basher
