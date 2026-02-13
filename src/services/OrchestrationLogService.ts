@@ -25,7 +25,9 @@ export class OrchestrationLogService {
     async discoverLogFiles(teamRoot: string): Promise<string[]> {
         const aiTeamDir = path.join(teamRoot, '.ai-team');
         
-        // Try each log directory in order
+        // Collect files from ALL log directories (union)
+        const allFiles: string[] = [];
+
         for (const dirName of OrchestrationLogService.LOG_DIRECTORIES) {
             const logDir = path.join(aiTeamDir, dirName);
             
@@ -38,20 +40,16 @@ export class OrchestrationLogService {
                 const files = await fs.promises.readdir(logDir);
                 const mdFiles = files
                     .filter(file => file.endsWith('.md'))
-                    .map(file => path.join(logDir, file))
-                    .sort(); // Sort chronologically (filenames are YYYY-MM-DD prefixed)
+                    .map(file => path.join(logDir, file));
 
-                if (mdFiles.length > 0) {
-                    return mdFiles;
-                }
+                allFiles.push(...mdFiles);
             } catch (error) {
                 // Directory doesn't exist or isn't readable, try next
                 continue;
             }
         }
 
-        // No log files found in any directory
-        return [];
+        return allFiles.sort();
     }
 
     /**
@@ -87,8 +85,8 @@ export class OrchestrationLogService {
         const content = await fs.promises.readFile(filePath, 'utf-8');
         const filename = path.basename(filePath);
 
-        // Extract date and topic from filename: YYYY-MM-DD-topic.md
-        const filenameMatch = filename.match(/^(\d{4}-\d{2}-\d{2})-(.+)\.md$/);
+        // Extract date and topic from filename: YYYY-MM-DD-topic.md or YYYY-MM-DDThhmm-topic.md
+        const filenameMatch = filename.match(/^(\d{4}-\d{2}-\d{2})(?:T\d{4})?-(.+)\.md$/);
         const date = filenameMatch?.[1] ?? this.extractDateFromContent(content) ?? new Date().toISOString().split('T')[0];
         const topic = filenameMatch?.[2] ?? this.extractTitleFromContent(content) ?? 'unknown';
 
@@ -291,6 +289,16 @@ export class OrchestrationLogService {
             return whoWorkedMatch[1]
                 .split(/[,;]/)
                 .map(p => p.trim())
+                .filter(p => p.length > 0);
+        }
+
+        // Try "**Agent routed:**" format (orchestration-log entries)
+        const agentRoutedMatch = content.match(/\*\*Agent routed\*\*\s*\|\s*(.+)/i);
+        if (agentRoutedMatch) {
+            // Format: "Name (Role)" — extract just the name
+            return agentRoutedMatch[1]
+                .split(/[,;]/)
+                .map(p => p.replace(/\s*\(.*?\)\s*/g, '').trim())
                 .filter(p => p.length > 0);
         }
 

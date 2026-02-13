@@ -140,3 +140,11 @@ Key design decisions:
 ### 2026-02-14: Team Update — Closed Issues Architecture Decision (Decision Merged)
 
 📌 **Team decision captured:** Closed issues use a separate `closedCache` field independent from open issues. Fetch at most 50 (single page, no pagination) sorted by updated_at descending. Use case-insensitive member matching via `squad:{name}` labels. — decided by Linus
+
+### 2026-02-13: OrchestrationLogService — Multi-Directory Discovery and Format Tolerance
+
+`discoverLogFiles()` now returns the union of files from ALL configured log directories (`orchestration-log/` and `log/`), not just the first one that has files. Real-world repos like MyFirstTextGame use both directories — `orchestration-log/` contains routing metadata with `**Agent routed**` fields, while `log/` contains session logs with `**Participants:**` and issue references.
+
+The filename regex in `parseLogFile()` now handles both `YYYY-MM-DD-topic.md` and `YYYY-MM-DDThhmm-topic.md` formats via the optional group `(?:T\d{4})?`. The orchestration-log directory uses the `T`-separated timestamp format.
+
+`extractParticipants()` now has a fallback for the `**Agent routed**` table field format used in orchestration-log entries (e.g., `| **Agent routed** | Fury (Lead) |`). The regex matches the markdown table pipe delimiter and strips the `(Role)` suffix to extract just the agent name.
