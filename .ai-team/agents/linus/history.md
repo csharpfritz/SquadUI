@@ -69,3 +69,19 @@ Implemented `SquadDataProvider` in `src/services/SquadDataProvider.ts` with:
 - `refresh()`: Invalidates all cached data for FileWatcherService integration
 
 Service aggregates data from OrchestrationLogService with internal caching. Cache is populated on first access and invalidated only when `refresh()` is called. Keeps UI layer decoupled from file parsing logic.
+
+### 2026-02-14: TeamMdService Implementation
+
+Implemented `TeamMdService` in `src/services/TeamMdService.ts` for Issue #21:
+- `parseTeamMd(workspaceRoot)`: Reads and parses `.ai-team/team.md` files
+- Returns `ExtendedTeamRoster` with members array, repository, owner, and copilotCapabilities
+- Parses Members markdown table: extracts name, role, charter path, and status badge
+- Extracts @copilot capability profile including auto-assign flag from HTML comment
+- Handles both detailed (bulleted list) and inline (comma-separated) capability formats
+- Returns null if file doesn't exist (graceful handling)
+
+Key parsing decisions:
+- Status badges (✅ Active, 📋 Silent, etc.) map to 'idle' since they're configuration status, not runtime status
+- Runtime status is determined by OrchestrationLogService
+- Coordinator entries in the table are skipped (separate section)
+- CopilotCapabilities extracts 🟢 good fit, 🟡 needs review, 🔴 not suitable lists
