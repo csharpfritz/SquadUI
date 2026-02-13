@@ -121,3 +121,86 @@ export interface TeamRoster {
     /** Project owner name */
     owner?: string;
 }
+
+// ─── GitHub Issues Models ──────────────────────────────────────────────────
+
+/**
+ * A GitHub issue label.
+ */
+export interface GitHubLabel {
+    /** Label name (e.g., "squad:linus", "enhancement") */
+    name: string;
+
+    /** Hex color code without # prefix */
+    color?: string;
+}
+
+/**
+ * A GitHub issue fetched from the repository.
+ */
+export interface GitHubIssue {
+    /** Issue number */
+    number: number;
+
+    /** Issue title */
+    title: string;
+
+    /** Issue body (markdown) */
+    body?: string;
+
+    /** Current state: open or closed */
+    state: 'open' | 'closed';
+
+    /** Labels attached to the issue */
+    labels: GitHubLabel[];
+
+    /** GitHub username of the assignee, if any */
+    assignee?: string;
+
+    /** HTML URL to view the issue on GitHub */
+    htmlUrl: string;
+
+    /** ISO 8601 creation timestamp */
+    createdAt: string;
+
+    /** ISO 8601 last-updated timestamp */
+    updatedAt: string;
+}
+
+/**
+ * Configuration for the Issue Source, parsed from team.md.
+ */
+export interface IssueSourceConfig {
+    /** Repository in "owner/repo" format */
+    repository: string;
+
+    /** Owner portion of the repository */
+    owner: string;
+
+    /** Repo name portion */
+    repo: string;
+
+    /** Filter string from team.md (e.g., "all open") */
+    filters?: string;
+}
+
+// ─── GitHub Issues Service Contract ────────────────────────────────────────
+
+/**
+ * Maps squad member names to their assigned GitHub issues.
+ * Key is the member name (matching SquadMember.name),
+ * value is the array of issues assigned to that member.
+ */
+export type MemberIssueMap = Map<string, GitHubIssue[]>;
+
+/**
+ * Contract for a service that provides GitHub issues mapped to squad members.
+ * Linus is building GitHubIssuesService (#18) to implement this.
+ */
+export interface IGitHubIssuesService {
+    /**
+     * Returns issues mapped to squad members by label convention (squad:{name}).
+     * @param workspaceRoot - Workspace root for reading issue source config
+     */
+    getIssuesByMember(workspaceRoot: string): Promise<MemberIssueMap>;
+}
