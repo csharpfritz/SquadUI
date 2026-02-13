@@ -98,3 +98,26 @@ Key design choices:
 - Roles from team.md are preserved (not overwritten with generic text)
 - The fallback path preserves backward compatibility with projects that have logs but no team.md
 - Both services are instantiated in the constructor; team.md is read fresh on each cache-miss call to `getSquadMembers()`
+
+### 2026-02-13: GitHubIssuesService Implementation
+
+Implemented `GitHubIssuesService` in `src/services/GitHubIssuesService.ts` for Issue #18:
+- `getIssueSource(workspaceRoot)`: Reads Issue Source section from team.md via TeamMdService
+- `getIssues(workspaceRoot, forceRefresh?)`: Fetches open issues from GitHub REST API with automatic pagination
+- `getIssuesForMember(workspaceRoot, memberName)`: Filters issues by `squad:{name}` label (case-insensitive)
+- `getIssuesByMember(workspaceRoot)`: Returns Map<string, GitHubIssue[]> grouping all issues by member
+- `invalidateCache()` / `invalidateAll()`: Cache control, `invalidateAll` also clears Issue Source config
+- `setToken(token)`: Allows runtime auth token updates without recreating the service
+
+Key design decisions:
+- Uses Node.js `https` module (no fetch polyfill, no dependencies)
+- Auth token is optional: works unauthenticated (60 req/hr) or with token (5000 req/hr)
+- 5-minute default cache TTL, configurable via `GitHubIssuesServiceOptions.cacheTtlMs`
+- GitHub `/issues` endpoint returns PRs too — service filters them out via `pull_request` field
+- Graceful degradation: if API fails mid-pagination, returns partial results instead of throwing
+- Issue Source parsing handles both `owner/repo` and `github.com/owner/repo` URL formats
+
+Models added to `src/models/index.ts`:
+- `GitHubIssue`: number, title, body, state, labels, assignee, htmlUrl, createdAt, updatedAt
+- `GitHubLabel`: name, color
+- `IssueSourceConfig`: repository, owner, repo, filters
