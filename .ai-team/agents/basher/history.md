@@ -239,3 +239,53 @@ Written proactively while Rusty builds the implementation. Tests describe expect
 ### 2026-02-14: Team Update — E2E Validation Test Strategy (Decision Merged)
 
 📌 **Team decision captured:** E2E tests use TestableWebviewRenderer pattern for HTML validation without live webview panels. Tests organized by acceptance criteria (AC-1 through AC-6) for direct traceability. Manual test plan covers visual/interactive behavior. — decided by Basher
+
+### 2026-02-14: Skill Import Feature Tests (Issue #39)
+
+**New test file:** `src/test/suite/skillCatalogService.test.ts` (60 tests)
+
+**SkillCatalogService tests (38):**
+
+1. **getInstalledSkills() (8 tests):** Reads from `.ai-team/skills/` directory, returns empty array when directory doesn't exist, parses SKILL.md heading as name and first paragraph as description, verifies source is "local" with raw content included, skips subdirectories without SKILL.md.
+
+2. **downloadSkill() (5 tests):** Creates skill directory and writes SKILL.md, uses content field when available, handles special characters via slug generation (e.g., `Dr. O'Brien's Code Review!` → `dr-o-brien-s-code-review`), strips leading/trailing dashes from slugs, builds stub with source link.
+
+3. **searchSkills() filter logic (5 tests):** Case-insensitive filtering by name, case-insensitive filtering by description, empty results for no matches, partial matching works.
+
+4. **deduplicateSkills() (4 tests):** awesome-copilot preferred over skills.sh for same name (case-insensitive), keeps skills.sh when no duplicate, keeps first entry for same-source duplicates.
+
+5. **parseAwesomeReadme() (7 tests):** Extracts skills from `- [Name](url) - Description` markdown list items, handles `*` bullet style, handles em dash separators, skips entries without description or with short names, returns empty for no-content input.
+
+6. **parseSkillsShHtml() (8 tests):** Extracts skills from HTML anchor tags, sets source to `skills.sh`, skips boilerplate links (Home, About, Login), extracts nearby description from p/span tags, handles JSON-LD structured data, handles malformed JSON-LD gracefully, prepends `https://skills.sh` to relative URLs.
+
+**Command Registration tests (9):**
+- Three package.json declaration checks for addSkill, viewSkill, removeSkill
+- Three runtime registration checks (with skip-guard pattern)
+- One combined check that all three appear in contributions
+- Two context menu targeting checks (viewSkill and removeSkill target `viewItem == skill`)
+
+**Skill Tree Node tests (8):**
+- Skills section appears in tree root with book icon
+- Expanding Skills shows installed skills from fixtures
+- Skill items show correct source badge (`🎯 local`)
+- Skill item contextValue is `skill`
+- Skill items have book icon and are leaf nodes
+- Skill tooltips are MarkdownStrings
+
+**Fixture data:** Created `test-fixtures/.ai-team/skills/` with two skill fixtures:
+- `code-review/SKILL.md` — Code Review skill (awesome-copilot source reference)
+- `testing-expert/SKILL.md` — Testing Expert skill (skills.sh source reference)
+
+**Existing test fixes (9 tests repaired):**
+- `treeProvider.test.ts`: Updated root-level assertions to filter by `itemType === 'member'` since `getChildren()` now returns members + Skills section node.
+- `acceptance.test.ts`: Same filter pattern for root count, member-type, and tooltip assertions.
+- `e2e-validation.test.ts`: Same filter pattern for AC-2 member count, label matching, pipeline integration count, and tooltip assertions.
+- `MockSquadDataProvider`: Added `getWorkspaceRoot()` method and `workspaceRoot` option to support skill tree provider tests.
+
+**Test count:** 267 passing → 327 passing (60 new tests, 0 existing tests broken), 28 pending (self-skipping).
+
+**Key patterns used:**
+- Temp directories with `Date.now()` suffix for downloadSkill tests, cleaned up in `teardown()`
+- Private method access via `as any` cast for dedup tests
+- Direct filter logic testing for searchSkills (avoids network calls)
+- Skip-guard pattern (`this.skip()`) for command registration tests needing workspace

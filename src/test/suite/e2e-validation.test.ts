@@ -223,8 +223,9 @@ suite('E2E MVP Validation (Issue #14)', () => {
     suite('AC-2: Tree view shows squad members with correct status', () => {
         test('tree returns all 3 team.md members at root', async () => {
             const roots = await treeProvider.getChildren();
-            assert.strictEqual(roots.length, 3, 'Should have 3 root items');
-            const names = roots.map(r => r.label);
+            const members = roots.filter(r => r.itemType === 'member');
+            assert.strictEqual(members.length, 3, 'Should have 3 member root items');
+            const names = members.map(r => r.label);
             assert.ok(names.includes('Alice'));
             assert.ok(names.includes('Bob'));
             assert.ok(names.includes('Carol'));
@@ -233,8 +234,9 @@ suite('E2E MVP Validation (Issue #14)', () => {
         test('member labels match team.md roster names exactly', async () => {
             const members = await dataProvider.getSquadMembers();
             const roots = await treeProvider.getChildren();
+            const memberRoots = roots.filter(r => r.itemType === 'member');
             const memberNames = members.map(m => m.name).sort();
-            const treeLabels = roots.map(r => r.label as string).sort();
+            const treeLabels = memberRoots.map(r => r.label as string).sort();
             assert.deepStrictEqual(treeLabels, memberNames);
         });
 
@@ -522,7 +524,8 @@ suite('E2E MVP Validation (Issue #14)', () => {
 
             // Step 2: Tree provider converts to tree items
             const roots = await treeProvider.getChildren();
-            assert.strictEqual(roots.length, members.length, 'Tree should have same count as members');
+            const memberRoots = roots.filter(r => r.itemType === 'member');
+            assert.strictEqual(memberRoots.length, members.length, 'Tree should have same count as members');
 
             // Step 3: Task children exist for members with tasks
             const carolItem = new SquadTreeItem(
@@ -587,7 +590,8 @@ suite('E2E MVP Validation (Issue #14)', () => {
 
         test('member tooltips contain role and status information', async () => {
             const roots = await treeProvider.getChildren();
-            for (const item of roots) {
+            const members = roots.filter(r => r.itemType === 'member');
+            for (const item of members) {
                 assert.ok(
                     item.tooltip instanceof vscode.MarkdownString,
                     `${item.label} tooltip should be MarkdownString`

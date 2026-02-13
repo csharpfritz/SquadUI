@@ -26,25 +26,29 @@ suite('SquadTreeProvider Test Suite', () => {
     suite('getChildren', () => {
         test('returns squad members at root level (no element)', async () => {
             const children = await provider.getChildren();
+            const members = children.filter(c => c.itemType === 'member');
 
-            assert.strictEqual(children.length, 3);
-            assert.strictEqual(children[0].label, 'Danny');
-            assert.strictEqual(children[1].label, 'Rusty');
-            assert.strictEqual(children[2].label, 'Linus');
+            assert.strictEqual(members.length, 3);
+            assert.strictEqual(members[0].label, 'Danny');
+            assert.strictEqual(members[1].label, 'Rusty');
+            assert.strictEqual(members[2].label, 'Linus');
         });
 
-        test('all root items have itemType "member"', async () => {
+        test('all root items include members and skills section', async () => {
             const children = await provider.getChildren();
+            const members = children.filter(c => c.itemType === 'member');
+            const skills = children.filter(c => c.itemType === 'skill');
 
-            children.forEach((item) => {
-                assert.strictEqual(item.itemType, 'member');
-            });
+            assert.strictEqual(members.length, 3);
+            assert.strictEqual(skills.length, 1);
+            assert.strictEqual(children.length, 4);
         });
 
-        test('root items are collapsible', async () => {
+        test('root member items are collapsible', async () => {
             const children = await provider.getChildren();
+            const members = children.filter(c => c.itemType === 'member');
 
-            children.forEach((item) => {
+            members.forEach((item) => {
                 assert.strictEqual(
                     item.collapsibleState,
                     vscode.TreeItemCollapsibleState.Collapsed

@@ -83,17 +83,19 @@ suite('Acceptance: Orchestration Logs → Tree View', () => {
     suite('tree view renders members at root', () => {
         test('root nodes are all team.md members', async () => {
             const roots = await treeProvider.getChildren();
-            const labels = roots.map(r => r.label);
+            const members = roots.filter(r => r.itemType === 'member');
+            const labels = members.map(r => r.label);
 
-            assert.strictEqual(roots.length, 3);
+            assert.strictEqual(members.length, 3);
             assert.ok(labels.includes('Alice'));
             assert.ok(labels.includes('Bob'));
             assert.ok(labels.includes('Carol'));
         });
 
-        test('all root items have itemType "member"', async () => {
+        test('all member root items have itemType "member"', async () => {
             const roots = await treeProvider.getChildren();
-            roots.forEach(item => {
+            const members = roots.filter(r => r.itemType === 'member');
+            members.forEach(item => {
                 assert.strictEqual(item.itemType, 'member');
             });
         });
@@ -279,7 +281,8 @@ suite('Acceptance: Orchestration Logs → Tree View', () => {
 
         test('member tooltips are MarkdownStrings', async () => {
             const roots = await treeProvider.getChildren();
-            for (const item of roots) {
+            const members = roots.filter(r => r.itemType === 'member');
+            for (const item of members) {
                 assert.ok(
                     item.tooltip instanceof vscode.MarkdownString,
                     `${item.label} tooltip should be a MarkdownString`

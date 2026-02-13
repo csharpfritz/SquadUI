@@ -8,6 +8,7 @@ export interface MockSquadDataProviderOptions {
     members?: SquadMember[];
     tasks?: Task[];
     workDetails?: Map<string, WorkDetails>;
+    workspaceRoot?: string;
 }
 
 export class MockSquadDataProvider {
@@ -15,11 +16,13 @@ export class MockSquadDataProvider {
     private tasks: Task[];
     private workDetails: Map<string, WorkDetails>;
     private refreshCalled = false;
+    private workspaceRoot: string;
 
     constructor(options: MockSquadDataProviderOptions = {}) {
         this.members = options.members ?? [];
         this.tasks = options.tasks ?? [];
         this.workDetails = options.workDetails ?? new Map();
+        this.workspaceRoot = options.workspaceRoot ?? '';
     }
 
     async getSquadMembers(): Promise<SquadMember[]> {
@@ -36,6 +39,10 @@ export class MockSquadDataProvider {
 
     refresh(): void {
         this.refreshCalled = true;
+    }
+
+    getWorkspaceRoot(): string {
+        return this.workspaceRoot;
     }
 
     wasRefreshCalled(): boolean {
