@@ -1,4 +1,6 @@
 import * as vscode from 'vscode';
+import * as path from 'path';
+import * as fs from 'fs';
 import { GitHubIssue } from './models';
 import { SquadDataProvider, FileWatcherService, GitHubIssuesService } from './services';
 import { SquadTreeProvider, WorkDetailsWebview, IssueDetailWebview } from './views';
@@ -80,6 +82,23 @@ export function activate(context: vscode.ExtensionContext): void {
             } else if (url) {
                 vscode.env.openExternal(vscode.Uri.parse(url));
             }
+        })
+    );
+
+    context.subscriptions.push(
+        vscode.commands.registerCommand('squadui.viewCharter', async (memberName: string) => {
+            if (!memberName) {
+                vscode.window.showWarningMessage('No member selected');
+                return;
+            }
+            const slug = memberName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+            const charterPath = path.join(workspaceRoot, '.ai-team', 'agents', slug, 'charter.md');
+            if (!fs.existsSync(charterPath)) {
+                vscode.window.showWarningMessage(`Charter not found for ${memberName}`);
+                return;
+            }
+            const doc = await vscode.workspace.openTextDocument(charterPath);
+            await vscode.window.showTextDocument(doc, { preview: true });
         })
     );
 

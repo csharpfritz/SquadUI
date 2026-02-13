@@ -94,6 +94,12 @@ export class SquadTreeProvider implements vscode.TreeDataProvider<SquadTreeItem>
             item.description = `${member.role} • ${member.status}`;
             item.tooltip = this.getMemberTooltip(member);
 
+            item.command = {
+                command: 'squadui.viewCharter',
+                title: 'View Charter',
+                arguments: [member.name]
+            };
+
             return item;
         });
     }

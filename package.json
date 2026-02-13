@@ -65,6 +65,12 @@
         "title": "Add Team Member",
         "category": "SquadUI",
         "icon": "$(add)"
+      },
+      {
+        "command": "squadui.viewCharter",
+        "title": "View Charter",
+        "category": "SquadUI",
+        "icon": "$(open-preview)"
       }
     ],
     "menus": {
@@ -78,6 +84,13 @@
           "command": "squadui.refreshTree",
           "when": "view == squadMembers",
           "group": "navigation"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "squadui.viewCharter",
+          "when": "view == squadMembers && viewItem == member",
+          "group": "inline"
         }
       ]
     }

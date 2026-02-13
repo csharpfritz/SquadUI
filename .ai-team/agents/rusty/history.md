@@ -125,3 +125,12 @@
 - Registered in `package.json` with `$(add)` icon in `view/title` navigation group for the `squadMembers` panel
 - Follows same registration pattern as `initSquadCommand` — factory function returning `vscode.Disposable`, callback for post-action refresh
 - team.md insertion finds end of Members table by tracking last `|`-prefixed data row after `## Members` heading
+
+### 2026-02-14: View Charter Command (#squadui.viewCharter)
+- Added `squadui.viewCharter` command — opens a member's `charter.md` in the editor with `preview: true`
+- Registered inline in `extension.ts` (same pattern as `refreshTree` and `showWorkDetails`)
+- Slug derivation reuses the same `toSlug` logic: lowercase, replace non-alphanumeric with hyphens, trim leading/trailing hyphens
+- Charter path: `{workspaceRoot}/.ai-team/agents/{slug}/charter.md`
+- Shows warning if charter file doesn't exist
+- Wired to tree view: clicking a member item triggers the command via `item.command`
+- Inline action button added to `view/item/context` menu with `$(open-preview)` icon, scoped to `viewItem == member`
