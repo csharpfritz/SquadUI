@@ -148,6 +148,9 @@ export interface Skill {
 
     /** Raw skill content (markdown body), populated on download */
     content?: string;
+
+    /** Directory slug used for filesystem lookup (set for installed skills) */
+    slug?: string;
 }
 
 // ─── GitHub Issues Models ──────────────────────────────────────────────────
@@ -307,6 +310,8 @@ export interface DecisionEntry {
     date: string;
     /** Full markdown content of the decision */
     content: string;
+    /** Absolute file path to the decision markdown file */
+    filePath: string;
 }
 
 /**

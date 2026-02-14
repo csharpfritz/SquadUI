@@ -358,29 +358,58 @@ export class SkillCatalogService {
     private parseInstalledSkill(dirName: string, content: string): Skill {
         const lines = content.split('\n');
 
-        // Extract name from first heading
         let name = dirName;
-        const headingMatch = /^#\s+(.+)/.exec(lines[0] ?? '');
-        if (headingMatch) {
-            name = headingMatch[1].trim();
-        }
-
-        // Extract description: first non-empty, non-heading line
         let description = '';
-        for (let i = 1; i < lines.length; i++) {
-            const line = lines[i].trim();
-            if (line && !line.startsWith('#') && !line.startsWith('>') && !line.startsWith('**Source:**')) {
-                description = line;
-                break;
+        let confidence: 'low' | 'medium' | 'high' | undefined;
+        let source: 'awesome-copilot' | 'skills.sh' | 'local' = 'local';
+        let bodyStartIndex = 0;
+
+        // Detect YAML frontmatter (lines between --- markers)
+        if (lines[0]?.trim() === '---') {
+            const closingIndex = lines.indexOf('---', 1);
+            if (closingIndex > 0) {
+                bodyStartIndex = closingIndex + 1;
+                for (let i = 1; i < closingIndex; i++) {
+                    const fmMatch = /^(\w+):\s*"?([^"]*)"?\s*$/.exec(lines[i]);
+                    if (!fmMatch) { continue; }
+                    const key = fmMatch[1].toLowerCase();
+                    const val = fmMatch[2].trim();
+                    if (key === 'name' && val) { name = val; }
+                    else if (key === 'description' && val) { description = val; }
+                    else if (key === 'confidence' && (val === 'low' || val === 'medium' || val === 'high')) { confidence = val; }
+                    else if (key === 'source' && val) { /* keep source as 'local' for installed skills */ }
+                }
             }
         }
 
-        return {
+        // Fall back to heading detection if no name from frontmatter
+        if (name === dirName) {
+            const headingMatch = /^#\s+(.+)/.exec(lines[bodyStartIndex] ?? '');
+            if (headingMatch) {
+                name = headingMatch[1].trim();
+            }
+        }
+
+        // Extract description from body if not set by frontmatter
+        if (!description) {
+            for (let i = bodyStartIndex; i < lines.length; i++) {
+                const line = lines[i].trim();
+                if (line && !line.startsWith('#') && !line.startsWith('>') && !line.startsWith('**Source:**') && line !== '---') {
+                    description = line;
+                    break;
+                }
+            }
+        }
+
+        const skill: Skill = {
             name,
             description: description || name,
-            source: 'local',
+            source,
             content,
+            slug: dirName,
         };
+        if (confidence) { skill.confidence = confidence; }
+        return skill;
     }
 
     /**

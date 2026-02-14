@@ -124,14 +124,12 @@ export class SquadTreeProvider implements vscode.TreeDataProvider<SquadTreeItem>
                 vscode.TreeItemCollapsibleState.None,
                 'decision'
             );
-            // Fix: DecisionEntry doesn't have status property in the model definition currently
-            // We'll use date and author for description
             item.description = d.date;
             item.tooltip = new vscode.MarkdownString(`**${d.title}**\n\n${d.date}\n\nBy: ${d.author}`);
             item.command = {
-                command: 'squadui.openDashboard', // Re-using dashboard for now as decision viewer
+                command: 'vscode.open',
                 title: 'View Decision',
-                arguments: [] // Dashboard handles state via message passing usually, might need specific command later
+                arguments: [vscode.Uri.file(d.filePath)]
             };
             return item;
         });
@@ -295,11 +293,12 @@ export class SquadTreeProvider implements vscode.TreeDataProvider<SquadTreeItem>
         const skills = this.skillCatalogService.getInstalledSkills(workspaceRoot);
 
         return skills.map(skill => {
+            const slug = skill.slug || skill.name;
             const item = new SquadTreeItem(
                 skill.name,
                 vscode.TreeItemCollapsibleState.None,
                 'skill',
-                skill.name // use name as memberId to carry skill identity
+                slug // pass slug for file lookup
             );
 
             const sourceBadge = skill.source === 'awesome-copilot' ? '📦 awesome-copilot'
@@ -311,11 +310,11 @@ export class SquadTreeProvider implements vscode.TreeDataProvider<SquadTreeItem>
             item.tooltip = this.getSkillTooltip(skill);
             item.contextValue = 'skill';
             
-            // Add click command
+            // Add click command — pass slug for filesystem lookup
             item.command = {
                 command: 'squadui.viewSkill',
                 title: 'View Skill',
-                arguments: [skill.name]
+                arguments: [slug]
             };
 
             return item;

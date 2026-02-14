@@ -71,7 +71,8 @@ export class DecisionService {
                 title,
                 author,
                 date,
-                content
+                content,
+                filePath
             };
         } catch (error) {
             console.error(`Error parsing decision file ${filePath}:`, error);

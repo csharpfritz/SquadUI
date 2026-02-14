@@ -155,15 +155,15 @@ export function activate(context: vscode.ExtensionContext): void {
 
     // Register view skill command — opens SKILL.md in editor
     context.subscriptions.push(
-        vscode.commands.registerCommand('squadui.viewSkill', async (skillName: string) => {
-            if (!skillName) {
+        vscode.commands.registerCommand('squadui.viewSkill', async (skillSlug: string) => {
+            if (!skillSlug) {
                 vscode.window.showWarningMessage('No skill selected');
                 return;
             }
-            const slug = skillName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-            const skillPath = path.join(workspaceRoot, '.ai-team', 'skills', slug, 'SKILL.md');
+            // skillSlug is the directory name, used directly for lookup
+            const skillPath = path.join(workspaceRoot, '.ai-team', 'skills', skillSlug, 'SKILL.md');
             if (!fs.existsSync(skillPath)) {
-                vscode.window.showWarningMessage(`Skill file not found for ${skillName}`);
+                vscode.window.showWarningMessage(`Skill file not found for ${skillSlug}`);
                 return;
             }
             const doc = await vscode.workspace.openTextDocument(skillPath);
@@ -173,22 +173,22 @@ export function activate(context: vscode.ExtensionContext): void {
 
     // Register remove skill command — deletes skill directory
     context.subscriptions.push(
-        vscode.commands.registerCommand('squadui.removeSkill', async (skillName: string) => {
-            if (!skillName) {
+        vscode.commands.registerCommand('squadui.removeSkill', async (skillSlug: string) => {
+            if (!skillSlug) {
                 vscode.window.showWarningMessage('No skill selected');
                 return;
             }
             const confirm = await vscode.window.showWarningMessage(
-                `Remove skill "${skillName}"?`, { modal: true }, 'Remove'
+                `Remove skill "${skillSlug}"?`, { modal: true }, 'Remove'
             );
             if (confirm !== 'Remove') {
                 return;
             }
-            const slug = skillName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-            const skillDir = path.join(workspaceRoot, '.ai-team', 'skills', slug);
+            // skillSlug is the directory name, used directly
+            const skillDir = path.join(workspaceRoot, '.ai-team', 'skills', skillSlug);
             if (fs.existsSync(skillDir)) {
                 fs.rmSync(skillDir, { recursive: true });
-                vscode.window.showInformationMessage(`Removed skill: ${skillName}`);
+                vscode.window.showInformationMessage(`Removed skill: ${skillSlug}`);
                 treeProvider.refresh();
             }
         })
