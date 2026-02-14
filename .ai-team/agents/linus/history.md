@@ -134,3 +134,7 @@ Created `src/services/SkillCatalogService.ts` (issue #38) — a unified service 
 - `httpsGet()` follows redirects (up to 5) and times out at 15s
 - `getInstalledSkills()` is synchronous (fs reads), while `fetchCatalog()` and `searchSkills()` are async (network)
 - Slug generation strips non-alphanumeric chars and joins with hyphens
+
+### 2026-02-14 — Visibility Features Proposals Finalized
+
+📌 Team update (2026-02-14): 10 PM visibility and UI feature proposals generated (Velocity Dashboard, Team Health Heatmap, Decision Browser, Ceremony Timeline, Blocker Visualizer, Activity Timeline, Status Bar Integration, Badge Decorations, Performance Dashboard, Skill Matrix). Proposals prioritized into Quick Wins (Status Bar, Badges) and High Impact (Timeline, Performance Dashboard). Ready for prioritization and implementation assignment. — decided by Danny, Rusty

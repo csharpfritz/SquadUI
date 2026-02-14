@@ -1078,3 +1078,142 @@ Any future tree node sections (e.g., "Issues", "History") will add more root-lev
 
 
 
+### 1. PM Visibility Features — Proposal
+
+**Date:** 2026-02-14  
+**Author:** Danny (Lead)  
+**Status:** Proposed  
+**Requested by:** Jeffrey T. Fritz
+
+#### Context
+
+SquadUI currently displays team members, tasks, and issues in a tree view with individual work details. The extension has access to rich data sources (orchestration logs, decisions.md, ceremonies.md, GitHub issues) but doesn't surface insights that help human PMs understand team health, velocity, or bottlenecks at a glance.
+
+#### Problem Statement
+
+Project managers need to answer these questions quickly:
+- How fast is the team moving? (Velocity)
+- Where are the bottlenecks? (Blockers, overload)
+- What decisions were made and why? (Decision context)
+- How healthy is collaboration? (Silos, pairing patterns)
+- What patterns emerge from retrospectives? (Learning)
+
+Currently, answering these requires manual archaeology across multiple files.
+
+#### Proposed Features
+
+**Feature 1: Velocity Dashboard** (High Value)
+- A webview panel showing work completed over rolling time windows (7d, 14d, 30d)
+- Data sources: OrchestrationLogService (completed tasks), GitHubIssuesService (closed issues)
+- Metrics: Issues closed per week, average time-to-close, member contribution distribution, burn-up charts
+- Implementation: Add VelocityDashboardWebview.ts in src/views/, query services for dated completions, render with CSS/HTML
+
+**Feature 2: Team Health Heatmap** (High Value)
+- Visual representation of workload distribution and collaboration patterns
+- Data sources: OrchestrationLogService (co-participant patterns), TeamMdService, task assignments
+- Metrics: Workload per member, collaboration frequency matrix, idle/working distribution, knowledge silos
+- Implementation: Add TeamHealthWebview.ts, parse co-participant patterns, color-code members (green/yellow/red)
+
+**Feature 3: Decision Browser** (Medium Value)
+- Searchable, filterable view of all team decisions with context
+- Data sources: .ai-team/decisions.md (structured decisions)
+- Features: Full-text search, filter by author/date/status, jump to decision in markdown
+- Implementation: Add DecisionBrowserWebview.ts, parse decisions.md with regex, store in memory for search
+
+**Feature 4: Ceremony Timeline** (Medium Value)
+- Chronological view of retrospectives, design reviews, and other ceremonies
+- Data sources: OrchestrationLogService (ceremony sessions), ceremonies.md
+- Features: Timeline of ceremonies, outcome summaries, links to issues/decisions, filtering
+- Implementation: Add CeremonyTimelineWebview.ts, display as timeline with ceremony icons
+
+**Feature 5: Blocker & Dependency Visualizer** (Lower Priority)
+- Dependency graph showing which tasks/members are blocked and why
+- Data sources: GitHub issue dependencies, Orchestration logs (blocked state), SquadDataProvider
+- Features: Directed graph, highlight blocked tasks, show blocking reason
+- Implementation: Add BlockerGraphWebview.ts, parse GitHub issue links, render dependency tree
+
+#### Rationale
+
+These features transform SquadUI from a status viewer to a management dashboard. They surface insights hidden in files, answer PM questions instantly, and reduce manual toil. The data already exists — we just need to aggregate and visualize it.
+
+#### Impact
+
+PMs gain visibility into team velocity, workload balance, decision rationale, ceremony effectiveness, and blockers. Answers key questions: "Are we on track?", "Is the team balanced?", "Where's the risk?"
+
+---
+
+### 2. Squad Visualization Features — UI Enhancement Proposals
+
+**Date:** 2026-02-14  
+**Author:** Rusty (Extension Dev)  
+**Status:** Proposed
+
+#### Context
+
+Jeffrey T. Fritz requested feature proposals for VS Code UI engagement and visual decision support. Focus is on leveraging VS Code UI capabilities (Tree Views, Webviews, Status Bar).
+
+#### Research Findings
+
+1. **FileDecorationProvider API:** Can add badges (max 2 characters) and icons to tree items
+2. **Status Bar API:** Supports custom items with text, icons (including spinning), theme colors, tooltips, click commands
+3. **Webview API:** Full HTML/CSS/JS control with postMessage for bidirectional communication
+4. **Theme System:** Must use ThemeColor for consistency
+5. **TreeView Limitations:** Cannot add multi-badge decorations; complex UI requires webview fallback
+
+#### Proposed Features
+
+**Feature 1: Activity Timeline Visualization** (High Value)
+- Interactive timeline webview showing member activity over time with swimlanes
+- UX: Command opens side panel webview, D3.js timeline with hourly/daily/weekly zoom, colored activity blocks per member
+- Implementation: ActivityTimelineWebview class, parse orchestration logs + GitHub events, D3.js timeline, postMessage filtering
+- Feasibility: Medium — D3.js integration, log parsing, established webview patterns
+
+**Feature 2: Real-Time Status Bar Integration** (High Value)
+- Live squad status in VS Code status bar: active member count, sprint progress, alerts
+- UX: $(organization) 3 active | Sprint: 7/12, spinning icon when working, warning colors for blockers
+- Implementation: SquadStatusBarItem class, poll SquadDataProvider every 30s, use ThemeColors
+- Feasibility: Easy — straightforward Status Bar API, low overhead
+
+**Feature 3: Tree Item Badge Decorations** (Medium Value)
+- Small badges on tree items: task counts (blue), blocked status (red), skill counts (green)
+- UX: Member items show "3" badge for 3 active tasks, blocked members show "!"
+- Implementation: SquadDecorationProvider implementing FileDecorationProvider, resourceUri pattern for decoration assignment
+- Feasibility: Easy — native API, 2-character limit acceptable
+
+**Feature 4: Member Performance Dashboard** (High Value)
+- Webview panel showing individual member metrics: tasks completed, avg completion time, issue velocity, contribution graph
+- UX: Context menu "View Performance Dashboard", charts for tasks/velocity/types, stats cards
+- Implementation: PerformanceDashboardWebview class, parse orchestration logs for metrics, Chart.js via CDN
+- Feasibility: Medium — requires metrics calculation, Chart.js integration, provides strong value
+
+**Feature 5: Skill Coverage Matrix** (Medium Value)
+- Heatmap webview showing member skills vs. skill catalog, highlighting coverage gaps
+- UX: Command opens webview with heatmap (rows=skills, columns=members), cell colors green/yellow/red, filtering
+- Implementation: SkillMatrixWebview class, parse charter.md for member skills, match to skill catalog with fuzzy matching
+- Feasibility: Medium — skill extraction, fuzzy matching, high strategic value
+
+#### Implementation Recommendations
+
+**Quick Wins (Easy):**
+1. Real-Time Status Bar Integration
+2. Tree Item Badge Decorations
+
+**High Impact (Medium):**
+3. Activity Timeline Visualization
+4. Member Performance Dashboard
+
+**Strategic (Later):**
+5. Skill Coverage Matrix
+
+#### Rationale
+
+Both Danny's and Rusty's proposals focus on transforming SquadUI from a simple viewer into a comprehensive project management tool. PM-focused features (velocity, health, decisions, ceremonies, blockers) provide data-driven decision support. UI-focused features (timeline, status bar, badges, dashboards, skills) provide real-time visibility and engagement. Together, they create sticky, valuable tool that managers want to keep installed.
+
+#### Impact
+
+- Managers gain real-time visibility into team health, velocity trends, and blockers without leaving VS Code
+- Historical decision context reduces onboarding time and repetition
+- Ceremony effectiveness tracking closes learning loops
+- Skill matrix identifies training needs and team weaknesses
+- Activity timeline and performance dashboards provide storytelling for retrospectives
+- Status bar alerts enable proactive unblocking and load balancing
