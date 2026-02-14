@@ -1,5 +1,0 @@
-Merge: Dashboard Design session (2026-02-14)
-
-- Log session: Danny designed Velocity/Activity/Decision dashboards
-- Merge decision: Real-Time Squad Visibility Features (status bar + tree badges)
-- Propagate: Danny history updated with team notification

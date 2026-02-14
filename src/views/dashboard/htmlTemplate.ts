@@ -8,6 +8,7 @@ import { DashboardData } from '../../models';
 export function getDashboardHtml(data: DashboardData): string {
     const velocityDataJson = JSON.stringify(data.velocity);
     const activityDataJson = JSON.stringify(data.activity);
+    const decisionDataJson = JSON.stringify(data.decisions);
 
     return /* html */ `
 <!DOCTYPE html>
@@ -221,9 +222,73 @@ export function getDashboardHtml(data: DashboardData): string {
         }
 
         /* Decisions Tab */
+        .decision-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+        .search-input {
+            padding: 8px 12px;
+            width: 300px;
+            background-color: var(--vscode-input-background);
+            color: var(--vscode-input-foreground);
+            border: 1px solid var(--vscode-input-border);
+            border-radius: 2px;
+            font-family: var(--vscode-font);
+        }
+        .search-input:focus {
+            outline: 1px solid var(--vscode-focusBorder);
+            border-color: var(--vscode-focusBorder);
+        }
+        .decision-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 16px;
+        }
+        .decision-card {
+            background-color: var(--vscode-editor-background);
+            border: 1px solid var(--vscode-panel-border);
+            border-radius: 4px;
+            padding: 16px;
+            cursor: pointer;
+            transition: transform 0.15s, box-shadow 0.15s;
+            display: flex;
+            flex-direction: column;
+        }
+        .decision-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            border-color: var(--vscode-focusBorder);
+        }
+        .decision-title {
+            font-weight: 600;
+            font-size: 1.1em;
+            margin-bottom: 8px;
+            color: var(--vscode-textLink-foreground);
+        }
+        .decision-meta {
+            font-size: 0.85em;
+            color: var(--vscode-descriptionForeground);
+            margin-bottom: 12px;
+            display: flex;
+            gap: 12px;
+        }
+        .decision-preview {
+            font-size: 0.9em;
+            color: var(--vscode-foreground);
+            opacity: 0.9;
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            line-height: 1.5;
+        }
         .decisions-empty {
             color: var(--vscode-descriptionForeground);
             font-style: italic;
+            text-align: center;
+            padding: 40px;
         }
     </style>
 </head>
@@ -262,15 +327,21 @@ export function getDashboardHtml(data: DashboardData): string {
 
     <!-- Decisions Tab -->
     <div class="tab-content" id="decisions-tab">
-        <h2>Decision Browser</h2>
-        <p>Search and explore team decisions.</p>
-        <p class="decisions-empty">Decision browser will be available in Phase 3.</p>
+        <div class="decision-header">
+            <div>
+                <h2>Decision Browser</h2>
+                <p>Explore architectural decision records (ADRs) and team agreements.</p>
+            </div>
+            <input type="text" id="decision-search" class="search-input" placeholder="Search decisions...">
+        </div>
+        <div id="decision-list" class="decision-list"></div>
     </div>
 
     <script>
         // Data from backend
         const velocityData = ${velocityDataJson};
         const activityData = ${activityDataJson};
+        const decisionData = ${decisionDataJson};
 
         // Tab switching
         document.querySelectorAll('.tab').forEach(tab => {
@@ -431,6 +502,63 @@ export function getDashboardHtml(data: DashboardData): string {
         renderVelocityChart();
         renderHeatmap();
         renderActivitySwimlanes();
+        renderDecisions();
+
+        // Render decisions
+        function renderDecisions(filter = '') {
+            const container = document.getElementById('decision-list');
+            const entries = decisionData.entries;
+            
+            const lowerFilter = filter.toLowerCase();
+            const filtered = entries.filter(d => 
+                d.title.toLowerCase().includes(lowerFilter) || 
+                d.content.toLowerCase().includes(lowerFilter) ||
+                d.author.toLowerCase().includes(lowerFilter)
+            );
+            
+            if (filtered.length === 0) {
+                container.innerHTML = '<div class="decisions-empty">No matching decisions found</div>';
+                container.style.display = 'block'; // Ensure it takes full width
+                return;
+            }
+            
+            container.style.display = 'grid'; // Restore grid
+            container.innerHTML = filtered.map(d => {
+                // Simple markdown strip (very basic)
+                const plainContent = d.content
+                    .replace(/#+\s/g, '')
+                    .replace(/[*_\`]/g, '')
+                    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1');
+
+                return \`
+                    <div class="decision-card" title="View \${d.title}">
+                        <div class="decision-title">\${escapeHtml(d.title)}</div>
+                        <div class="decision-meta">
+                            <span>📅 \${d.date}</span>
+                            <span>👤 \${escapeHtml(d.author)}</span>
+                        </div>
+                        <div class="decision-preview">
+                            \${escapeHtml(plainContent)}
+                        </div>
+                    </div>
+                \`;
+            }).join('');
+        }
+
+        // Search handler
+        document.getElementById('decision-search').addEventListener('input', (e) => {
+            renderDecisions(e.target.value);
+        });
+
+        // Helper to escape HTML
+        function escapeHtml(text) {
+            return text
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
     </script>
 </body>
 </html>

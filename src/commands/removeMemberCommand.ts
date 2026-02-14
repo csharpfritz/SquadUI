@@ -60,7 +60,7 @@ export function registerRemoveMemberCommand(
     _context: vscode.ExtensionContext,
     onMemberRemoved: () => void
 ): vscode.Disposable {
-    return vscode.commands.registerCommand('squadui.removeMember', async () => {
+    return vscode.commands.registerCommand('squadui.removeMember', async (item?: any) => {
         const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
         if (!workspaceFolder) {
             vscode.window.showErrorMessage('Squad: No workspace folder open. Open a folder first.');
@@ -81,21 +81,37 @@ export function registerRemoveMemberCommand(
             return;
         }
 
-        // QuickPick showing current members
-        const picks: vscode.QuickPickItem[] = rows.map(r => ({
-            label: r.name,
-            description: r.slug,
-        }));
+        let memberNameToCheck: string | undefined;
 
-        const picked = await vscode.window.showQuickPick(picks, {
-            placeHolder: 'Select a team member to remove',
-            title: 'Remove Team Member',
-        });
-        if (!picked) {
-            return; // cancelled
+        // If command was called from the tree view context menu, item will be the SquadTreeItem
+        if (item && item.label) {
+            memberNameToCheck = typeof item.label === 'string' ? item.label : item.label.label;
         }
 
-        const member = rows.find(r => r.name === picked.label);
+        let member: MemberRow | undefined;
+
+        if (memberNameToCheck) {
+            member = rows.find(r => r.name === memberNameToCheck);
+        }
+
+        // If no member found via context arg (or command palette usage), prompt user
+        if (!member) {
+            // QuickPick showing current members
+            const picks: vscode.QuickPickItem[] = rows.map(r => ({
+                label: r.name,
+                description: r.slug,
+            }));
+
+            const picked = await vscode.window.showQuickPick(picks, {
+                placeHolder: 'Select a team member to remove',
+                title: 'Remove Team Member',
+            });
+            if (!picked) {
+                return; // cancelled
+            }
+            member = rows.find(r => r.name === picked.label);
+        }
+
         if (!member) {
             return;
         }

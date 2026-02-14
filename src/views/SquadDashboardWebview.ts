@@ -79,12 +79,14 @@ export class SquadDashboardWebview {
             const members = await this.dataProvider.getSquadMembers();
             const tasks = await this.dataProvider.getTasks();
             const logEntries = await this.dataProvider.getLogEntries();
+            const decisions = await this.dataProvider.getDecisions();
 
             // Build dashboard data
             const dashboardData: DashboardData = this.dataBuilder.buildDashboardData(
                 logEntries,
                 members,
-                tasks
+                tasks,
+                decisions
             );
 
             // Render HTML

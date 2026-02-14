@@ -3,7 +3,7 @@
  * Builds data for velocity charts, activity timelines, and decision browser.
  */
 
-import { OrchestrationLogEntry, Task, SquadMember, DashboardData, VelocityDataPoint, ActivityHeatmapPoint, ActivitySwimlane, TimelineTask } from '../../models';
+import { OrchestrationLogEntry, Task, SquadMember, DashboardData, VelocityDataPoint, ActivityHeatmapPoint, ActivitySwimlane, TimelineTask, DecisionEntry } from '../../models';
 
 export class DashboardDataBuilder {
     /**
@@ -12,7 +12,8 @@ export class DashboardDataBuilder {
     buildDashboardData(
         logEntries: OrchestrationLogEntry[],
         members: SquadMember[],
-        tasks: Task[]
+        tasks: Task[],
+        decisions: DecisionEntry[]
     ): DashboardData {
         return {
             velocity: {
@@ -23,7 +24,7 @@ export class DashboardDataBuilder {
                 swimlanes: this.buildActivitySwimlanes(members, tasks),
             },
             decisions: {
-                entries: [], // Will be populated from decisions.md in Phase 3
+                entries: decisions,
             },
         };
     }

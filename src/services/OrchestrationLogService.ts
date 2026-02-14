@@ -39,7 +39,7 @@ export class OrchestrationLogService {
 
                 const files = await fs.promises.readdir(logDir);
                 const mdFiles = files
-                    .filter(file => file.endsWith('.md'))
+                    .filter(file => file.endsWith('.md') && !file.toLowerCase().startsWith('readme'))
                     .map(file => path.join(logDir, file));
 
                 allFiles.push(...mdFiles);

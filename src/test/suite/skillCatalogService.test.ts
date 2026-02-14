@@ -682,11 +682,12 @@ suite('Skill Tree Nodes (SquadTreeProvider)', () => {
         const skillsNode = roots.find(r => r.label === 'Skills');
 
         assert.ok(skillsNode, 'Should have a Skills section node');
-        assert.strictEqual(skillsNode.itemType, 'skill');
+        assert.strictEqual(skillsNode.itemType, 'section');
+        assert.strictEqual(skillsNode.contextValue, 'skill-section');
         assert.strictEqual(
             skillsNode.collapsibleState,
-            vscode.TreeItemCollapsibleState.Collapsed,
-            'Skills section should be collapsible'
+            vscode.TreeItemCollapsibleState.Expanded,
+            'Skills section should be expanded'
         );
     });
 
