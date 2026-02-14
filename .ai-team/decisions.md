@@ -842,6 +842,67 @@ Created `.github/workflows/release.yml` with the following design:
 
 ## 2026-02-14: Command Test Skip-Guard Pattern
 
+---
+
+## 2026-02-13: Dashboard Architecture - Unified Webview with Tabs
+
+**Date:** 2026-02-13  
+**Author:** Danny (Lead/Architect)  
+**Status:** Proposed  
+**Context:** Implementing Velocity Dashboard, Activity Timeline, and Decision Browser
+
+### Decision
+
+Single unified `SquadDashboardWebview` hosting three tabs (Velocity, Activity, Decisions). No external chart libraries — use HTML5 Canvas and CSS Grid for lightweight visualization.
+
+**Rationale:**
+- Consolidates related management views in one place
+- Reduces activation cost (single webview lifecycle vs. three)
+- Natural grouping: all three are "insights" on same underlying data
+- VS Code status bar can show dashboard shortcut
+- Users expect tabbed interfaces for multi-faceted views
+
+**Command:** `squadui.openDashboard` (Ctrl+Shift+D / Cmd+Shift+D)
+
+**Charting Strategy:** No Chart.js. HTML5 Canvas for trends/heatmaps, CSS Grid for swimlanes, vanilla JS for search. Keeps bundle lean.
+
+**File Structure:**
+- `src/views/SquadDashboardWebview.ts` (main class)
+- `src/views/dashboard/DashboardDataBuilder.ts` (transforms logs to chart data)
+- `src/views/dashboard/htmlTemplate.ts` (tab UI + inline JS)
+
+### Implementation Phases
+
+**Phase 1: Shell + Velocity (COMPLETED 2026-02-13)**
+- ✅ `SquadDashboardWebview` scaffolded with tab navigation
+- ✅ Velocity tab: line chart (30-day task completion trends)
+- ✅ Heatmap: team activity levels (7 days)
+- ✅ Activity timeline: swimlane view of member tasks
+- ✅ Command registered, status bar integration
+
+**Phase 2: Activity Timeline Enhancements (Next)**
+- Date range filter (7/30/90 days selector)
+- Swimlane visual design (color-coded by status)
+- Task tooltips with full descriptions
+
+**Phase 3: Decision Browser (Future)**
+- Parse decisions.md into searchable entries
+- Client-side search + tag filtering
+- Link decisions to log entries by date
+
+**Phase 4: Polish & Release**
+- Loading states, error handling, refresh button
+- Keyboard shortcuts in README
+- Version bump to 0.4.0
+
+### Impact
+
+- Pattern for all future "insight" features
+- New tabs added by: HTML template + `DashboardData` interface + `DashboardDataBuilder` logic
+- Single-webview model keeps activation cost low
+- All dashboard code in `src/views/dashboard/`
+- No external dependencies added
+
 **By:** Basher (Tester)
 **Date:** 2026-02-14
 

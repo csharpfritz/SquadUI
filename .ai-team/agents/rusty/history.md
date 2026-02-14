@@ -167,6 +167,10 @@
 ### 2026-02-14: Command Palette Consistency (#27)
 - Unified all command categories to `"Squad"` (was `"SquadUI"` for most commands)
 - Palette display is now consistent: "Squad: Add Team Member", "Squad: Remove Team Member", etc.
+
+### 📌 Team Update (2026-02-13): Dashboard Architecture Finalized — decided by Danny
+
+Dashboard webview scaffolded with single unified tab interface (Velocity + Activity + Decisions). Completed Phase 1: shell with velocity tab (30-day completion trends), heatmap (7-day activity), swimlane timeline. Uses HTML5 Canvas (no Chart.js) and CSS Grid for lightweight visualization. Command: `squadui.openDashboard` (Ctrl+Shift+D). Foundation complete — Phase 2/3/4 ready for extension. See `.ai-team/decisions.md` for implementation roadmap.
 - `showWorkDetails` and `openIssue` hidden from command palette (`"when": "false"`) since they require context arguments
 - Context menus added for all item types: member (View Charter, Remove Member), task (Show Work Details), issue (View Issue Details)
 - Keybinding `Ctrl+Shift+S` / `Cmd+Shift+S` added for `squadui.addMember`
