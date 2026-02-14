@@ -1078,3 +1078,41 @@ Any future tree node sections (e.g., "Issues", "History") will add more root-lev
 
 
 
+
+## 2026-02-14: Sidebar Split into Three Collapsible Sections
+
+**By:** Rusty  
+**Date:** 2026-02-14  
+**Issue:** Sidebar Reorganization
+
+### Context
+
+The single squadMembers tree view was mixing members, skills, and decisions into one flat list. This violates the VS Code convention of separate collapsible sections (like the Debug panel's VARIABLES/WATCH/CALL STACK).
+
+### Decision
+
+Replaced single squadMembers tree view with three separate views under the squadui activity bar container:
+1. **squadTeam**  Squad members and their tasks
+2. **squadSkills**  Available skills catalog (awesome-copilot + skills.sh)
+3. **squadDecisions**  Team decisions from .ai-team/decisions.md
+
+Each view has its own:
+- Tree data provider (TeamMembersProvider, SkillCatalogProvider, DecisionsProvider)
+- Scoped menu contributions (context menus only for that view)
+- Title bar icons and actions
+
+### Rationale
+
+- **Separation of concerns:** Each section has its own title bar, icon set, and context menu  no visual clutter
+- **VS Code convention:** Matches how Debug, Explorer, and other VS Code panels organize multiple related data streams
+- **Extensibility:** New sections (History, Issues, etc.) can be added as sibling views without refactoring the UI tree
+- **View IDs follow naming pattern:** squad{Feature} aligns with existing squadMembers and keeps all SquadUI views namespace-isolated
+
+### Impact
+
+- **Extension activation:** Lazy activation now triggers on onView:squadTeam|squadSkills|squadDecisions (any view opening starts the extension)
+- **Tree view consumers:** squadTeam replaces squadMembers as the primary tree view. Old commands and webviews continue working.
+- **Test updates:** Tree tests must account for three separate root structures (members, skills, decisions). No cross-section mixing.
+- **Future:** Adding a new view type is now a straightforward addition of a new provider + package.json contribution.
+
+

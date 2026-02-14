@@ -289,3 +289,7 @@ Written proactively while Rusty builds the implementation. Tests describe expect
 - Private method access via `as any` cast for dedup tests
 - Direct filter logic testing for searchSkills (avoids network calls)
 - Skip-guard pattern (`this.skip()`) for command registration tests needing workspace
+
+### 2026-02-14: Team Update — Sidebar Reorganization
+
+📌 **Team update (2026-02-14):** Sidebar reorganized into Team/Skills/Decisions views — decided by Rusty

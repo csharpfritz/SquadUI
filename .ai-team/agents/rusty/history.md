@@ -199,3 +199,17 @@
 ### 2026-02-14: Team Update — Tree Tests Must Filter by Item Type
 
 📌 **Team decision captured:** Root-level tree tests must filter by `itemType === 'member'` when asserting member properties. Skills section node is now a root-level item alongside members. Future tree node sections (Issues, History) will add more root nodes—tests should always filter by type rather than assume fixed root count. — decided by Basher
+
+### 2026-02-14: Sidebar Reorganized into Three Collapsible Sections
+- Replaced single `squadMembers` tree view with three separate views: `squadTeam`, `squadSkills`, `squadDecisions`
+- Renamed `SquadTreeProvider` → `TeamTreeProvider`, added `SkillsTreeProvider` and `DecisionsTreeProvider`
+- All three providers share `SquadTreeItem` class; added `'decision'` to the `itemType` union
+- `DecisionEntry` model added to `src/models/index.ts`
+- `DecisionService` created at `src/services/DecisionService.ts` — parses `## ` headings from `.ai-team/decisions.md`
+- Each view gets its own title bar actions: addMember/refresh on Team, addSkill on Skills
+- `when` clauses in `package.json` menus updated: `view == squadTeam` for member/task/issue context, `view == squadSkills` for skill context
+- Activation event changed from `onView:squadMembers` to `onView:squadTeam`
+- Decision items use `$(notebook)` codicon and open `decisions.md` via `vscode.open` command
+- File watcher refreshes all three providers
+- All existing test files updated to use `TeamTreeProvider` / `SkillsTreeProvider` names
+- TypeScript compiles cleanly with `npx tsc --noEmit`
