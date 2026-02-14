@@ -1217,3 +1217,33 @@ Both Danny's and Rusty's proposals focus on transforming SquadUI from a simple v
 - Skill matrix identifies training needs and team weaknesses
 - Activity timeline and performance dashboards provide storytelling for retrospectives
 - Status bar alerts enable proactive unblocking and load balancing
+
+
+---
+
+## Real-Time Squad Visibility Features
+
+**Date:** 2026-02-14
+**Author:** Danny (UI Design)
+**Status:** Implemented
+
+### Context
+
+Users needed at-a-glance feedback on squad health without expanding the tree view. Current UI provided no immediate status context about team member activity levels or health indicators.
+
+### Decision
+
+1. **Status Bar Item:** Created SquadStatusBar showing active member count with health indicators (🟢/🟡/🟠/⚪ based on activity ratio)
+2. **Tree View Badges:** Enhanced SquadTreeProvider to display status badges (⚡ working / 💤 idle) and issue counts for each member
+3. **Visual Language:** Use emoji for all status indicators (works across all themes, no custom icon management required)
+4. **Synchronization:** All refresh paths (commands, file watcher) update both tree and status bar for consistency
+
+### Technical Implementation
+
+- Created: src/views/SquadStatusBar.ts — subscribes to SquadDataProvider and updates VS Code status bar
+- Modified: src/views/SquadTreeProvider.ts — compute issue counts and format badges
+- Modified: src/extension.ts, src/views/index.ts — wire up lifecycle and refresh coordination
+
+### Impact
+
+Improves situational awareness. Users can now identify when team members need work assigned or are overloaded without opening the tree view. Establishes visual patterns (status badges, activity indicators) for future dashboard features.
