@@ -145,11 +145,6 @@
           "group": "inline"
         },
         {
-          "command": "squadui.viewSkill",
-          "when": "view == squadSkills && viewItem == skill",
-          "group": "inline"
-        },
-        {
           "command": "squadui.removeSkill",
           "when": "view == squadSkills && viewItem == skill",
           "group": "inline"

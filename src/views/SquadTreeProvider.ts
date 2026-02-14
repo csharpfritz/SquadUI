@@ -291,6 +291,12 @@ export class SkillsTreeProvider implements vscode.TreeDataProvider<SquadTreeItem
             item.tooltip = this.getSkillTooltip(skill);
             item.contextValue = 'skill';
 
+            item.command = {
+                command: 'squadui.viewSkill',
+                title: 'View Skill',
+                arguments: [skill.name]
+            };
+
             return item;
         });
     }
@@ -348,9 +354,9 @@ export class DecisionsTreeProvider implements vscode.TreeDataProvider<SquadTreeI
             item.tooltip = this.getDecisionTooltip(decision);
 
             item.command = {
-                command: 'vscode.open',
-                title: 'Open Decisions File',
-                arguments: [vscode.Uri.file(decision.filePath)]
+                command: 'squadui.openDecision',
+                title: 'Open Decision',
+                arguments: [decision.filePath, decision.lineNumber]
             };
 
             return item;

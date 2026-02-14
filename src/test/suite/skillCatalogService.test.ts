@@ -630,7 +630,7 @@ suite('Skill Command Registration', () => {
         assert.ok(commandNames.includes('squadui.removeSkill'));
     });
 
-    test('viewSkill context menu targets skill items', () => {
+    test('skill items open via click command instead of context menu', () => {
         const extension = vscode.extensions.getExtension('csharpfritz.squadui');
         assert.ok(extension);
 
@@ -638,11 +638,7 @@ suite('Skill Command Registration', () => {
         const contextMenus: { command: string; when: string }[] = menus['view/item/context'] ?? [];
         const viewSkillMenu = contextMenus.find(m => m.command === 'squadui.viewSkill');
 
-        assert.ok(viewSkillMenu, 'viewSkill should have a context menu entry');
-        assert.ok(
-            viewSkillMenu.when.includes('viewItem == skill'),
-            'viewSkill context menu should target skill items'
-        );
+        assert.strictEqual(viewSkillMenu, undefined, 'viewSkill should NOT have a context menu entry — skills open on click');
     });
 
     test('removeSkill context menu targets skill items', () => {

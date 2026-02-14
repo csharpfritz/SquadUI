@@ -165,6 +165,21 @@ export function activate(context: vscode.ExtensionContext): void {
         })
     );
 
+    // Register open decision command — opens decisions.md and scrolls to the heading
+    context.subscriptions.push(
+        vscode.commands.registerCommand('squadui.openDecision', async (filePath: string, lineNumber: number) => {
+            if (!filePath) {
+                return;
+            }
+            const doc = await vscode.workspace.openTextDocument(filePath);
+            const range = new vscode.Range(lineNumber, 0, lineNumber, 0);
+            await vscode.window.showTextDocument(doc, {
+                preview: true,
+                selection: range
+            });
+        })
+    );
+
     // Register remove skill command — deletes skill directory
     context.subscriptions.push(
         vscode.commands.registerCommand('squadui.removeSkill', async (skillName: string) => {

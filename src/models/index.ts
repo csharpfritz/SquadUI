@@ -139,6 +139,8 @@ export interface DecisionEntry {
     author?: string;
     /** File path to the decisions file for opening */
     filePath: string;
+    /** Line number (0-based) of the heading in decisions.md */
+    lineNumber: number;
 }
 
 // ─── Skill Catalog Models ──────────────────────────────────────────────────

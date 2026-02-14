@@ -9,8 +9,9 @@ import { DecisionEntry } from '../models';
 export class DecisionService {
     /**
      * Parse decisions.md and return structured decision entries.
-     * Looks for ## and ### headings as decision titles,
+     * Looks for ## headings as decision titles (not ### sub-headings),
      * extracts date and author from nearby metadata lines.
+     * Returns decisions in reverse order (newest first).
      */
     getDecisions(workspaceRoot: string): DecisionEntry[] {
         const filePath = path.join(workspaceRoot, '.ai-team', 'decisions.md');
@@ -26,7 +27,7 @@ export class DecisionService {
         while (i < lines.length) {
             const line = lines[i].trim();
 
-            // Match ## headings (but not the top-level # title)
+            // Match ## headings only (not # title or ### sub-headings)
             const headingMatch = line.match(/^##\s+(.+)$/);
             if (headingMatch && !line.startsWith('###')) {
                 const title = headingMatch[1].trim();
@@ -50,12 +51,13 @@ export class DecisionService {
                     }
                 }
 
-                decisions.push({ title, date, author, filePath });
+                decisions.push({ title, date, author, filePath, lineNumber: i });
             }
 
             i++;
         }
 
-        return decisions;
+        // Return newest first (last in file = most recent)
+        return decisions.reverse();
     }
 }
