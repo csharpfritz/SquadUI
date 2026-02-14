@@ -1,26 +1,26 @@
 /**
- * Tests for SquadTreeProvider.
+ * Tests for TeamTreeProvider.
  * Verifies tree data generation for members and tasks.
  */
 
 import * as assert from 'assert';
 import * as vscode from 'vscode';
-import { SquadTreeProvider, SquadTreeItem } from '../../views/SquadTreeProvider';
+import { TeamTreeProvider, SquadTreeItem } from '../../views/SquadTreeProvider';
 import {
     MockSquadDataProvider,
     createMockMembers,
     createMockTasks,
 } from '../mocks/squadDataProvider';
 
-suite('SquadTreeProvider Test Suite', () => {
-    let provider: SquadTreeProvider;
+suite('TeamTreeProvider Test Suite', () => {
+    let provider: TeamTreeProvider;
     let mockDataProvider: MockSquadDataProvider;
 
     setup(() => {
         const members = createMockMembers();
         const tasks = createMockTasks();
         mockDataProvider = new MockSquadDataProvider({ members, tasks });
-        provider = new SquadTreeProvider(mockDataProvider as never);
+        provider = new TeamTreeProvider(mockDataProvider as never);
     });
 
     suite('getChildren', () => {
@@ -34,14 +34,11 @@ suite('SquadTreeProvider Test Suite', () => {
             assert.strictEqual(members[2].label, 'Linus');
         });
 
-        test('all root items include members and skills section', async () => {
+        test('root items are all members', async () => {
             const children = await provider.getChildren();
-            const members = children.filter(c => c.itemType === 'member');
-            const skills = children.filter(c => c.itemType === 'skill');
 
-            assert.strictEqual(members.length, 3);
-            assert.strictEqual(skills.length, 1);
-            assert.strictEqual(children.length, 4);
+            assert.strictEqual(children.length, 3);
+            children.forEach(c => assert.strictEqual(c.itemType, 'member'));
         });
 
         test('root member items are collapsible', async () => {

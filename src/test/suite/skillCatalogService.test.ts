@@ -17,7 +17,7 @@ import * as fs from 'fs';
 import * as vscode from 'vscode';
 import { SkillCatalogService } from '../../services/SkillCatalogService';
 import { Skill } from '../../models';
-import { SquadTreeProvider } from '../../views/SquadTreeProvider';
+import { SkillsTreeProvider } from '../../views/SquadTreeProvider';
 import {
     MockSquadDataProvider,
     createMockMembers,
@@ -663,8 +663,8 @@ suite('Skill Command Registration', () => {
 
 // ─── Skill Tree Node Tests ──────────────────────────────────────────────────
 
-suite('Skill Tree Nodes (SquadTreeProvider)', () => {
-    let provider: SquadTreeProvider;
+suite('Skill Tree Nodes (SkillsTreeProvider)', () => {
+    let provider: SkillsTreeProvider;
 
     setup(() => {
         const members = createMockMembers();
@@ -674,36 +674,26 @@ suite('Skill Tree Nodes (SquadTreeProvider)', () => {
             tasks,
             workspaceRoot: TEST_FIXTURES_ROOT,
         });
-        provider = new SquadTreeProvider(mockDataProvider as never);
+        provider = new SkillsTreeProvider(mockDataProvider as never);
     });
 
-    test('Skills section appears in tree root', async () => {
+    test('Skills items appear at root level', async () => {
         const roots = await provider.getChildren();
-        const skillsNode = roots.find(r => r.label === 'Skills');
 
-        assert.ok(skillsNode, 'Should have a Skills section node');
-        assert.strictEqual(skillsNode.itemType, 'skill');
-        assert.strictEqual(
-            skillsNode.collapsibleState,
-            vscode.TreeItemCollapsibleState.Collapsed,
-            'Skills section should be collapsible'
-        );
+        assert.ok(roots.length >= 2, `Should show installed skills, found ${roots.length}`);
     });
 
-    test('Skills section has book icon', async () => {
+    test('skill items have book icon', async () => {
         const roots = await provider.getChildren();
-        const skillsNode = roots.find(r => r.label === 'Skills');
 
-        assert.ok(skillsNode);
-        assert.ok(skillsNode.iconPath instanceof vscode.ThemeIcon);
-        assert.strictEqual((skillsNode.iconPath as vscode.ThemeIcon).id, 'book');
+        for (const item of roots) {
+            assert.ok(item.iconPath instanceof vscode.ThemeIcon);
+            assert.strictEqual((item.iconPath as vscode.ThemeIcon).id, 'book');
+        }
     });
 
-    test('expanding Skills section shows installed skills', async () => {
-        const roots = await provider.getChildren();
-        const skillsNode = roots.find(r => r.label === 'Skills')!;
-
-        const skillItems = await provider.getChildren(skillsNode);
+    test('installed skills are shown', async () => {
+        const skillItems = await provider.getChildren();
 
         assert.ok(skillItems.length >= 2, `Should show installed skills, found ${skillItems.length}`);
         const names = skillItems.map(s => s.label);
@@ -712,13 +702,10 @@ suite('Skill Tree Nodes (SquadTreeProvider)', () => {
     });
 
     test('skill items show correct source badge', async () => {
-        const roots = await provider.getChildren();
-        const skillsNode = roots.find(r => r.label === 'Skills')!;
-        const skillItems = await provider.getChildren(skillsNode);
+        const skillItems = await provider.getChildren();
 
         for (const item of skillItems) {
             const desc = String(item.description);
-            // All installed skills should show the local badge
             assert.ok(
                 desc.includes('local'),
                 `Skill ${item.label} description should include "local", got: ${desc}`
@@ -727,34 +714,15 @@ suite('Skill Tree Nodes (SquadTreeProvider)', () => {
     });
 
     test('skill item contextValue is "skill"', async () => {
-        const roots = await provider.getChildren();
-        const skillsNode = roots.find(r => r.label === 'Skills')!;
-        const skillItems = await provider.getChildren(skillsNode);
+        const skillItems = await provider.getChildren();
 
         for (const item of skillItems) {
             assert.strictEqual(item.contextValue, 'skill', `${item.label} should have contextValue "skill"`);
         }
     });
 
-    test('skill items have book icon', async () => {
-        const roots = await provider.getChildren();
-        const skillsNode = roots.find(r => r.label === 'Skills')!;
-        const skillItems = await provider.getChildren(skillsNode);
-
-        for (const item of skillItems) {
-            assert.ok(item.iconPath instanceof vscode.ThemeIcon);
-            assert.strictEqual(
-                (item.iconPath as vscode.ThemeIcon).id,
-                'book',
-                `${item.label} should have book icon`
-            );
-        }
-    });
-
     test('skill items are leaf nodes (not collapsible)', async () => {
-        const roots = await provider.getChildren();
-        const skillsNode = roots.find(r => r.label === 'Skills')!;
-        const skillItems = await provider.getChildren(skillsNode);
+        const skillItems = await provider.getChildren();
 
         for (const item of skillItems) {
             assert.strictEqual(
@@ -766,9 +734,7 @@ suite('Skill Tree Nodes (SquadTreeProvider)', () => {
     });
 
     test('skill tooltips are MarkdownStrings', async () => {
-        const roots = await provider.getChildren();
-        const skillsNode = roots.find(r => r.label === 'Skills')!;
-        const skillItems = await provider.getChildren(skillsNode);
+        const skillItems = await provider.getChildren();
 
         for (const item of skillItems) {
             assert.ok(

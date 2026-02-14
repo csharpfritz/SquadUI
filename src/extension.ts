@@ -3,7 +3,7 @@ import * as path from 'path';
 import * as fs from 'fs';
 import { GitHubIssue } from './models';
 import { SquadDataProvider, FileWatcherService, GitHubIssuesService } from './services';
-import { SquadTreeProvider, WorkDetailsWebview, IssueDetailWebview } from './views';
+import { TeamTreeProvider, SkillsTreeProvider, DecisionsTreeProvider, WorkDetailsWebview, IssueDetailWebview } from './views';
 import { registerInitSquadCommand, registerAddMemberCommand, registerRemoveMemberCommand, registerAddSkillCommand } from './commands';
 
 let fileWatcher: FileWatcherService | undefined;
@@ -31,18 +31,28 @@ export function activate(context: vscode.ExtensionContext): void {
     fileWatcher.start();
     context.subscriptions.push(fileWatcher);
 
-    // Create tree view provider
-    const treeProvider = new SquadTreeProvider(dataProvider);
+    // Create tree view providers
+    const teamProvider = new TeamTreeProvider(dataProvider);
+    const skillsProvider = new SkillsTreeProvider(dataProvider);
+    const decisionsProvider = new DecisionsTreeProvider(dataProvider);
 
     // Wire up GitHub Issues service
     const issuesService = new GitHubIssuesService();
-    treeProvider.setIssuesService(issuesService);
+    teamProvider.setIssuesService(issuesService);
 
-    const treeView = vscode.window.createTreeView('squadMembers', {
-        treeDataProvider: treeProvider,
+    const teamView = vscode.window.createTreeView('squadTeam', {
+        treeDataProvider: teamProvider,
         showCollapseAll: true
     });
-    context.subscriptions.push(treeView);
+    const skillsView = vscode.window.createTreeView('squadSkills', {
+        treeDataProvider: skillsProvider,
+        showCollapseAll: true
+    });
+    const decisionsView = vscode.window.createTreeView('squadDecisions', {
+        treeDataProvider: decisionsProvider,
+        showCollapseAll: true
+    });
+    context.subscriptions.push(teamView, skillsView, decisionsView);
 
     // Create webview for work details
     webview = new WorkDetailsWebview(context.extensionUri);
@@ -70,7 +80,9 @@ export function activate(context: vscode.ExtensionContext): void {
 
     context.subscriptions.push(
         vscode.commands.registerCommand('squadui.refreshTree', () => {
-            treeProvider.refresh();
+            teamProvider.refresh();
+            skillsProvider.refresh();
+            decisionsProvider.refresh();
             vscode.window.showInformationMessage('Squad tree refreshed');
         })
     );
@@ -106,7 +118,9 @@ export function activate(context: vscode.ExtensionContext): void {
     context.subscriptions.push(
         registerInitSquadCommand(context, () => {
             dataProvider.refresh();
-            treeProvider.refresh();
+            teamProvider.refresh();
+            skillsProvider.refresh();
+            decisionsProvider.refresh();
         })
     );
 
@@ -114,7 +128,7 @@ export function activate(context: vscode.ExtensionContext): void {
     context.subscriptions.push(
         registerAddMemberCommand(context, () => {
             dataProvider.refresh();
-            treeProvider.refresh();
+            teamProvider.refresh();
         })
     );
 
@@ -122,14 +136,14 @@ export function activate(context: vscode.ExtensionContext): void {
     context.subscriptions.push(
         registerRemoveMemberCommand(context, () => {
             dataProvider.refresh();
-            treeProvider.refresh();
+            teamProvider.refresh();
         })
     );
 
     // Register add skill command
     context.subscriptions.push(
         registerAddSkillCommand(context, () => {
-            treeProvider.refresh();
+            skillsProvider.refresh();
         })
     );
 
@@ -169,14 +183,16 @@ export function activate(context: vscode.ExtensionContext): void {
             if (fs.existsSync(skillDir)) {
                 fs.rmSync(skillDir, { recursive: true });
                 vscode.window.showInformationMessage(`Removed skill: ${skillName}`);
-                treeProvider.refresh();
+                skillsProvider.refresh();
             }
         })
     );
 
     // Connect file watcher to tree refresh
     fileWatcher.onFileChange(() => {
-        treeProvider.refresh();
+        teamProvider.refresh();
+        skillsProvider.refresh();
+        decisionsProvider.refresh();
     });
 }
 

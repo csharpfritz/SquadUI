@@ -64,15 +64,15 @@ suite('Extension Test Suite', () => {
     });
 
     suite('View Contribution', () => {
-        test('squadMembers view is declared in package.json', async () => {
+        test('squadTeam view is declared in package.json', async () => {
             // This test verifies the view contribution exists in package.json
             // The actual view registration depends on VS Code loading the manifest
             const extension = vscode.extensions.getExtension('csharpfritz.squadui');
             if (extension) {
                 const packageJson = extension.packageJSON;
                 const views = packageJson?.contributes?.views?.squadui || [];
-                const hasSquadMembersView = views.some((v: { id: string }) => v.id === 'squadMembers');
-                assert.ok(hasSquadMembersView, 'squadMembers view should be declared');
+                const hasSquadTeamView = views.some((v: { id: string }) => v.id === 'squadTeam');
+                assert.ok(hasSquadTeamView, 'squadTeam view should be declared');
             }
         });
     });

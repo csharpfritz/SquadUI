@@ -125,6 +125,22 @@ export interface TeamRoster {
     owner?: string;
 }
 
+// ─── Decision Entry Models ─────────────────────────────────────────────────
+
+/**
+ * Represents a single decision parsed from decisions.md.
+ */
+export interface DecisionEntry {
+    /** Decision title/heading */
+    title: string;
+    /** Date of the decision */
+    date?: string;
+    /** Who made the decision */
+    author?: string;
+    /** File path to the decisions file for opening */
+    filePath: string;
+}
+
 // ─── Skill Catalog Models ──────────────────────────────────────────────────
 
 /**

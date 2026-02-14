@@ -1,21 +1,22 @@
 /**
- * Tree data provider for displaying squad members, their tasks, and GitHub issues.
+ * Tree data providers for displaying squad team, skills, and decisions.
  */
 
 import * as vscode from 'vscode';
-import { SquadMember, Task, GitHubIssue, Skill, IGitHubIssuesService } from '../models';
+import { SquadMember, Task, GitHubIssue, Skill, DecisionEntry, IGitHubIssuesService } from '../models';
 import { SquadDataProvider } from '../services/SquadDataProvider';
 import { SkillCatalogService } from '../services/SkillCatalogService';
+import { DecisionService } from '../services/DecisionService';
 
 /**
  * Represents an item in the squad tree view.
- * Can be a squad member (parent), a task (child), or a GitHub issue (child).
+ * Shared across all three tree providers.
  */
 export class SquadTreeItem extends vscode.TreeItem {
     constructor(
         public readonly label: string,
         public readonly collapsibleState: vscode.TreeItemCollapsibleState,
-        public readonly itemType: 'member' | 'task' | 'issue' | 'skill',
+        public readonly itemType: 'member' | 'task' | 'issue' | 'skill' | 'decision',
         public readonly memberId?: string,
         public readonly taskId?: string
     ) {
@@ -25,54 +26,32 @@ export class SquadTreeItem extends vscode.TreeItem {
 }
 
 /**
- * Provides tree data for the squad members view.
- * Top-level items are squad members, children are their assigned tasks and GitHub issues.
+ * Provides tree data for the Team view.
+ * Shows squad members with their tasks and GitHub issues as children.
  */
-export class SquadTreeProvider implements vscode.TreeDataProvider<SquadTreeItem> {
+export class TeamTreeProvider implements vscode.TreeDataProvider<SquadTreeItem> {
     private _onDidChangeTreeData = new vscode.EventEmitter<SquadTreeItem | undefined | null | void>();
     readonly onDidChangeTreeData = this._onDidChangeTreeData.event;
     private issuesService: IGitHubIssuesService | undefined;
-    private skillCatalogService = new SkillCatalogService();
 
     constructor(private dataProvider: SquadDataProvider) {}
 
-    /**
-     * Sets the GitHub issues service. Called when the service becomes available.
-     */
     setIssuesService(service: IGitHubIssuesService): void {
         this.issuesService = service;
     }
 
-    /**
-     * Fires the tree data change event to refresh the view.
-     */
     refresh(): void {
         this.dataProvider.refresh();
         this._onDidChangeTreeData.fire();
     }
 
-    /**
-     * Returns the tree item for display.
-     */
     getTreeItem(element: SquadTreeItem): vscode.TreeItem {
         return element;
     }
 
-    /**
-     * Returns children for the given element.
-     * If no element, returns squad members (root level).
-     * If element is a member, returns their tasks and issues.
-     */
     async getChildren(element?: SquadTreeItem): Promise<SquadTreeItem[]> {
         if (!element) {
-            const members = await this.getSquadMemberItems();
-            const skillsNode = this.getSkillsSectionItem();
-            return [...members, skillsNode];
-        }
-
-        if (element.itemType === 'skill' && !element.memberId) {
-            // "Skills" root node — return installed skills
-            return this.getSkillItems();
+            return this.getSquadMemberItems();
         }
 
         if (element.itemType === 'member' && element.memberId) {
@@ -229,52 +208,6 @@ export class SquadTreeProvider implements vscode.TreeDataProvider<SquadTreeItem>
         }
     }
 
-    private getSkillsSectionItem(): SquadTreeItem {
-        const item = new SquadTreeItem(
-            'Skills',
-            vscode.TreeItemCollapsibleState.Collapsed,
-            'skill'
-        );
-        item.iconPath = new vscode.ThemeIcon('book');
-        item.description = '';
-        return item;
-    }
-
-    private getSkillItems(): SquadTreeItem[] {
-        const workspaceRoot = this.dataProvider.getWorkspaceRoot();
-        const skills = this.skillCatalogService.getInstalledSkills(workspaceRoot);
-
-        return skills.map(skill => {
-            const item = new SquadTreeItem(
-                skill.name,
-                vscode.TreeItemCollapsibleState.None,
-                'skill',
-                skill.name // use name as memberId to carry skill identity
-            );
-
-            const sourceBadge = skill.source === 'awesome-copilot' ? '📦 awesome-copilot'
-                : skill.source === 'skills.sh' ? '🏆 skills.sh'
-                : '🎯 local';
-
-            item.iconPath = new vscode.ThemeIcon('book');
-            item.description = sourceBadge;
-            item.tooltip = this.getSkillTooltip(skill);
-            item.contextValue = 'skill';
-
-            return item;
-        });
-    }
-
-    private getSkillTooltip(skill: Skill): vscode.MarkdownString {
-        const md = new vscode.MarkdownString();
-        md.appendMarkdown(`**${skill.name}**\n\n`);
-        md.appendMarkdown(`${skill.description}\n\n`);
-        if (skill.confidence) {
-            md.appendMarkdown(`Confidence: ${skill.confidence}`);
-        }
-        return md;
-    }
-
     private getMemberTooltip(member: SquadMember): vscode.MarkdownString {
         const md = new vscode.MarkdownString();
         md.appendMarkdown(`**${member.name}**\n\n`);
@@ -307,6 +240,132 @@ export class SquadTreeProvider implements vscode.TreeDataProvider<SquadTreeItem>
             md.appendMarkdown(`Assignee: ${issue.assignee}\n\n`);
         }
         md.appendMarkdown(`[Open on GitHub](${issue.htmlUrl})`);
+        return md;
+    }
+}
+
+/**
+ * Provides tree data for the Skills view.
+ * Shows installed skills from the skill catalog.
+ */
+export class SkillsTreeProvider implements vscode.TreeDataProvider<SquadTreeItem> {
+    private _onDidChangeTreeData = new vscode.EventEmitter<SquadTreeItem | undefined | null | void>();
+    readonly onDidChangeTreeData = this._onDidChangeTreeData.event;
+    private skillCatalogService = new SkillCatalogService();
+
+    constructor(private dataProvider: SquadDataProvider) {}
+
+    refresh(): void {
+        this._onDidChangeTreeData.fire();
+    }
+
+    getTreeItem(element: SquadTreeItem): vscode.TreeItem {
+        return element;
+    }
+
+    async getChildren(element?: SquadTreeItem): Promise<SquadTreeItem[]> {
+        if (!element) {
+            return this.getSkillItems();
+        }
+        return [];
+    }
+
+    private getSkillItems(): SquadTreeItem[] {
+        const workspaceRoot = this.dataProvider.getWorkspaceRoot();
+        const skills = this.skillCatalogService.getInstalledSkills(workspaceRoot);
+
+        return skills.map(skill => {
+            const item = new SquadTreeItem(
+                skill.name,
+                vscode.TreeItemCollapsibleState.None,
+                'skill',
+                skill.name
+            );
+
+            const sourceBadge = skill.source === 'awesome-copilot' ? '📦 awesome-copilot'
+                : skill.source === 'skills.sh' ? '🏆 skills.sh'
+                : '🎯 local';
+
+            item.iconPath = new vscode.ThemeIcon('book');
+            item.description = sourceBadge;
+            item.tooltip = this.getSkillTooltip(skill);
+            item.contextValue = 'skill';
+
+            return item;
+        });
+    }
+
+    private getSkillTooltip(skill: Skill): vscode.MarkdownString {
+        const md = new vscode.MarkdownString();
+        md.appendMarkdown(`**${skill.name}**\n\n`);
+        md.appendMarkdown(`${skill.description}\n\n`);
+        if (skill.confidence) {
+            md.appendMarkdown(`Confidence: ${skill.confidence}`);
+        }
+        return md;
+    }
+}
+
+/**
+ * Provides tree data for the Decisions view.
+ * Shows parsed decisions from .ai-team/decisions.md.
+ */
+export class DecisionsTreeProvider implements vscode.TreeDataProvider<SquadTreeItem> {
+    private _onDidChangeTreeData = new vscode.EventEmitter<SquadTreeItem | undefined | null | void>();
+    readonly onDidChangeTreeData = this._onDidChangeTreeData.event;
+    private decisionService = new DecisionService();
+
+    constructor(private dataProvider: SquadDataProvider) {}
+
+    refresh(): void {
+        this._onDidChangeTreeData.fire();
+    }
+
+    getTreeItem(element: SquadTreeItem): vscode.TreeItem {
+        return element;
+    }
+
+    async getChildren(element?: SquadTreeItem): Promise<SquadTreeItem[]> {
+        if (!element) {
+            return this.getDecisionItems();
+        }
+        return [];
+    }
+
+    private getDecisionItems(): SquadTreeItem[] {
+        const workspaceRoot = this.dataProvider.getWorkspaceRoot();
+        const decisions = this.decisionService.getDecisions(workspaceRoot);
+
+        return decisions.map(decision => {
+            const item = new SquadTreeItem(
+                decision.title,
+                vscode.TreeItemCollapsibleState.None,
+                'decision'
+            );
+
+            item.iconPath = new vscode.ThemeIcon('notebook');
+            item.description = [decision.date, decision.author].filter(Boolean).join(' — ');
+            item.tooltip = this.getDecisionTooltip(decision);
+
+            item.command = {
+                command: 'vscode.open',
+                title: 'Open Decisions File',
+                arguments: [vscode.Uri.file(decision.filePath)]
+            };
+
+            return item;
+        });
+    }
+
+    private getDecisionTooltip(decision: DecisionEntry): vscode.MarkdownString {
+        const md = new vscode.MarkdownString();
+        md.appendMarkdown(`**${decision.title}**\n\n`);
+        if (decision.date) {
+            md.appendMarkdown(`Date: ${decision.date}\n\n`);
+        }
+        if (decision.author) {
+            md.appendMarkdown(`Author: ${decision.author}`);
+        }
         return md;
     }
 }

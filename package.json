@@ -16,7 +16,7 @@
     "Other"
   ],
   "activationEvents": [
-    "onView:squadMembers"
+    "onView:squadTeam"
   ],
   "main": "./out/extension.js",
   "contributes": {
@@ -32,8 +32,16 @@
     "views": {
       "squadui": [
         {
-          "id": "squadMembers",
-          "name": "Team Members"
+          "id": "squadTeam",
+          "name": "Team"
+        },
+        {
+          "id": "squadSkills",
+          "name": "Skills"
+        },
+        {
+          "id": "squadDecisions",
+          "name": "Decisions"
         }
       ]
     },
@@ -101,49 +109,49 @@
       "view/title": [
         {
           "command": "squadui.addMember",
-          "when": "view == squadMembers",
+          "when": "view == squadTeam",
           "group": "navigation"
         },
         {
           "command": "squadui.addSkill",
-          "when": "view == squadMembers",
+          "when": "view == squadSkills",
           "group": "navigation"
         },
         {
           "command": "squadui.refreshTree",
-          "when": "view == squadMembers",
+          "when": "view == squadTeam",
           "group": "navigation"
         }
       ],
       "view/item/context": [
         {
           "command": "squadui.viewCharter",
-          "when": "view == squadMembers && viewItem == member",
+          "when": "view == squadTeam && viewItem == member",
           "group": "inline"
         },
         {
           "command": "squadui.removeMember",
-          "when": "view == squadMembers && viewItem == member",
+          "when": "view == squadTeam && viewItem == member",
           "group": "inline"
         },
         {
           "command": "squadui.showWorkDetails",
-          "when": "view == squadMembers && viewItem == task",
+          "when": "view == squadTeam && viewItem == task",
           "group": "inline"
         },
         {
           "command": "squadui.openIssue",
-          "when": "view == squadMembers && viewItem == issue",
+          "when": "view == squadTeam && viewItem == issue",
           "group": "inline"
         },
         {
           "command": "squadui.viewSkill",
-          "when": "view == squadMembers && viewItem == skill",
+          "when": "view == squadSkills && viewItem == skill",
           "group": "inline"
         },
         {
           "command": "squadui.removeSkill",
-          "when": "view == squadMembers && viewItem == skill",
+          "when": "view == squadSkills && viewItem == skill",
           "group": "inline"
         }
       ],

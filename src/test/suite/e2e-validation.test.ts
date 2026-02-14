@@ -15,7 +15,7 @@
 import * as assert from 'assert';
 import * as path from 'path';
 import * as vscode from 'vscode';
-import { SquadTreeProvider, SquadTreeItem } from '../../views/SquadTreeProvider';
+import { TeamTreeProvider, SquadTreeItem } from '../../views/SquadTreeProvider';
 import { SquadDataProvider } from '../../services/SquadDataProvider';
 import { WorkDetails } from '../../models';
 
@@ -156,12 +156,12 @@ class TestableWebviewRenderer {
 
 suite('E2E MVP Validation (Issue #14)', () => {
     let dataProvider: SquadDataProvider;
-    let treeProvider: SquadTreeProvider;
+    let treeProvider: TeamTreeProvider;
     let renderer: TestableWebviewRenderer;
 
     setup(() => {
         dataProvider = new SquadDataProvider(ACCEPTANCE_FIXTURES);
-        treeProvider = new SquadTreeProvider(dataProvider as never);
+        treeProvider = new TeamTreeProvider(dataProvider as never);
         renderer = new TestableWebviewRenderer();
     });
 
@@ -196,13 +196,13 @@ suite('E2E MVP Validation (Issue #14)', () => {
             assert.ok(ids.includes('squadui.refreshTree'), 'refreshTree registered');
         });
 
-        test('package.json declares squadMembers tree view', () => {
+        test('package.json declares squadTeam tree view', () => {
             const ext = vscode.extensions.getExtension('csharpfritz.squadui');
             if (!ext) { return; }
             const views = ext.packageJSON?.contributes?.views?.squadui ?? [];
             assert.ok(
-                views.some((v: { id: string }) => v.id === 'squadMembers'),
-                'squadMembers view should be declared'
+                views.some((v: { id: string }) => v.id === 'squadTeam'),
+                'squadTeam view should be declared'
             );
         });
 

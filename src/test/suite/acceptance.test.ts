@@ -1,9 +1,9 @@
 /**
  * Acceptance test: validates the full data pipeline from orchestration log
- * fixtures through to SquadTreeProvider tree items.
+ * fixtures through to TeamTreeProvider tree items.
  *
  * Pipeline under test:
- *   fixture files → OrchestrationLogService → SquadDataProvider → SquadTreeProvider
+ *   fixture files → OrchestrationLogService → SquadDataProvider → TeamTreeProvider
  *
  * Uses real fixture files in test-fixtures/acceptance-scenario/ — no service mocks.
  * VS Code APIs are available via the test electron host.
@@ -12,18 +12,18 @@
 import * as assert from 'assert';
 import * as path from 'path';
 import * as vscode from 'vscode';
-import { SquadTreeProvider, SquadTreeItem } from '../../views/SquadTreeProvider';
+import { TeamTreeProvider, SquadTreeItem } from '../../views/SquadTreeProvider';
 import { SquadDataProvider } from '../../services/SquadDataProvider';
 
 const ACCEPTANCE_FIXTURES = path.resolve(__dirname, '../../../test-fixtures/acceptance-scenario');
 
 suite('Acceptance: Orchestration Logs → Tree View', () => {
     let dataProvider: SquadDataProvider;
-    let treeProvider: SquadTreeProvider;
+    let treeProvider: TeamTreeProvider;
 
     setup(() => {
         dataProvider = new SquadDataProvider(ACCEPTANCE_FIXTURES);
-        treeProvider = new SquadTreeProvider(dataProvider as never);
+        treeProvider = new TeamTreeProvider(dataProvider as never);
     });
 
     // ── Step 1-2: Given fixtures exist, verify data layer resolves correctly ──
