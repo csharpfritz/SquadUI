@@ -154,9 +154,12 @@ export class SquadDataProvider {
         this.cachedTasks = null;
     }
 
-    // ─── Private Methods ───────────────────────────────────────────────────
+    // ─── Public Data Access Methods ───────────────────────────────────────
 
-    private async getLogEntries(): Promise<OrchestrationLogEntry[]> {
+    /**
+     * Returns all parsed orchestration log entries.
+     */
+    async getLogEntries(): Promise<OrchestrationLogEntry[]> {
         if (this.cachedLogEntries) {
             return this.cachedLogEntries;
         }
@@ -165,7 +168,10 @@ export class SquadDataProvider {
         return this.cachedLogEntries;
     }
 
-    private async getTasks(): Promise<Task[]> {
+    /**
+     * Returns all active tasks from orchestration logs.
+     */
+    async getTasks(): Promise<Task[]> {
         if (this.cachedTasks) {
             return this.cachedTasks;
         }

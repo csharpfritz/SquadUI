@@ -244,3 +244,90 @@ export interface IGitHubIssuesService {
      */
     getClosedIssuesByMember(workspaceRoot: string): Promise<MemberIssueMap>;
 }
+
+// ─── Dashboard Models ───────────────────────────────────────────────────────
+
+/**
+ * A single data point in the velocity timeline chart.
+ */
+export interface VelocityDataPoint {
+    /** Date in YYYY-MM-DD format */
+    date: string;
+    /** Number of tasks completed on this date */
+    completedTasks: number;
+}
+
+/**
+ * Team health heatmap data for a squad member.
+ */
+export interface ActivityHeatmapPoint {
+    /** Squad member name */
+    member: string;
+    /** Activity level: 0.0 (idle) to 1.0 (fully active) */
+    activityLevel: number;
+}
+
+/**
+ * A task positioned on the activity timeline.
+ */
+export interface TimelineTask {
+    /** Task ID */
+    id: string;
+    /** Task title */
+    title: string;
+    /** Start date in YYYY-MM-DD format */
+    startDate: string;
+    /** End date in YYYY-MM-DD format, or null if in progress */
+    endDate: string | null;
+    /** Task status */
+    status: TaskStatus;
+}
+
+/**
+ * A swimlane showing one member's tasks on the activity timeline.
+ */
+export interface ActivitySwimlane {
+    /** Squad member name */
+    member: string;
+    /** Role of the member */
+    role: string;
+    /** Tasks for this member, sorted by start date */
+    tasks: TimelineTask[];
+}
+
+/**
+ * A searchable decision entry from decisions.md.
+ */
+export interface DecisionEntry {
+    /** Decision title */
+    title: string;
+    /** Author name */
+    author: string;
+    /** Date in YYYY-MM-DD format */
+    date: string;
+    /** Full markdown content of the decision */
+    content: string;
+}
+
+/**
+ * Complete data bundle for the dashboard webview.
+ */
+export interface DashboardData {
+    /** Velocity tab data */
+    velocity: {
+        /** Timeline of completed tasks per day */
+        timeline: VelocityDataPoint[];
+        /** Current team health heatmap */
+        heatmap: ActivityHeatmapPoint[];
+    };
+    /** Activity timeline tab data */
+    activity: {
+        /** Swimlanes, one per member */
+        swimlanes: ActivitySwimlane[];
+    };
+    /** Decision browser tab data */
+    decisions: {
+        /** All parsed decision entries */
+        entries: DecisionEntry[];
+    };
+}

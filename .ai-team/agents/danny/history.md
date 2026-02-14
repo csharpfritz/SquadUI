@@ -28,6 +28,17 @@
 - Tree member badges show: `[status-emoji] [role] • [N issues]` where status emoji is ⚡ (working) or 💤 (idle)
 - All refresh operations (init, add/remove member, file watcher) update both tree and status bar
 
+### Dashboard Architecture
+
+- `SquadDashboardWebview` hosts three tabs: Velocity, Activity Timeline, Decision Browser
+- Uses HTML5 Canvas for velocity line charts (no external chart libraries)
+- CSS Grid for activity swimlanes and heatmap layout
+- Status bar click opens dashboard (`squadui.openDashboard` command)
+- Dashboard data flows: `OrchestrationLogService` + `SquadDataProvider` → `DashboardDataBuilder` → HTML template
+- Webview uses `enableScripts: true` and `retainContextWhenHidden: true` for tab navigation
+- File structure: `src/views/dashboard/` contains `DashboardDataBuilder.ts` and `htmlTemplate.ts`
+- Dashboard data models: `DashboardData`, `VelocityDataPoint`, `ActivityHeatmapPoint`, `ActivitySwimlane`, `TimelineTask` in `models/index.ts`
+
 📌 Team update (2026-02-14): Real-Time Squad Visibility Features — status bar and tree view badges for squad health monitoring — decided by Danny
 
 <!-- Append new learnings below. Each entry is something lasting about the project. -->

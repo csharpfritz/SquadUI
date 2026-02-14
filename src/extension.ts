@@ -3,12 +3,14 @@ import * as path from 'path';
 import * as fs from 'fs';
 import { GitHubIssue } from './models';
 import { SquadDataProvider, FileWatcherService, GitHubIssuesService } from './services';
-import { SquadTreeProvider, WorkDetailsWebview, IssueDetailWebview } from './views';
+import { SquadTreeProvider, WorkDetailsWebview, IssueDetailWebview, SquadStatusBar, SquadDashboardWebview } from './views';
 import { registerInitSquadCommand, registerAddMemberCommand, registerRemoveMemberCommand, registerAddSkillCommand } from './commands';
 
 let fileWatcher: FileWatcherService | undefined;
 let webview: WorkDetailsWebview | undefined;
 let issueWebview: IssueDetailWebview | undefined;
+let dashboardWebview: SquadDashboardWebview | undefined;
+let statusBar: SquadStatusBar | undefined;
 
 export function activate(context: vscode.ExtensionContext): void {
     console.log('SquadUI extension is now active');
@@ -44,6 +46,10 @@ export function activate(context: vscode.ExtensionContext): void {
     });
     context.subscriptions.push(treeView);
 
+    // Create status bar
+    statusBar = new SquadStatusBar(dataProvider);
+    context.subscriptions.push(statusBar);
+
     // Create webview for work details
     webview = new WorkDetailsWebview(context.extensionUri);
     context.subscriptions.push({ dispose: () => webview?.dispose() });
@@ -51,6 +57,10 @@ export function activate(context: vscode.ExtensionContext): void {
     // Create webview for issue details
     issueWebview = new IssueDetailWebview(context.extensionUri);
     context.subscriptions.push({ dispose: () => issueWebview?.dispose() });
+
+    // Create dashboard webview
+    dashboardWebview = new SquadDashboardWebview(context.extensionUri, dataProvider);
+    context.subscriptions.push({ dispose: () => dashboardWebview?.dispose() });
 
     // Register commands
     context.subscriptions.push(
@@ -71,6 +81,7 @@ export function activate(context: vscode.ExtensionContext): void {
     context.subscriptions.push(
         vscode.commands.registerCommand('squadui.refreshTree', () => {
             treeProvider.refresh();
+            statusBar?.update();
             vscode.window.showInformationMessage('Squad tree refreshed');
         })
     );
@@ -82,6 +93,12 @@ export function activate(context: vscode.ExtensionContext): void {
             } else if (url) {
                 vscode.env.openExternal(vscode.Uri.parse(url));
             }
+        })
+    );
+
+    context.subscriptions.push(
+        vscode.commands.registerCommand('squadui.openDashboard', async () => {
+            await dashboardWebview?.show();
         })
     );
 
@@ -107,6 +124,7 @@ export function activate(context: vscode.ExtensionContext): void {
         registerInitSquadCommand(context, () => {
             dataProvider.refresh();
             treeProvider.refresh();
+            statusBar?.update();
         })
     );
 
@@ -115,6 +133,7 @@ export function activate(context: vscode.ExtensionContext): void {
         registerAddMemberCommand(context, () => {
             dataProvider.refresh();
             treeProvider.refresh();
+            statusBar?.update();
         })
     );
 
@@ -123,6 +142,7 @@ export function activate(context: vscode.ExtensionContext): void {
         registerRemoveMemberCommand(context, () => {
             dataProvider.refresh();
             treeProvider.refresh();
+            statusBar?.update();
         })
     );
 
@@ -177,6 +197,7 @@ export function activate(context: vscode.ExtensionContext): void {
     // Connect file watcher to tree refresh
     fileWatcher.onFileChange(() => {
         treeProvider.refresh();
+        statusBar?.update();
     });
 }
 
@@ -184,4 +205,6 @@ export function deactivate(): void {
     fileWatcher?.dispose();
     webview?.dispose();
     issueWebview?.dispose();
+    dashboardWebview?.dispose();
+    statusBar?.dispose();
 }

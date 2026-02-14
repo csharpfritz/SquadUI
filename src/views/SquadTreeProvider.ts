@@ -88,7 +88,7 @@ export class SquadTreeProvider implements vscode.TreeDataProvider<SquadTreeItem>
     private async getSquadMemberItems(): Promise<SquadTreeItem[]> {
         const members = await this.dataProvider.getSquadMembers();
         
-        return members.map(member => {
+        return Promise.all(members.map(async member => {
             const item = new SquadTreeItem(
                 member.name,
                 vscode.TreeItemCollapsibleState.Collapsed,
@@ -100,7 +100,12 @@ export class SquadTreeProvider implements vscode.TreeDataProvider<SquadTreeItem>
                 member.status === 'working' ? 'sync~spin' : 'person'
             );
             
-            item.description = `${member.role} • ${member.status}`;
+            // Build description with status badge and issue count
+            const statusBadge = member.status === 'working' ? '⚡' : '💤';
+            const issueCount = await this.getIssueCount(member.name);
+            const issueText = issueCount > 0 ? ` • ${issueCount} issue${issueCount > 1 ? 's' : ''}` : '';
+            
+            item.description = `${statusBadge} ${member.role}${issueText}`;
             item.tooltip = this.getMemberTooltip(member);
 
             item.command = {
@@ -110,7 +115,7 @@ export class SquadTreeProvider implements vscode.TreeDataProvider<SquadTreeItem>
             };
 
             return item;
-        });
+        }));
     }
 
     private async getTaskItems(memberId: string): Promise<SquadTreeItem[]> {
@@ -308,5 +313,23 @@ export class SquadTreeProvider implements vscode.TreeDataProvider<SquadTreeItem>
         }
         md.appendMarkdown(`[Open on GitHub](${issue.htmlUrl})`);
         return md;
+    }
+
+    /**
+     * Counts open issues assigned to a member.
+     */
+    private async getIssueCount(memberId: string): Promise<number> {
+        if (!this.issuesService) {
+            return 0;
+        }
+
+        try {
+            const workspaceRoot = this.dataProvider.getWorkspaceRoot();
+            const issueMap = await this.issuesService.getIssuesByMember(workspaceRoot);
+            const issues = issueMap.get(memberId.toLowerCase()) ?? [];
+            return issues.length;
+        } catch (error) {
+            return 0;
+        }
     }
 }

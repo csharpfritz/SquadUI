@@ -199,3 +199,16 @@
 ### 2026-02-14: Team Update — Tree Tests Must Filter by Item Type
 
 📌 **Team decision captured:** Root-level tree tests must filter by `itemType === 'member'` when asserting member properties. Skills section node is now a root-level item alongside members. Future tree node sections (Issues, History) will add more root nodes—tests should always filter by type rather than assume fixed root count. — decided by Basher
+
+### 2026-02-14: Refined Dashboard Swimlanes for v0.2 Release
+- Enhanced swimlane visuals in `src/views/dashboard/htmlTemplate.ts` with distinct task status styling
+- Done tasks: green background (`rgba(40, 167, 69, 0.15)`) with green left border (`var(--vscode-charts-green)`)
+- In-progress tasks: amber/orange background (`rgba(255, 193, 7, 0.15)`) with orange left border (`var(--vscode-charts-orange)`)
+- Added CSS tooltip system: `.task-item .tooltip` positioned absolutely on hover, shows task title + status + duration
+- Tooltips use `var(--vscode-editorWidget-background)` and `var(--vscode-editorWidget-border)` for theme consistency
+- Task items now have hover state (`var(--vscode-list-hoverBackground)`) and pointer cursor for better UX
+- HTML escaping applied to task titles in tooltip content to prevent XSS
+- All colors use VS Code CSS variables ensuring proper rendering in dark/light themes
+- Bumped version to `0.2.0` in `package.json`
+- Created `CHANGELOG.md` documenting features: Status Bar, Roster Badges, Dashboard (Velocity + Activity), Skills Management
+- Compiled successfully with no errors
