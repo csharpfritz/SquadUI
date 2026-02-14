@@ -216,3 +216,18 @@ Dashboard webview scaffolded with single unified tab interface (Velocity + Activ
 - Bumped version to `0.2.0` in `package.json`
 - Created `CHANGELOG.md` documenting features: Status Bar, Roster Badges, Dashboard (Velocity + Activity), Skills Management
 - Compiled successfully with no errors
+
+### 2026-02-14: Decision Items Open File Directly (Bug Fix)
+- `DecisionEntry` model now includes `filePath` property — the absolute path to the source `.md` file
+- `DecisionService.parseDecisionFile()` already receives `filePath` as a parameter; now passes it through to the returned entry
+- Decision tree items use `vscode.open` command with `vscode.Uri.file(d.filePath)` instead of `squadui.openDashboard`
+- No custom command registration needed — `vscode.open` is a built-in VS Code command that opens files in the editor
+
+### 2026-02-14: Skill YAML Frontmatter Parsing & Slug-Based Lookup (Bug Fix)
+- `parseInstalledSkill()` now detects YAML frontmatter (lines between `---` markers) and extracts `name`, `description`, `confidence` fields
+- Falls back to heading detection (`# Title`) then `dirName` if no frontmatter name found
+- `Skill` model now includes optional `slug` property — the directory name used for filesystem lookup
+- `parseInstalledSkill()` always sets `slug` to `dirName`, decoupling display name from filesystem identity
+- `SquadTreeProvider.getSkillItems()` passes `slug` (not display name) as the command argument
+- `viewSkill` and `removeSkill` commands in `extension.ts` now use slug directly — no more slugifying the display name
+- Pattern: display name can differ from directory name; always use directory slug for file I/O
