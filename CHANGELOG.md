@@ -5,6 +5,16 @@ All notable changes to the SquadUI extension will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.1] - 2026-02-15
+
+### Fixed
+- **Decision preview**: Clicking a decision in the sidebar now opens in markdown preview mode instead of the text editor (#47)
+- **Markdown link names**: Member names containing markdown links (e.g., `[Name](url)`) now display as plain text in the sidebar tree view and render as proper hyperlinks in the dashboard (#48)
+
+### Added
+- **markdownUtils**: New shared utility module (`src/utils/markdownUtils.ts`) with `stripMarkdownLinks()` and `renderMarkdownLinks()` functions
+- **12 new tests**: Regression tests for markdown link handling
+
 ## [0.6.0] - 2026-02-15
 
 ### Added
