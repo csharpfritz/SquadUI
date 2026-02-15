@@ -5,248 +5,40 @@
 - **Stack:** TypeScript, VS Code Extension API, potentially GitHub Copilot integration
 - **Created:** 2026-02-13
 
-## Learnings
+## Learnings Summary
 
 ### Architecture Patterns
+- Status bar items managed with lifecycle (dispose); updates coordinated with tree view refreshes
+- Tree item badges via description field with emoji/icon + text patterns
+- File watcher events trigger both tree and status bar updates
+- Status bar shows: $(organization) Squad: X/Y Active [health-icon] (/// based on activity ratio)
+- Tree badges: [status-emoji] [role]  [N issues] where  = working,  = idle
 
-- Status bar items should be created with `vscode.window.createStatusBarItem()` and managed with lifecycle (dispose).
-- Status bar updates should be coordinated with tree view refreshes via shared data provider.
-- Tree item badges can be implemented using `description` field with emoji/icon + text patterns.
-- File watcher events should trigger both tree refresh and status bar updates for consistency.
-
-### Key File Locations
-
-- `src/views/SquadStatusBar.ts` - Status bar component showing squad health (active/total counts, status icons)
-- `src/views/SquadTreeProvider.ts` - Tree view provider with badge support (status icons, issue counts)
-- `src/extension.ts` - Entry point that wires up status bar and coordinates refresh callbacks
-- `src/services/SquadDataProvider.ts` - Central data provider used by both tree and status bar
-- `src/services/OrchestrationLogService.ts` - Parses log files to derive member states and tasks
-
-### UI Patterns Established
-
-- Status bar shows: `$(organization) Squad: X/Y Active [health-icon]` where health icons are 🟢/🟡/🟠/⚪ based on activity ratio
-- Tree member badges show: `[status-emoji] [role] • [N issues]` where status emoji is ⚡ (working) or 💤 (idle)
-- All refresh operations (init, add/remove member, file watcher) update both tree and status bar
-
-### Dashboard Architecture
-
-- `SquadDashboardWebview` hosts three tabs: Velocity, Activity Timeline, Decision Browser
-- Uses HTML5 Canvas for velocity line charts (no external chart libraries)
+### Dashboard Architecture (v0.4v0.5)
+- Three tabs: Velocity (canvas line chart), Activity Timeline (swimlanes), Decision Browser
 - CSS Grid for activity swimlanes and heatmap layout
-- Status bar click opens dashboard (`squadui.openDashboard` command)
-- Dashboard data flows: `OrchestrationLogService` + `SquadDataProvider` → `DashboardDataBuilder` → HTML template
-- Webview uses `enableScripts: true` and `retainContextWhenHidden: true` for tab navigation
-- File structure: `src/views/dashboard/` contains `DashboardDataBuilder.ts` and `htmlTemplate.ts`
-- Dashboard data models: `DashboardData`, `VelocityDataPoint`, `ActivityHeatmapPoint`, `ActivitySwimlane`, `TimelineTask` in `models/index.ts`
+- Data flow: OrchestrationLogService + SquadDataProvider  DashboardDataBuilder  HTML template
+- Webview uses nableScripts: true and etainContextWhenHidden: true
+- Models: DashboardData, VelocityDataPoint, ActivityHeatmapPoint, ActivitySwimlane, TimelineTask in models/index.ts
 
-📌 Team update (2026-02-14): Real-Time Squad Visibility Features — status bar and tree view badges for squad health monitoring — decided by Danny
-
-<!-- Append new learnings below. Each entry is something lasting about the project. -->
-
-### 2026-02-14: Team Update — Sidebar Reorganization
-
-📌 **Team update (2026-02-14):** Sidebar reorganized into Team/Skills/Decisions views — decided by Rusty
-
-### 2026-02-15: v0.6.0 Sprint Planning
-
-📌 Team update (2026-02-15): User directive — releases require explicit human approval before tagging/publishing — decided by Jeffrey T. Fritz
-
-📌 Team update (2026-02-15): Dashboard Chart & Decisions Rendering Fixes (canvas colors, axis labels, empty state) — decided by Rusty
-
-**Context:** Jeff requested planning for next milestone after v0.5.1 shipped. v0.5.0/v0.5.1 polished sidebar heavily (icons, labels, ordering, cross-project compat).
-
+### v0.6.0 Sprint Planning (2026-02-15)
 **Key findings:**
-- **Skills infrastructure is COMPLETE** — SkillCatalogService (#38) exists, Add Skill command (#40) fully implemented, Skills tree view (#37) shipped in v0.5.0
-- **Add Skill is DISABLED** — button hidden in package.json `commandPalette when:false`, removed from Skills panel toolbar. Jeff disabled pending QA.
-- **The gap:** No end-to-end QA validation. Once tested, re-enabling is a one-line change.
-- **Open issues audit needed** — #25 (member management), #26 (universe selector), #27 (command palette) need review for staleness/completion
+- Skills infrastructure complete (SkillCatalogService, Add Skill command fully implemented)
+- Add Skill feature disabled pending QA; re-enabling is one-line change
+- No end-to-end QA validation; open issues #25/#26/#27 need review
 
-**Sprint scope decision:**
-- **Focus:** Ship Add Skill feature by QA'ing + re-enabling. Close skills management loop.
-- **Secondary:** Dashboard polish (2-3 quick visual wins), backlog issue audit, @copilot integration QA
-- **Deferred:** Member management clarification, universe selector (low priority), test harness (v0.7.0), BlazorLora fixes (depends on QA findings)
+**Sprint scope:**
+- Focus: Ship Add Skill feature by QA'ing + re-enabling
+- Secondary: Dashboard polish, backlog audit, @copilot integration QA
+- Deferred: Member management, universe selector
 
-**Sprint composition:** 6 work items (4 small, 2 extra-small) — achievable in one focused session.
+**Backlog audit results:**
+- Issues #27, #37, #38 closed (shipped in v0.5.0/v0.5.1)
+- #25 fully implemented, ready to close; #26 deferred (P2); #39/#40 in progress
+- Backlog is clean and properly triaged
 
-**Planning principles applied:**
-1. **Ship what's nearly done** — Don't start new features when existing ones are 95% complete
-2. **QA gates quality** — Never ship user-facing features without validation
-3. **Polish compounds** — Small visual improvements across dashboard add up to professional feel
-4. **Backlog hygiene matters** — Stale issues create confusion; audit regularly
-
-**Risks flagged for Jeff:**
-- Add Skill QA may find bugs (fix vs defer decision needed)
-- Dashboard polish scope undefined (needs Jeff input on priorities)
-- BlazorLora "copilot completed tasks" issue not well-specified
-- Issue #27 appears complete (command palette already has "Squad" category)
-
-### 2026-02-15: Backlog Audit Results
-
-**Issues closed (shipped in v0.5.0/v0.5.1):**
-- **#27** — Command palette integration with Squad category prefix ✅
-- **#37** — Skills tree view with source badges and confidence levels ✅
-- **#38** — SkillCatalogService (awesome-copilot + skills.sh integration) ✅
-
-**Issues audited (open):**
-- **#25** — Team member management (addMember, removeMember) — Both commands fully implemented and functional. Ready to close or integrate further.
-- **#26** — Universe selector for casting — Deferred to future milestone (P2)
-- **#39** — Skill import tests — In progress (Basher writing tests for v0.6.0)
-- **#40** — Add Skill import command — In progress (Rusty QA'ing end-to-end flow, currently disabled pending validation)
-
-**Key insight:** Backlog is clean. Three completed issues shipped in v0.5.0. Four open issues properly triaged with clear status. #25 is a candidate for closure in next pass once decision made on scope. #39/#40 will unblock v0.6.0 release once QA passes.
-
-📌 Team update (2026-02-15): Dashboard decisions sort order — decisions list on dashboard should be sorted most-recent first — decided by Jeffrey T. Fritz
-
-📌 Team update (2026-02-15): Add Skill Error Handling — network failures now throw exceptions for better UX instead of silent empty arrays — decided by Rusty
-
-### 2026-02-15: Test Coverage & Dashboard Assessment
-
-**Requested by:** Jeff — "What tests are we missing? What are we missing from the dashboard?"
-
-**Test Coverage Gaps Identified:**
-
-Files with NO test coverage:
-- `src/views/dashboard/DashboardDataBuilder.ts` — Zero tests. Contains `buildVelocityTimeline()`, `buildActivityHeatmap()`, `buildActivitySwimlanes()`, `taskToTimelineTask()`. All are pure logic, very testable.
-- `src/views/dashboard/htmlTemplate.ts` — Zero tests for `getDashboardHtml()`. Template rendering, decision sorting, click handler wiring.
-- `src/views/SquadDashboardWebview.ts` — Zero tests. `show()`, `dispose()`, `createPanel()`, `updateContent()`, message handling.
-- `src/views/IssueDetailWebview.ts` — Zero tests. HTML generation, `getContrastColor()`, `formatDateString()`, `escapeHtml()`.
-- `src/views/SquadStatusBar.ts` — Zero tests. `update()`, `getHealthIcon()`, `startPolling()`, `stopPolling()`, `dispose()`.
-- `src/commands/initSquadCommand.ts` — Zero tests. Terminal creation, `onDidCloseTerminal` listener.
-- `src/commands/removeMemberCommand.ts` — Zero tests. `parseMemberRows()`, file operations, alumni move logic.
-- `src/services/FileWatcherService.ts` — Only 2 smoke tests (import + constructor). No coverage of `start()`, `stop()`, `onFileChange()`, `queueEvent()`, debounce logic, `registerCacheInvalidator()`.
-
-Recently changed files WITHOUT corresponding test updates:
-- `f1a8279 feat(dashboard): add sidebar button and clickable entries` — No tests for click handlers (`openDecision`, `openTask`, `openMember`)
-- `7da4364 fix(dashboard): sort decisions most-recent first` — No test verifying sort order in template
-- `b39e3f8 feat: broader task extraction for cross-project session logs` — OrchestrationLogService changed, no new tests
-
-**Dashboard Assessment:**
-- Three tabs: Velocity, Activity, Decisions — all rendering correctly
-- Decision sort (most-recent first) is implemented in both DecisionService and htmlTemplate.ts ✅
-- Clickable entries implemented: decision cards, task items, member names ✅
-- Empty states exist for all three tabs ✅
-- Canvas color fix shipped (resolveColor helper) ✅
-- Axis labels on velocity chart shipped ✅
-- Missing: No "Team Overview" or summary stats panel. No member count, sprint burndown, or at-a-glance health summary on the dashboard itself.
-- Missing: No loading state — if data takes time, user sees nothing until render completes.
-- Visual gap: Heatmap cells show activity bars but no numeric labels (e.g., "5 sessions").
-
-**Key finding:** DashboardDataBuilder is the #1 testing priority — it's pure logic with zero VS Code dependencies, highly testable, and drives all three dashboard tabs.
-
-### 2026-02-15: Team Update — User Testing Directive & Assessment Findings
-
-📌 **Team decision merged (2026-02-15):** User testing directive from Jeff: always write tests alongside new features. Write regression tests for every bug so we know it's fixed when test passes. — decided by Jeff
-
-📌 **Team assessment completed (2026-02-15):** Test coverage audit identified 8 files with zero/near-zero coverage. DashboardDataBuilder, removeMemberCommand, SquadStatusBar, IssueDetailWebview flagged as Priority 1 (pure logic, easy wins). FileWatcherService, SquadDashboardWebview, initSquadCommand flagged as Priority 2 (require mocking). Dashboard completeness: 3 tabs working, missing summary panel, loading state, heatmap numeric labels, tab persistence, refresh button. — decided by Danny
-
-### 2026-02-15: v0.6.0 Release Preparation
-
-**Task:** Prepare CHANGELOG.md and version bump for v0.6.0 release.
-
-**Completed:**
-- CHANGELOG.md updated with v0.6.0 entry (2026-02-15)
-- Added: Dashboard decisions/sessions panels, sidebar button, clickable entries, per-member activity logs, re-enabled Add Skill with error handling, skill install enhancements (actual SKILL.md fetching), 90+ new tests
-- Fixed: awesome-copilot catalog URL + parser rewrite, extractGitHubSubpath() for subdirectories, skills.sh parser rewrite, null-safety fixes (skill search, decisions rendering), decision date extraction parser rewrite, sort order, subsection filters
-- Changed: Activity moved from root to per-member, decision heading parser (H2/H3 support)
-- Removed: Root "Recent Activity" node
-- package.json version bumped 0.5.1 → 0.6.0
-- TypeScript compilation verified (npx tsc --noEmit — exit code 0) ✅
-
-**Release notes summary:** v0.6.0 is a significant feature release adding dashboard interactivity (decisions rendering, recent sessions, sidebar access), activity telemetry improvements (per-member logs), skill management completion (re-enabled UI with duplicate protection, actual content fetching), and comprehensive test coverage (+90 tests across P1 gaps).
-
-**Notes for Jeff:** Ready for review. Version bump and changelog finalized. No commits/tags created per instructions. Compilation clean.
-
-### 2026-02-15: README.md Rewrite for v0.6.0
-
-**Task:** Rewrite README.md to comprehensively showcase all SquadUI features (requested by Jeff).
-
-**Completed:**
-- Expanded feature sections from 4 bullets to detailed subsections covering:
-  - **Sidebar Panels** — Team (with role badges, expandable member nodes, GitHub issues, activity logs), Skills (catalog browsing, add/view/remove), Decisions (chronological, click-through)
-  - **Dashboard** — Velocity tab (30-day timeline, 7-day heatmap), Activity tab (swimlane view, session logs), Decisions browser
-  - **Status Bar** — Real-time activity indicator and health status
-  - **Integration features** — File watching, GitHub integration, cross-project compat, markdown rendering
-- Added comprehensive **Commands table** with keyboard shortcuts (Ctrl+Shift+S for Add Member, Ctrl+Shift+D for Dashboard)
-- Restructured **Getting Started** with step-by-step flow (install → setup → view → add members → dashboard)
-- Enhanced **Development** section with test command
-- Added **Requirements** section (VS Code 1.85.0+)
-- Maintained existing assets: badges, screenshot reference, License section
-
-**Key decisions:**
-1. Used emoji sparingly (status badges 🟢/📋/🔄/🤖 only, no excessive decoration)
-2. Used tables for command reference (clear, scannable format matching marketplace style)
-3. Kept descriptions concise (1-2 lines per feature) to stay readable but comprehensive
-4. Emphasized audience: developers using GitHub Copilot and Squad
-5. Organized by UI surface (panels, dashboard, commands, status bar) to match user experience
-
-**Result:** README now fully represents v0.6.0 feature set without being overwhelming. Professional, marketplace-ready, scannable. Target audience (Copilot + Squad developers) can quickly understand what SquadUI offers and how to use it.
-
-### 2026-02-15: New Milestone Planning — Init Redesign & Version Check
-
-**Requested by:** Jeff — Two new features for next milestone after v0.6.0
-
-**Feature 1: VS Code-native init experience (#41)**
-- Replace terminal-based `squad init` with guided workflow in VS Code
-- Universe selector (absorbs issue #26) becomes step 1 of flow
-- Steps: Universe → Project description → Team proposal → Post-setup sources (PRD, repo, members, @copilot opt-in)
-- Runs squad CLI with `--universe` flag after collecting inputs
-- Size: M | Priority: P1
-
-**Feature 2: Squad CLI version check & upgrade (#42)**
-- On extension activation, check installed squad version vs latest on GitHub
-- Show notification if update available with one-click "Upgrade Now" button
-- Graceful handling: skip if CLI not installed, skip if network down
-- Manual check command available in command palette
-- Size: M | Priority: P1
-
-**Decisions made:**
-- **Init redesign absorbs #26 (universe selector)** — integrates universe choice as step 1 of init flow instead of standalone command. Rationale: better UX (stay in IDE), architectural simplification (no separate state management), makes semantic sense (universe choice only relevant during init). Decision doc: `.ai-team/decisions/inbox/danny-init-redesign.md`
-
-**GitHub issues created:**
-- #41: VS Code-native init experience (M, P1, enhancement)
-- #42: Version check & upgrade (M, P1, enhancement)
-
-**Routing:**
-- Both issues assigned `squad:rusty` (Extension Dev — primary concerns are VS Code API usage, terminal/notification handling, dialogs)
-- Rusty owns initSquadCommand.ts; version check is new service in similar domain
-
-**Key file references for implementation:**
-- `src/commands/initSquadCommand.ts` — current terminal-spawn approach; will be rewritten
-- `src/extension.ts` — entry point; version check called on activation
-- `src/services/` — new SquadVersionService.ts will live here alongside existing services
-- `package.json` — already has `squadui.initSquad` command registered; no changes needed
-
-### 2026-02-15: VS 2026 Extension Kickoff
-
-**Requested by:** Jeffrey T. Fritz — Start building Visual Studio 2026 extension in parallel with VS Code work
-
-**Decision:** Launch VS 2026 extension as independent parallel track. Separate C# project folder, same monorepo, shared `.ai-team/` file format but independent implementations.
-
-**Team Assignment:**
-- **Virgil** (VS 2026 Extension Dev) — VSIX/MEF infrastructure, core services (file parsing, caching, file watching)
-- **Turk** (VS 2026 Extension UI) — WPF/XAML tool windows, MVVM view models, theme integration
-
-**GitHub issues created (VS 2026 Milestone 1):**
-- **#43** — VS 2026: Project scaffold and VSIX configuration (squad:virgil, M, P1)
-  - C# project structure, VSIX manifest, VisualStudio.Extensibility SDK setup, extension activation
-- **#44** — VS 2026: Core services — .ai-team file parsing in C# (squad:virgil, L, P1)
-  - Port TeamMdService, DecisionService, SkillCatalogService, FileWatcherService from TypeScript
-  - Shared models (TeamMember, DecisionEntry, Skill, etc.)
-  - Depends on: #43
-- **#45** — VS 2026: Team roster tool window (squad:turk, M, P1)
-  - WPF/XAML tool window showing team members, TreeView with member details
-  - MVVM architecture, VS theme integration, auto-refresh on file changes
-  - Depends on: #44
-
-**Architecture Decisions:**
-- Project folder: `vs2026/` (separate from VS Code's `src/`)
-- No code dependencies between TypeScript and C# tracks
-- Both extensions read same `.ai-team/` files; independent implementations
-- VisualStudio.Extensibility SDK (NOT legacy VSSDK)
-- Parallel velocity: no blocking dependencies, independent teams
-
-**Rationale:**
-VS Code extension mature (v0.6.0). Starting VS 2026 now enables Visual Studio developers access to Squad visualization without delaying VS Code work. Different languages, different APIs, different teams = independent parallel tracks with shared data format.
-
-**Decision doc:** `.ai-team/decisions/inbox/danny-vs2026-kickoff.md`
-
+### 2026-02-15 Team Updates
+ Real-Time Squad Visibility Features  status bar and tree view badges for squad health monitoring  decided by Danny
+ Dashboard Chart & Decisions Rendering Fixes (canvas colors, axis labels, empty state)  decided by Rusty
+ Dashboard decisions sort order  decisions list on dashboard should be sorted most-recent first  decided by Jeffrey T. Fritz
+ Add Skill Error Handling  network failures now throw exceptions for better UX instead of silent empty arrays  decided by Rusty
