@@ -139,3 +139,20 @@ Recently changed files WITHOUT corresponding test updates:
 
 📌 **Team assessment completed (2026-02-15):** Test coverage audit identified 8 files with zero/near-zero coverage. DashboardDataBuilder, removeMemberCommand, SquadStatusBar, IssueDetailWebview flagged as Priority 1 (pure logic, easy wins). FileWatcherService, SquadDashboardWebview, initSquadCommand flagged as Priority 2 (require mocking). Dashboard completeness: 3 tabs working, missing summary panel, loading state, heatmap numeric labels, tab persistence, refresh button. — decided by Danny
 
+### 2026-02-15: v0.6.0 Release Preparation
+
+**Task:** Prepare CHANGELOG.md and version bump for v0.6.0 release.
+
+**Completed:**
+- CHANGELOG.md updated with v0.6.0 entry (2026-02-15)
+- Added: Dashboard decisions/sessions panels, sidebar button, clickable entries, per-member activity logs, re-enabled Add Skill with error handling, skill install enhancements (actual SKILL.md fetching), 90+ new tests
+- Fixed: awesome-copilot catalog URL + parser rewrite, extractGitHubSubpath() for subdirectories, skills.sh parser rewrite, null-safety fixes (skill search, decisions rendering), decision date extraction parser rewrite, sort order, subsection filters
+- Changed: Activity moved from root to per-member, decision heading parser (H2/H3 support)
+- Removed: Root "Recent Activity" node
+- package.json version bumped 0.5.1 → 0.6.0
+- TypeScript compilation verified (npx tsc --noEmit — exit code 0) ✅
+
+**Release notes summary:** v0.6.0 is a significant feature release adding dashboard interactivity (decisions rendering, recent sessions, sidebar access), activity telemetry improvements (per-member logs), skill management completion (re-enabled UI with duplicate protection, actual content fetching), and comprehensive test coverage (+90 tests across P1 gaps).
+
+**Notes for Jeff:** Ready for review. Version bump and changelog finalized. No commits/tags created per instructions. Compilation clean.
+

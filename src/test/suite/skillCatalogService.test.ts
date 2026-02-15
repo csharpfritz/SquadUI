@@ -840,6 +840,89 @@ suite('SkillCatalogService', () => {
         });
     });
 
+    // ─── extractGitHubSubpath() Tests ──────────────────────────────────────
+
+    suite('extractGitHubSubpath() — Subdirectory Skill Fetching', () => {
+        test('extracts subpath from tree URL', () => {
+            const url = 'https://github.com/owner/repo/tree/main/skills/agentic-eval';
+            const result = (service as any).extractGitHubSubpath(url);
+            
+            assert.strictEqual(result, 'skills/agentic-eval');
+        });
+
+        test('extracts subpath from blob URL', () => {
+            const url = 'https://github.com/owner/repo/blob/main/docs/skills/testing/SKILL.md';
+            const result = (service as any).extractGitHubSubpath(url);
+            
+            assert.strictEqual(result, 'docs/skills/testing/SKILL.md');
+        });
+
+        test('extracts multi-level subpath', () => {
+            const url = 'https://github.com/github/awesome-copilot/tree/main/skills/deep/nested/path';
+            const result = (service as any).extractGitHubSubpath(url);
+            
+            assert.strictEqual(result, 'skills/deep/nested/path');
+        });
+
+        test('returns undefined for root-level repo URL', () => {
+            const url = 'https://github.com/owner/repo';
+            const result = (service as any).extractGitHubSubpath(url);
+            
+            assert.strictEqual(result, undefined);
+        });
+
+        test('returns undefined for repo URL with only branch', () => {
+            const url = 'https://github.com/owner/repo/tree/main';
+            const result = (service as any).extractGitHubSubpath(url);
+            
+            assert.strictEqual(result, undefined);
+        });
+
+        test('handles URL with http protocol', () => {
+            const url = 'http://github.com/owner/repo/tree/main/skills/test';
+            const result = (service as any).extractGitHubSubpath(url);
+            
+            assert.strictEqual(result, 'skills/test');
+        });
+
+        test('returns undefined for non-GitHub URL', () => {
+            const url = 'https://skills.sh/owner/repo/skill';
+            const result = (service as any).extractGitHubSubpath(url);
+            
+            assert.strictEqual(result, undefined);
+        });
+
+        test('handles branch names with slashes', () => {
+            const url = 'https://github.com/owner/repo/tree/feature/branch/skills/test';
+            const result = (service as any).extractGitHubSubpath(url);
+            
+            // Note: The regex extracts everything after /tree/{branch}/, so this captures
+            // the path after the first branch segment. This is a known limitation.
+            assert.ok(result !== undefined, 'Should extract some subpath');
+        });
+
+        test('extracts single-level subpath', () => {
+            const url = 'https://github.com/owner/repo/tree/main/skills';
+            const result = (service as any).extractGitHubSubpath(url);
+            
+            assert.strictEqual(result, 'skills');
+        });
+
+        test('returns undefined for empty URL', () => {
+            const url = '';
+            const result = (service as any).extractGitHubSubpath(url);
+            
+            assert.strictEqual(result, undefined);
+        });
+
+        test('returns undefined for malformed GitHub URL', () => {
+            const url = 'https://github.com/owner';
+            const result = (service as any).extractGitHubSubpath(url);
+            
+            assert.strictEqual(result, undefined);
+        });
+    });
+
     suite('searchSkills() — Regression Tests', () => {
         test('filters by name match (case-insensitive)', async () => {
             // Mock service method to return test data

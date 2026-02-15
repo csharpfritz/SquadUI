@@ -5,6 +5,35 @@ All notable changes to the SquadUI extension will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.0] - 2026-02-15
+
+### Added
+- **Dashboard decisions panel**: Decisions now render in the Activity tab with proper null-safety
+- **Dashboard "Recent Sessions" panel**: Shows recent orchestration log sessions for quick access
+- **Dashboard sidebar button**: One-click access to the dashboard from Team panel header
+- **Clickable dashboard entries**: Drill into decision and session details from dashboard panels
+- **Per-member activity logs**: Orchestration log entries appear under each team member in sidebar (filtered by participant)
+- **Re-enabled Add Skill UI**: Restored skill addition with improved error handling and duplicate protection
+- **Skill install enhancements**: Fetches actual SKILL.md content from GitHub repos during installation
+- **90+ comprehensive tests**: New P1 test coverage for IssueDetailWebview, SquadStatusBar, removeMemberCommand, and skillCatalog
+
+### Fixed
+- **awesome-copilot skill catalog**: Updated URL after repo moved to github/awesome-copilot, rewrote parser for new table format
+- **awesome-copilot skill install**: extractGitHubSubpath() now resolves SKILL.md from subdirectories
+- **skills.sh parser**: Rewrote parser to handle new leaderboard h3/p pattern (was picking up nav links)
+- **Skill search null-safety**: Added safe navigation (description?.toLowerCase()) to prevent runtime errors
+- **Decision date extraction**: Complete parser rewrite for reliable date/author extraction from heading prefixes
+- **Decision sort order**: Ensures decisions display most-recent-first
+- **Dashboard rendering null-safety**: Fixed potential errors in decision panel rendering
+- **Decision subsection filters**: Fixed filtering for proper subsection isolation
+
+### Changed
+- **Activity relocation**: Activity moved from root-level "Recent Activity" section to per-member children in Team panel
+- **Decision heading parser**: Now handles both H2 and H3 levels with proper date/author metadata extraction
+
+### Removed
+- **Root-level "Recent Activity" node**: Removed from Team sidebar (activity now per-member in Team panel children)
+
 ## [0.5.0] - 2026-02-15
 
 ### Added
@@ -65,6 +94,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Team.md parser service for member roster management
 - Orchestration log service for runtime activity tracking
 
+[0.6.0]: https://github.com/csharpfritz/SquadUI/releases/tag/v0.6.0
 [0.5.0]: https://github.com/csharpfritz/SquadUI/releases/tag/v0.5.0
 [0.4.0]: https://github.com/csharpfritz/SquadUI/releases/tag/v0.4.0
 [0.1.0]: https://github.com/csharpfritz/SquadUI/releases/tag/v0.1.0

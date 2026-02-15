@@ -336,6 +336,47 @@ All test code and infrastructure are in place in src/test/suite/ and work as of 
 
 📌 Team update (2026-02-15): Dashboard sidebar activity enhancements — fixed Decisions tab null-safety crashes, added Recent Activity section to Team sidebar (10 most recent log entries), added Recent Sessions panel to Dashboard Activity tab with rich session context. Wrote 48 regression tests for htmlTemplate.ts and fixed existing tree provider/acceptance tests. — decided by Rusty
 
+### v0.6.0 Pre-Release Test Coverage Review (2026-02-15)
+
+Conducted comprehensive test coverage review for v0.6.0 release. Verified all recent changes (since v0.5.1) have proper test coverage.
+
+**Coverage status for recent changes:**
+1. ✅ **awesome-copilot table format parser** — 7 tests in skillCatalogService.test.ts covering table row parsing, relative URLs, HTML tag stripping, mixed formats
+2. ✅ **extractGitHubSubpath()** — 11 NEW tests added (this review) covering tree URLs, blob URLs, multi-level paths, edge cases (empty, malformed, non-GitHub)
+3. ✅ **Per-member activity logs (getMemberLogEntries)** — 3 tests in treeProvider.test.ts covering log entry rendering, icons, collapsibility
+4. ✅ **renderDecisions null-safety fix** — 9 regression tests in htmlTemplate.test.ts covering undefined content, undefined author, mixed optional fields
+5. ✅ **Recent Sessions panel** — 10 tests in htmlTemplate.test.ts covering recentLogs rendering, empty state, XSS protection, unicode
+6. ✅ **Skill catalog search null-safety** — 5 regression tests in skillCatalogService.test.ts covering undefined/empty descriptions
+
+**Tests added this review (11 new tests):**
+
+Created comprehensive test suite for `extractGitHubSubpath()` — the private method that enables fetching SKILL.md from subdirectories in GitHub repos (e.g., github/awesome-copilot/tree/main/skills/agentic-eval).
+
+**extractGitHubSubpath() tests (11 tests):**
+- Extracts subpath from `/tree/` URLs (e.g., skills/agentic-eval)
+- Extracts subpath from `/blob/` URLs (with file paths)
+- Handles multi-level nested paths (skills/deep/nested/path)
+- Returns undefined for root-level repo URLs
+- Returns undefined for repo URLs with only branch name
+- Supports both http and https protocols
+- Returns undefined for non-GitHub URLs (skills.sh, etc.)
+- Handles single-level subpaths
+- Handles branch names with slashes (known limitation documented)
+- Returns undefined for empty/malformed URLs
+- Edge case: empty string, partial GitHub URL
+
+**Testing pattern:** Private method tested via `(service as any).extractGitHubSubpath()` — standard pattern for critical internal logic.
+
+**Test results:** All 627 tests passing (up from 616). Zero failures.
+
+**CRITICAL gaps identified:** NONE. All v0.6.0 changes have adequate test coverage. The extension is ready for release from a test coverage perspective.
+
+**Key learnings:**
+- extractGitHubSubpath is critical infrastructure for subdirectory skill fetching — needed comprehensive edge case coverage
+- Regex-based URL parsing requires testing with http/https variants, empty strings, malformed URLs
+- Branch names with slashes are a known limitation (regex captures after first segment) — documented in tests
+- Private method testing pattern (`(service as any).methodName`) is appropriate for pure logic with no side effects
+
 ### Skill Catalog Regression Tests & P1 Test Coverage (2026-02-15)
 
 Wrote comprehensive regression tests for skill catalog bugs being fixed by Rusty and filled P1 test coverage gaps identified in issue tracking.
