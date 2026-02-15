@@ -361,7 +361,7 @@ export class SkillCatalogService {
         let name = dirName;
         let description = '';
         let confidence: 'low' | 'medium' | 'high' | undefined;
-        let source: 'awesome-copilot' | 'skills.sh' | 'local' = 'local';
+        const source: 'awesome-copilot' | 'skills.sh' | 'local' = 'local';
         let bodyStartIndex = 0;
 
         // Detect YAML frontmatter (lines between --- markers)
