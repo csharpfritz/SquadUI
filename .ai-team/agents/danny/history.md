@@ -79,3 +79,22 @@
 - Dashboard polish scope undefined (needs Jeff input on priorities)
 - BlazorLora "copilot completed tasks" issue not well-specified
 - Issue #27 appears complete (command palette already has "Squad" category)
+
+### 2026-02-15: Backlog Audit Results
+
+**Issues closed (shipped in v0.5.0/v0.5.1):**
+- **#27** — Command palette integration with Squad category prefix ✅
+- **#37** — Skills tree view with source badges and confidence levels ✅
+- **#38** — SkillCatalogService (awesome-copilot + skills.sh integration) ✅
+
+**Issues audited (open):**
+- **#25** — Team member management (addMember, removeMember) — Both commands fully implemented and functional. Ready to close or integrate further.
+- **#26** — Universe selector for casting — Deferred to future milestone (P2)
+- **#39** — Skill import tests — In progress (Basher writing tests for v0.6.0)
+- **#40** — Add Skill import command — In progress (Rusty QA'ing end-to-end flow, currently disabled pending validation)
+
+**Key insight:** Backlog is clean. Three completed issues shipped in v0.5.0. Four open issues properly triaged with clear status. #25 is a candidate for closure in next pass once decision made on scope. #39/#40 will unblock v0.6.0 release once QA passes.
+
+📌 Team update (2026-02-15): Dashboard decisions sort order — decisions list on dashboard should be sorted most-recent first — decided by Jeffrey T. Fritz
+
+📌 Team update (2026-02-15): Add Skill Error Handling — network failures now throw exceptions for better UX instead of silent empty arrays — decided by Rusty

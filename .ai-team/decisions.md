@@ -1187,3 +1187,25 @@ The Squad Dashboard had three usability issues: (1) the velocity chart was invis
 - Users can interpret chart data with proper axis labels
 - Decisions tab shows helpful guidance when no decisions exist
 - No new dependencies introduced; all fixes are in `htmlTemplate.ts`
+### 2026-02-15: Dashboard decisions sort order
+**By:** Jeffrey T. Fritz (via Copilot)
+**What:** Decisions list on the dashboard should be sorted most-recent first (newest at top)
+**Why:** User request — captured for team memory
+
+---
+
+### 2026-02-15: Add Skill Error Handling — Network Failures Throw Exceptions
+**Date:** 2026-02-15
+**Decided by:** Rusty (QA of Add Skill feature #40)
+**Status:** Implemented
+
+During QA, found that SkillCatalogService.fetchCatalog() returned empty arrays on network failures, causing misleading "No skills found" messages. Changed service to throw exceptions on network failures; command layer catches and shows appropriate error messages via showErrorMessage(). Improves UX and debugging while maintaining standard VS Code command patterns.
+
+---
+
+### 2026-02-15: Backlog Audit and Issue Cleanup
+**By:** Danny
+**What:** Closed completed issues (#27, #37, #38), audited remaining backlog (#25, #26, #39, #40)
+**Why:** Sprint hygiene — keep the backlog accurate with shipped work
+
+Closed #27 (Command palette integration), #37 (Skills tree view), #38 (SkillCatalogService). Triaged open issues: #25 (team member commands, ready to close), #26 (universe selector, deferred P2), #39 (Basher writing skill import tests), #40 (Rusty QA'ing Add Skill, currently disabled, re-enable is one-line).
