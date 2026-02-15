@@ -124,8 +124,8 @@ export function activate(context: vscode.ExtensionContext): void {
                 vscode.window.showWarningMessage(`Charter not found for ${memberName}`);
                 return;
             }
-            const doc = await vscode.workspace.openTextDocument(charterPath);
-            await vscode.window.showTextDocument(doc, { preview: true });
+            const uri = vscode.Uri.file(charterPath);
+            await vscode.commands.executeCommand('markdown.showPreview', uri);
         })
     );
 
