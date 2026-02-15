@@ -333,3 +333,5 @@ Basher completed comprehensive test coverage during the initial two days of deve
 All test code and infrastructure are in place in src/test/suite/ and work as of the last test run. See .ai-team/decisions.md and commit history for detailed patterns established.
 
 📌 Team update (2026-02-15): Add Skill now fetches actual content from GitHub repos (copilot-instructions.md → SKILL.md → README.md fallback) and prompts on duplicate installs instead of silently overwriting — decided by Rusty
+
+📌 Team update (2026-02-15): Dashboard sidebar activity enhancements — fixed Decisions tab null-safety crashes, added Recent Activity section to Team sidebar (10 most recent log entries), added Recent Sessions panel to Dashboard Activity tab with rich session context. Wrote 48 regression tests for htmlTemplate.ts and fixed existing tree provider/acceptance tests. — decided by Rusty

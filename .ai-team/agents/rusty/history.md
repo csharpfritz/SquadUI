@@ -123,3 +123,12 @@ Two critical issues in the Add Skill workflow:
 - `src/services/SkillCatalogService.ts` — `downloadSkill()`, `fetchSkillContent()`, `parseGitHubRepoUrl()`, `buildSkillStub()`
 - `src/commands/addSkillCommand.ts` — duplicate error handling with overwrite prompt
 
+
+### 2026-02-15: Dashboard and Sidebar Activity Enhancements
+
+📌 **Team decisions merged (2026-02-15):** 
+1. Fixed Dashboard Decisions tab null-safety — prevented TypeError crashes on undefined content/author fields in renderDecisions()
+2. Added "Recent Activity" section to Team sidebar with 10 most recent orchestration log entries, clickable to open logs
+3. Added "Recent Sessions" panel to Dashboard Activity tab with rich session context (topic, date, participants, decision counts)
+— decided by Rusty
+
