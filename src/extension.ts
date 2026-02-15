@@ -3,12 +3,14 @@ import * as path from 'path';
 import * as fs from 'fs';
 import { GitHubIssue } from './models';
 import { SquadDataProvider, FileWatcherService, GitHubIssuesService } from './services';
-import { TeamTreeProvider, SkillsTreeProvider, DecisionsTreeProvider, WorkDetailsWebview, IssueDetailWebview } from './views';
+import { TeamTreeProvider, SkillsTreeProvider, DecisionsTreeProvider, WorkDetailsWebview, IssueDetailWebview, SquadStatusBar, SquadDashboardWebview } from './views';
 import { registerInitSquadCommand, registerAddMemberCommand, registerRemoveMemberCommand, registerAddSkillCommand } from './commands';
 
 let fileWatcher: FileWatcherService | undefined;
 let webview: WorkDetailsWebview | undefined;
 let issueWebview: IssueDetailWebview | undefined;
+let dashboardWebview: SquadDashboardWebview | undefined;
+let statusBar: SquadStatusBar | undefined;
 
 export function activate(context: vscode.ExtensionContext): void {
     console.log('SquadUI extension is now active');
@@ -54,6 +56,10 @@ export function activate(context: vscode.ExtensionContext): void {
     });
     context.subscriptions.push(teamView, skillsView, decisionsView);
 
+    // Create status bar
+    statusBar = new SquadStatusBar(dataProvider);
+    context.subscriptions.push(statusBar);
+
     // Create webview for work details
     webview = new WorkDetailsWebview(context.extensionUri);
     context.subscriptions.push({ dispose: () => webview?.dispose() });
@@ -61,6 +67,10 @@ export function activate(context: vscode.ExtensionContext): void {
     // Create webview for issue details
     issueWebview = new IssueDetailWebview(context.extensionUri);
     context.subscriptions.push({ dispose: () => issueWebview?.dispose() });
+
+    // Create dashboard webview
+    dashboardWebview = new SquadDashboardWebview(context.extensionUri, dataProvider);
+    context.subscriptions.push({ dispose: () => dashboardWebview?.dispose() });
 
     // Register commands
     context.subscriptions.push(
@@ -83,6 +93,7 @@ export function activate(context: vscode.ExtensionContext): void {
             teamProvider.refresh();
             skillsProvider.refresh();
             decisionsProvider.refresh();
+            statusBar?.update();
             vscode.window.showInformationMessage('Squad tree refreshed');
         })
     );
@@ -94,6 +105,12 @@ export function activate(context: vscode.ExtensionContext): void {
             } else if (url) {
                 vscode.env.openExternal(vscode.Uri.parse(url));
             }
+        })
+    );
+
+    context.subscriptions.push(
+        vscode.commands.registerCommand('squadui.openDashboard', async () => {
+            await dashboardWebview?.show();
         })
     );
 
@@ -121,6 +138,7 @@ export function activate(context: vscode.ExtensionContext): void {
             teamProvider.refresh();
             skillsProvider.refresh();
             decisionsProvider.refresh();
+            statusBar?.update();
         })
     );
 
@@ -129,6 +147,7 @@ export function activate(context: vscode.ExtensionContext): void {
         registerAddMemberCommand(context, () => {
             dataProvider.refresh();
             teamProvider.refresh();
+            statusBar?.update();
         })
     );
 
@@ -137,6 +156,7 @@ export function activate(context: vscode.ExtensionContext): void {
         registerRemoveMemberCommand(context, () => {
             dataProvider.refresh();
             teamProvider.refresh();
+            statusBar?.update();
         })
     );
 
@@ -149,15 +169,15 @@ export function activate(context: vscode.ExtensionContext): void {
 
     // Register view skill command — opens SKILL.md in editor
     context.subscriptions.push(
-        vscode.commands.registerCommand('squadui.viewSkill', async (skillName: string) => {
-            if (!skillName) {
+        vscode.commands.registerCommand('squadui.viewSkill', async (skillSlug: string) => {
+            if (!skillSlug) {
                 vscode.window.showWarningMessage('No skill selected');
                 return;
             }
-            const slug = skillName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-            const skillPath = path.join(workspaceRoot, '.ai-team', 'skills', slug, 'SKILL.md');
+            // skillSlug is the directory name, used directly for lookup
+            const skillPath = path.join(workspaceRoot, '.ai-team', 'skills', skillSlug, 'SKILL.md');
             if (!fs.existsSync(skillPath)) {
-                vscode.window.showWarningMessage(`Skill file not found for ${skillName}`);
+                vscode.window.showWarningMessage(`Skill file not found for ${skillSlug}`);
                 return;
             }
             const doc = await vscode.workspace.openTextDocument(skillPath);
@@ -182,22 +202,22 @@ export function activate(context: vscode.ExtensionContext): void {
 
     // Register remove skill command — deletes skill directory
     context.subscriptions.push(
-        vscode.commands.registerCommand('squadui.removeSkill', async (skillName: string) => {
-            if (!skillName) {
+        vscode.commands.registerCommand('squadui.removeSkill', async (skillSlug: string) => {
+            if (!skillSlug) {
                 vscode.window.showWarningMessage('No skill selected');
                 return;
             }
             const confirm = await vscode.window.showWarningMessage(
-                `Remove skill "${skillName}"?`, { modal: true }, 'Remove'
+                `Remove skill "${skillSlug}"?`, { modal: true }, 'Remove'
             );
             if (confirm !== 'Remove') {
                 return;
             }
-            const slug = skillName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-            const skillDir = path.join(workspaceRoot, '.ai-team', 'skills', slug);
+            // skillSlug is the directory name, used directly
+            const skillDir = path.join(workspaceRoot, '.ai-team', 'skills', skillSlug);
             if (fs.existsSync(skillDir)) {
                 fs.rmSync(skillDir, { recursive: true });
-                vscode.window.showInformationMessage(`Removed skill: ${skillName}`);
+                vscode.window.showInformationMessage(`Removed skill: ${skillSlug}`);
                 skillsProvider.refresh();
             }
         })
@@ -208,6 +228,7 @@ export function activate(context: vscode.ExtensionContext): void {
         teamProvider.refresh();
         skillsProvider.refresh();
         decisionsProvider.refresh();
+        statusBar?.update();
     });
 }
 
@@ -215,4 +236,6 @@ export function deactivate(): void {
     fileWatcher?.dispose();
     webview?.dispose();
     issueWebview?.dispose();
+    dashboardWebview?.dispose();
+    statusBar?.dispose();
 }

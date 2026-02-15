@@ -138,3 +138,6 @@ Created `src/services/SkillCatalogService.ts` (issue #38) — a unified service 
 ### 2026-02-14: Team Update — Sidebar Reorganization
 
 📌 **Team update (2026-02-14):** Sidebar reorganized into Team/Skills/Decisions views — decided by Rusty
+### 2026-02-14 — Visibility Features Proposals Finalized
+
+📌 Team update (2026-02-14): 10 PM visibility and UI feature proposals generated (Velocity Dashboard, Team Health Heatmap, Decision Browser, Ceremony Timeline, Blocker Visualizer, Activity Timeline, Status Bar Integration, Badge Decorations, Performance Dashboard, Skill Matrix). Proposals prioritized into Quick Wins (Status Bar, Badges) and High Impact (Timeline, Performance Dashboard). Ready for prioritization and implementation assignment. — decided by Danny, Rusty

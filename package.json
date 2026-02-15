@@ -2,7 +2,7 @@
   "name": "squadui",
   "displayName": "SquadUI",
   "description": "Visualize Squad team members and their tasks",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "publisher": "csharpfritz",
   "icon": "images/icon.png",
   "repository": {
@@ -103,6 +103,12 @@
         "title": "Remove Skill",
         "category": "Squad",
         "icon": "$(trash)"
+      },
+      {
+        "command": "squadui.openDashboard",
+        "title": "Open Dashboard",
+        "category": "Squad",
+        "icon": "$(graph)"
       }
     ],
     "menus": {
@@ -174,6 +180,11 @@
         "command": "squadui.addMember",
         "key": "ctrl+shift+s",
         "mac": "cmd+shift+s"
+      },
+      {
+        "command": "squadui.openDashboard",
+        "key": "ctrl+shift+d",
+        "mac": "cmd+shift+d"
       }
     ]
   },

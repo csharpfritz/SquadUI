@@ -80,10 +80,12 @@ suite('Acceptance: Orchestration Logs → Tree View', () => {
 
     // ── Step 3-4: When SquadTreeProvider builds tree, members have correct children ──
 
-    suite('tree view renders members at root', () => {
-        test('root nodes are all team.md members', async () => {
+    suite('tree view renders members under Team section', () => {
+        test('Team section contains all team.md members', async () => {
             const roots = await treeProvider.getChildren();
-            const members = roots.filter(r => r.itemType === 'member');
+            const teamSection = roots.find(r => r.label === 'Team');
+            assert.ok(teamSection, 'Should have a Team section');
+            const members = await treeProvider.getChildren(teamSection);
             const labels = members.map(r => r.label);
 
             assert.strictEqual(members.length, 3);
@@ -92,20 +94,21 @@ suite('Acceptance: Orchestration Logs → Tree View', () => {
             assert.ok(labels.includes('Carol'));
         });
 
-        test('all member root items have itemType "member"', async () => {
+        test('all member items have itemType "member"', async () => {
             const roots = await treeProvider.getChildren();
-            const members = roots.filter(r => r.itemType === 'member');
+            const teamSection = roots.find(r => r.label === 'Team')!;
+            const members = await treeProvider.getChildren(teamSection);
             members.forEach(item => {
                 assert.strictEqual(item.itemType, 'member');
             });
         });
 
-        test('root items are collapsible', async () => {
+        test('section root items are expanded', async () => {
             const roots = await treeProvider.getChildren();
             roots.forEach(item => {
                 assert.strictEqual(
                     item.collapsibleState,
-                    vscode.TreeItemCollapsibleState.Collapsed
+                    vscode.TreeItemCollapsibleState.Expanded
                 );
             });
         });
@@ -248,7 +251,9 @@ suite('Acceptance: Orchestration Logs → Tree View', () => {
     suite('member item rendering', () => {
         test('working member (Carol) has sync~spin icon', async () => {
             const roots = await treeProvider.getChildren();
-            const carol = roots.find(r => r.label === 'Carol');
+            const teamSection = roots.find(r => r.label === 'Team')!;
+            const members = await treeProvider.getChildren(teamSection);
+            const carol = members.find(r => r.label === 'Carol');
 
             assert.ok(carol);
             assert.ok(carol.iconPath instanceof vscode.ThemeIcon);
@@ -257,8 +262,10 @@ suite('Acceptance: Orchestration Logs → Tree View', () => {
 
         test('idle members (Alice, Bob) have person icon', async () => {
             const roots = await treeProvider.getChildren();
+            const teamSection = roots.find(r => r.label === 'Team')!;
+            const members = await treeProvider.getChildren(teamSection);
             for (const name of ['Alice', 'Bob']) {
-                const item = roots.find(r => r.label === name);
+                const item = members.find(r => r.label === name);
                 assert.ok(item, `Should find ${name}`);
                 assert.ok(item!.iconPath instanceof vscode.ThemeIcon);
                 assert.strictEqual(
@@ -271,17 +278,20 @@ suite('Acceptance: Orchestration Logs → Tree View', () => {
 
         test('member descriptions include role and status', async () => {
             const roots = await treeProvider.getChildren();
-            const carol = roots.find(r => r.label === 'Carol');
+            const teamSection = roots.find(r => r.label === 'Team')!;
+            const members = await treeProvider.getChildren(teamSection);
+            const carol = members.find(r => r.label === 'Carol');
 
             assert.ok(carol);
             const desc = String(carol.description);
             assert.ok(desc.includes('Tester'), 'Description should include role');
-            assert.ok(desc.includes('working'), 'Description should include status');
+            assert.ok(desc.includes('⚡') || desc.includes('working'), 'Description should include status');
         });
 
         test('member tooltips are MarkdownStrings', async () => {
             const roots = await treeProvider.getChildren();
-            const members = roots.filter(r => r.itemType === 'member');
+            const teamSection = roots.find(r => r.label === 'Team')!;
+            const members = await treeProvider.getChildren(teamSection);
             for (const item of members) {
                 assert.ok(
                     item.tooltip instanceof vscode.MarkdownString,

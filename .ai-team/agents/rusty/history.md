@@ -167,6 +167,10 @@
 ### 2026-02-14: Command Palette Consistency (#27)
 - Unified all command categories to `"Squad"` (was `"SquadUI"` for most commands)
 - Palette display is now consistent: "Squad: Add Team Member", "Squad: Remove Team Member", etc.
+
+### 📌 Team Update (2026-02-13): Dashboard Architecture Finalized — decided by Danny
+
+Dashboard webview scaffolded with single unified tab interface (Velocity + Activity + Decisions). Completed Phase 1: shell with velocity tab (30-day completion trends), heatmap (7-day activity), swimlane timeline. Uses HTML5 Canvas (no Chart.js) and CSS Grid for lightweight visualization. Command: `squadui.openDashboard` (Ctrl+Shift+D). Foundation complete — Phase 2/3/4 ready for extension. See `.ai-team/decisions.md` for implementation roadmap.
 - `showWorkDetails` and `openIssue` hidden from command palette (`"when": "false"`) since they require context arguments
 - Context menus added for all item types: member (View Charter, Remove Member), task (Show Work Details), issue (View Issue Details)
 - Keybinding `Ctrl+Shift+S` / `Cmd+Shift+S` added for `squadui.addMember`
@@ -213,3 +217,30 @@
 - File watcher refreshes all three providers
 - All existing test files updated to use `TeamTreeProvider` / `SkillsTreeProvider` names
 - TypeScript compiles cleanly with `npx tsc --noEmit`
+### 2026-02-14: Refined Dashboard Swimlanes for v0.2 Release
+- Enhanced swimlane visuals in `src/views/dashboard/htmlTemplate.ts` with distinct task status styling
+- Done tasks: green background (`rgba(40, 167, 69, 0.15)`) with green left border (`var(--vscode-charts-green)`)
+- In-progress tasks: amber/orange background (`rgba(255, 193, 7, 0.15)`) with orange left border (`var(--vscode-charts-orange)`)
+- Added CSS tooltip system: `.task-item .tooltip` positioned absolutely on hover, shows task title + status + duration
+- Tooltips use `var(--vscode-editorWidget-background)` and `var(--vscode-editorWidget-border)` for theme consistency
+- Task items now have hover state (`var(--vscode-list-hoverBackground)`) and pointer cursor for better UX
+- HTML escaping applied to task titles in tooltip content to prevent XSS
+- All colors use VS Code CSS variables ensuring proper rendering in dark/light themes
+- Bumped version to `0.2.0` in `package.json`
+- Created `CHANGELOG.md` documenting features: Status Bar, Roster Badges, Dashboard (Velocity + Activity), Skills Management
+- Compiled successfully with no errors
+
+### 2026-02-14: Decision Items Open File Directly (Bug Fix)
+- `DecisionEntry` model now includes `filePath` property — the absolute path to the source `.md` file
+- `DecisionService.parseDecisionFile()` already receives `filePath` as a parameter; now passes it through to the returned entry
+- Decision tree items use `vscode.open` command with `vscode.Uri.file(d.filePath)` instead of `squadui.openDashboard`
+- No custom command registration needed — `vscode.open` is a built-in VS Code command that opens files in the editor
+
+### 2026-02-14: Skill YAML Frontmatter Parsing & Slug-Based Lookup (Bug Fix)
+- `parseInstalledSkill()` now detects YAML frontmatter (lines between `---` markers) and extracts `name`, `description`, `confidence` fields
+- Falls back to heading detection (`# Title`) then `dirName` if no frontmatter name found
+- `Skill` model now includes optional `slug` property — the directory name used for filesystem lookup
+- `parseInstalledSkill()` always sets `slug` to `dirName`, decoupling display name from filesystem identity
+- `SquadTreeProvider.getSkillItems()` passes `slug` (not display name) as the command argument
+- `viewSkill` and `removeSkill` commands in `extension.ts` now use slug directly — no more slugifying the display name
+- Pattern: display name can differ from directory name; always use directory slug for file I/O

@@ -16,12 +16,15 @@ export class SquadTreeItem extends vscode.TreeItem {
     constructor(
         public readonly label: string,
         public readonly collapsibleState: vscode.TreeItemCollapsibleState,
-        public readonly itemType: 'member' | 'task' | 'issue' | 'skill' | 'decision',
+        public readonly itemType: 'section' | 'member' | 'task' | 'issue' | 'skill' | 'decision',
         public readonly memberId?: string,
         public readonly taskId?: string
     ) {
         super(label, collapsibleState);
-        this.contextValue = itemType;
+        // contextValue is set by caller or defaults to itemType
+        if (!this.contextValue) {
+            this.contextValue = itemType;
+        }
     }
 }
 
@@ -67,7 +70,7 @@ export class TeamTreeProvider implements vscode.TreeDataProvider<SquadTreeItem> 
     private async getSquadMemberItems(): Promise<SquadTreeItem[]> {
         const members = await this.dataProvider.getSquadMembers();
         
-        return members.map(member => {
+        return Promise.all(members.map(async member => {
             const item = new SquadTreeItem(
                 member.name,
                 vscode.TreeItemCollapsibleState.Collapsed,
@@ -79,7 +82,12 @@ export class TeamTreeProvider implements vscode.TreeDataProvider<SquadTreeItem> 
                 member.status === 'working' ? 'sync~spin' : 'person'
             );
             
-            item.description = `${member.role} • ${member.status}`;
+            // Build description with status badge and issue count
+            const statusBadge = member.status === 'working' ? '⚡' : '💤';
+            const issueCount = await this.getIssueCount(member.name);
+            const issueText = issueCount > 0 ? ` • ${issueCount} issue${issueCount > 1 ? 's' : ''}` : '';
+            
+            item.description = `${statusBadge} ${member.role}${issueText}`;
             item.tooltip = this.getMemberTooltip(member);
 
             item.command = {
@@ -89,7 +97,7 @@ export class TeamTreeProvider implements vscode.TreeDataProvider<SquadTreeItem> 
             };
 
             return item;
-        });
+        }));
     }
 
     private async getTaskItems(memberId: string): Promise<SquadTreeItem[]> {
@@ -208,6 +216,7 @@ export class TeamTreeProvider implements vscode.TreeDataProvider<SquadTreeItem> 
         }
     }
 
+
     private getMemberTooltip(member: SquadMember): vscode.MarkdownString {
         const md = new vscode.MarkdownString();
         md.appendMarkdown(`**${member.name}**\n\n`);
@@ -241,6 +250,24 @@ export class TeamTreeProvider implements vscode.TreeDataProvider<SquadTreeItem> 
         }
         md.appendMarkdown(`[Open on GitHub](${issue.htmlUrl})`);
         return md;
+    }
+
+    /**
+     * Counts open issues assigned to a member.
+     */
+    private async getIssueCount(memberId: string): Promise<number> {
+        if (!this.issuesService) {
+            return 0;
+        }
+
+        try {
+            const workspaceRoot = this.dataProvider.getWorkspaceRoot();
+            const issueMap = await this.issuesService.getIssuesByMember(workspaceRoot);
+            const issues = issueMap.get(memberId.toLowerCase()) ?? [];
+            return issues.length;
+        } catch (error) {
+            return 0;
+        }
     }
 }
 

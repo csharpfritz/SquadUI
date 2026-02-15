@@ -26,12 +26,11 @@ suite('TeamTreeProvider Test Suite', () => {
     suite('getChildren', () => {
         test('returns squad members at root level (no element)', async () => {
             const children = await provider.getChildren();
-            const members = children.filter(c => c.itemType === 'member');
 
-            assert.strictEqual(members.length, 3);
-            assert.strictEqual(members[0].label, 'Danny');
-            assert.strictEqual(members[1].label, 'Rusty');
-            assert.strictEqual(members[2].label, 'Linus');
+            assert.strictEqual(children.length, 3);
+            assert.strictEqual(children[0].label, 'Danny');
+            assert.strictEqual(children[1].label, 'Rusty');
+            assert.strictEqual(children[2].label, 'Linus');
         });
 
         test('root items are all members', async () => {
@@ -42,8 +41,7 @@ suite('TeamTreeProvider Test Suite', () => {
         });
 
         test('root member items are collapsible', async () => {
-            const children = await provider.getChildren();
-            const members = children.filter(c => c.itemType === 'member');
+            const members = await provider.getChildren();
 
             members.forEach((item) => {
                 assert.strictEqual(
@@ -168,7 +166,8 @@ suite('TeamTreeProvider Test Suite', () => {
             assert.ok(danny.description);
             const desc = String(danny.description);
             assert.ok(desc.includes('Lead'));
-            assert.ok(desc.includes('working'));
+            // Check for status badge (⚡) or legacy 'working' text
+            assert.ok(desc.includes('⚡') || desc.includes('working'), `Description "${desc}" should indicate working status`);
         });
 
         test('task description shows status', async () => {

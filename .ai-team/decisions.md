@@ -842,6 +842,67 @@ Created `.github/workflows/release.yml` with the following design:
 
 ## 2026-02-14: Command Test Skip-Guard Pattern
 
+---
+
+## 2026-02-13: Dashboard Architecture - Unified Webview with Tabs
+
+**Date:** 2026-02-13  
+**Author:** Danny (Lead/Architect)  
+**Status:** Proposed  
+**Context:** Implementing Velocity Dashboard, Activity Timeline, and Decision Browser
+
+### Decision
+
+Single unified `SquadDashboardWebview` hosting three tabs (Velocity, Activity, Decisions). No external chart libraries — use HTML5 Canvas and CSS Grid for lightweight visualization.
+
+**Rationale:**
+- Consolidates related management views in one place
+- Reduces activation cost (single webview lifecycle vs. three)
+- Natural grouping: all three are "insights" on same underlying data
+- VS Code status bar can show dashboard shortcut
+- Users expect tabbed interfaces for multi-faceted views
+
+**Command:** `squadui.openDashboard` (Ctrl+Shift+D / Cmd+Shift+D)
+
+**Charting Strategy:** No Chart.js. HTML5 Canvas for trends/heatmaps, CSS Grid for swimlanes, vanilla JS for search. Keeps bundle lean.
+
+**File Structure:**
+- `src/views/SquadDashboardWebview.ts` (main class)
+- `src/views/dashboard/DashboardDataBuilder.ts` (transforms logs to chart data)
+- `src/views/dashboard/htmlTemplate.ts` (tab UI + inline JS)
+
+### Implementation Phases
+
+**Phase 1: Shell + Velocity (COMPLETED 2026-02-13)**
+- ✅ `SquadDashboardWebview` scaffolded with tab navigation
+- ✅ Velocity tab: line chart (30-day task completion trends)
+- ✅ Heatmap: team activity levels (7 days)
+- ✅ Activity timeline: swimlane view of member tasks
+- ✅ Command registered, status bar integration
+
+**Phase 2: Activity Timeline Enhancements (Next)**
+- Date range filter (7/30/90 days selector)
+- Swimlane visual design (color-coded by status)
+- Task tooltips with full descriptions
+
+**Phase 3: Decision Browser (Future)**
+- Parse decisions.md into searchable entries
+- Client-side search + tag filtering
+- Link decisions to log entries by date
+
+**Phase 4: Polish & Release**
+- Loading states, error handling, refresh button
+- Keyboard shortcuts in README
+- Version bump to 0.4.0
+
+### Impact
+
+- Pattern for all future "insight" features
+- New tabs added by: HTML template + `DashboardData` interface + `DashboardDataBuilder` logic
+- Single-webview model keeps activation cost low
+- All dashboard code in `src/views/dashboard/`
+- No external dependencies added
+
 **By:** Basher (Tester)
 **Date:** 2026-02-14
 
@@ -1114,5 +1175,227 @@ Each view has its own:
 - **Tree view consumers:** squadTeam replaces squadMembers as the primary tree view. Old commands and webviews continue working.
 - **Test updates:** Tree tests must account for three separate root structures (members, skills, decisions). No cross-section mixing.
 - **Future:** Adding a new view type is now a straightforward addition of a new provider + package.json contribution.
+### 1. PM Visibility Features — Proposal
+
+**Date:** 2026-02-14  
+**Author:** Danny (Lead)  
+**Status:** Proposed  
+**Requested by:** Jeffrey T. Fritz
+
+#### Context
+
+SquadUI currently displays team members, tasks, and issues in a tree view with individual work details. The extension has access to rich data sources (orchestration logs, decisions.md, ceremonies.md, GitHub issues) but doesn't surface insights that help human PMs understand team health, velocity, or bottlenecks at a glance.
+
+#### Problem Statement
+
+Project managers need to answer these questions quickly:
+- How fast is the team moving? (Velocity)
+- Where are the bottlenecks? (Blockers, overload)
+- What decisions were made and why? (Decision context)
+- How healthy is collaboration? (Silos, pairing patterns)
+- What patterns emerge from retrospectives? (Learning)
+
+Currently, answering these requires manual archaeology across multiple files.
+
+#### Proposed Features
+
+**Feature 1: Velocity Dashboard** (High Value)
+- A webview panel showing work completed over rolling time windows (7d, 14d, 30d)
+- Data sources: OrchestrationLogService (completed tasks), GitHubIssuesService (closed issues)
+- Metrics: Issues closed per week, average time-to-close, member contribution distribution, burn-up charts
+- Implementation: Add VelocityDashboardWebview.ts in src/views/, query services for dated completions, render with CSS/HTML
+
+**Feature 2: Team Health Heatmap** (High Value)
+- Visual representation of workload distribution and collaboration patterns
+- Data sources: OrchestrationLogService (co-participant patterns), TeamMdService, task assignments
+- Metrics: Workload per member, collaboration frequency matrix, idle/working distribution, knowledge silos
+- Implementation: Add TeamHealthWebview.ts, parse co-participant patterns, color-code members (green/yellow/red)
+
+**Feature 3: Decision Browser** (Medium Value)
+- Searchable, filterable view of all team decisions with context
+- Data sources: .ai-team/decisions.md (structured decisions)
+- Features: Full-text search, filter by author/date/status, jump to decision in markdown
+- Implementation: Add DecisionBrowserWebview.ts, parse decisions.md with regex, store in memory for search
+
+**Feature 4: Ceremony Timeline** (Medium Value)
+- Chronological view of retrospectives, design reviews, and other ceremonies
+- Data sources: OrchestrationLogService (ceremony sessions), ceremonies.md
+- Features: Timeline of ceremonies, outcome summaries, links to issues/decisions, filtering
+- Implementation: Add CeremonyTimelineWebview.ts, display as timeline with ceremony icons
+
+**Feature 5: Blocker & Dependency Visualizer** (Lower Priority)
+- Dependency graph showing which tasks/members are blocked and why
+- Data sources: GitHub issue dependencies, Orchestration logs (blocked state), SquadDataProvider
+- Features: Directed graph, highlight blocked tasks, show blocking reason
+- Implementation: Add BlockerGraphWebview.ts, parse GitHub issue links, render dependency tree
+
+#### Rationale
+
+These features transform SquadUI from a status viewer to a management dashboard. They surface insights hidden in files, answer PM questions instantly, and reduce manual toil. The data already exists — we just need to aggregate and visualize it.
+
+#### Impact
+
+PMs gain visibility into team velocity, workload balance, decision rationale, ceremony effectiveness, and blockers. Answers key questions: "Are we on track?", "Is the team balanced?", "Where's the risk?"
+
+---
+
+---
+
+### 2. Squad Visualization Features — UI Enhancement Proposals
+
+**Date:** 2026-02-14  
+**Author:** Rusty (Extension Dev)  
+**Status:** Proposed
+
+#### Context
+
+Jeffrey T. Fritz requested feature proposals for VS Code UI engagement and visual decision support. Focus is on leveraging VS Code UI capabilities (Tree Views, Webviews, Status Bar).
+
+#### Research Findings
+
+1. **FileDecorationProvider API:** Can add badges (max 2 characters) and icons to tree items
+2. **Status Bar API:** Supports custom items with text, icons (including spinning), theme colors, tooltips, click commands
+3. **Webview API:** Full HTML/CSS/JS control with postMessage for bidirectional communication
+4. **Theme System:** Must use ThemeColor for consistency
+5. **TreeView Limitations:** Cannot add multi-badge decorations; complex UI requires webview fallback
+
+#### Proposed Features
+
+**Feature 1: Activity Timeline Visualization** (High Value)
+- Interactive timeline webview showing member activity over time with swimlanes
+- UX: Command opens side panel webview, D3.js timeline with hourly/daily/weekly zoom, colored activity blocks per member
+- Implementation: ActivityTimelineWebview class, parse orchestration logs + GitHub events, D3.js timeline, postMessage filtering
+- Feasibility: Medium — D3.js integration, log parsing, established webview patterns
+
+**Feature 2: Real-Time Status Bar Integration** (High Value)
+- Live squad status in VS Code status bar: active member count, sprint progress, alerts
+- UX: $(organization) 3 active | Sprint: 7/12, spinning icon when working, warning colors for blockers
+- Implementation: SquadStatusBarItem class, poll SquadDataProvider every 30s, use ThemeColors
+- Feasibility: Easy — straightforward Status Bar API, low overhead
+
+**Feature 3: Tree Item Badge Decorations** (Medium Value)
+- Small badges on tree items: task counts (blue), blocked status (red), skill counts (green)
+- UX: Member items show "3" badge for 3 active tasks, blocked members show "!"
+- Implementation: SquadDecorationProvider implementing FileDecorationProvider, resourceUri pattern for decoration assignment
+- Feasibility: Easy — native API, 2-character limit acceptable
+
+**Feature 4: Member Performance Dashboard** (High Value)
+- Webview panel showing individual member metrics: tasks completed, avg completion time, issue velocity, contribution graph
+- UX: Context menu "View Performance Dashboard", charts for tasks/velocity/types, stats cards
+- Implementation: PerformanceDashboardWebview class, parse orchestration logs for metrics, Chart.js via CDN
+- Feasibility: Medium — requires metrics calculation, Chart.js integration, provides strong value
+
+**Feature 5: Skill Coverage Matrix** (Medium Value)
+- Heatmap webview showing member skills vs. skill catalog, highlighting coverage gaps
+- UX: Command opens webview with heatmap (rows=skills, columns=members), cell colors green/yellow/red, filtering
+- Implementation: SkillMatrixWebview class, parse charter.md for member skills, match to skill catalog with fuzzy matching
+- Feasibility: Medium — skill extraction, fuzzy matching, high strategic value
+
+#### Implementation Recommendations
+
+**Quick Wins (Easy):**
+1. Real-Time Status Bar Integration
+2. Tree Item Badge Decorations
+
+**High Impact (Medium):**
+3. Activity Timeline Visualization
+4. Member Performance Dashboard
+
+**Strategic (Later):**
+5. Skill Coverage Matrix
+
+#### Rationale
+
+Both Danny's and Rusty's proposals focus on transforming SquadUI from a simple viewer into a comprehensive project management tool. PM-focused features (velocity, health, decisions, ceremonies, blockers) provide data-driven decision support. UI-focused features (timeline, status bar, badges, dashboards, skills) provide real-time visibility and engagement. Together, they create sticky, valuable tool that managers want to keep installed.
+
+#### Impact
+
+- Managers gain real-time visibility into team health, velocity trends, and blockers without leaving VS Code
+- Historical decision context reduces onboarding time and repetition
+- Ceremony effectiveness tracking closes learning loops
+- Skill matrix identifies training needs and team weaknesses
+- Activity timeline and performance dashboards provide storytelling for retrospectives
+- Status bar alerts enable proactive unblocking and load balancing
+
+
+---
+
+---
+
+### 2026-02-14: Skill identity uses directory slug, not display name
+
+**By:** Rusty
+**What:** Added `slug` property to the `Skill` model (set to the directory name by `parseInstalledSkill`). Tree items, `viewSkill`, and `removeSkill` commands now pass/use the slug for filesystem operations instead of slugifying the display name. Also added YAML frontmatter parsing to `parseInstalledSkill()` so skills with frontmatter (like all `.ai-team/skills/` entries) show their human-readable `name:` field instead of the raw directory name.
+**Why:** The display name extracted from frontmatter (e.g., `"github-actions-vscode-ci"` → could be `"GitHub Actions CI"`) can differ from the directory name. Slugifying the display name back to a path is lossy and error-prone. The directory name is the canonical identifier; the display name is for humans. Separating these concerns prevents file-not-found errors when skill names don't round-trip through slugification.
+
+
+---
+
+---
+
+# Dashboard Swimlane Visual Refinements for v0.2
+
+**Author:** Rusty (Extension Developer)  
+**Date:** 2026-02-14  
+**Status:** Implemented
+
+## Context
+
+The Squad Dashboard swimlane view needed visual refinement to distinguish task status at a glance and provide detailed information on hover. This is part of preparing the v0.2.0 release which includes the new dashboard feature.
+
+## Decision
+
+### Swimlane Visual Enhancements
+
+1. **Status-Based Color Coding:**
+   - **Done tasks**: Green theme with `rgba(40, 167, 69, 0.15)` background and `var(--vscode-charts-green)` left border
+   - **In-progress tasks**: Amber/orange theme with `rgba(255, 193, 7, 0.15)` background and `var(--vscode-charts-orange)` left border
+   - Use 3px left border for visual status indicator
+
+2. **Hover Tooltips:**
+   - Implemented pure CSS tooltips (no JS framework needed)
+   - Positioned absolutely above task items when hovered
+   - Display: task title, status text, and duration
+   - Uses VS Code theme variables: `--vscode-editorWidget-background`, `--vscode-editorWidget-foreground`, `--vscode-editorWidget-border`
+   - Smooth opacity transition for better UX
+
+3. **Interactive Polish:**
+   - Task items have hover state using `var(--vscode-list-hoverBackground)`
+   - Cursor changes to `help` to indicate tooltip availability
+   - All task titles HTML-escaped to prevent XSS
+
+4. **Theme Compatibility:**
+   - All colors use VS Code CSS variables
+   - Works seamlessly in both dark and light themes
+   - Follows existing color system from velocity chart and heatmap
+
+## Implementation Details
+
+**Files Modified:**
+- `src/views/dashboard/htmlTemplate.ts`: Added CSS classes (`.task-item`, `.done`, `.in-progress`, `.tooltip`) and updated `renderActivitySwimlanes()` function to apply classes and generate tooltip markup
+
+**Version Bump:**
+- `package.json`: version `0.3.0` → `0.2.0`
+- Created `CHANGELOG.md` with feature list for v0.2.0 release
+
+## Rationale
+
+- **Visual distinction** allows users to quickly scan swimlanes and identify task status without reading text
+- **CSS tooltips** avoid JavaScript complexity and postMessage patterns, keeping the webview lightweight
+- **Theme variables** ensure the dashboard looks native in VS Code regardless of theme choice
+- **HTML escaping** maintains security best practices for user-generated content
+
+## Impact
+
+- Users can now see task status visually (green = done, amber = active)
+- Hovering reveals full context without cluttering the swimlane layout
+- Dashboard is ready for v0.2.0 release with polished visuals
+- Pattern established for future dashboard enhancements (Phase 3 Decision Browser)
+
+## Alternatives Considered
+
+- **title attribute only**: Too basic, no control over styling or multi-line content
+- **JavaScript-based tooltips**: Over-engineered for this use case, CSS is sufficient
+- **Icons instead of colors**: Less clear at-a-glance, colors provide better visual hierarchy
 
 

@@ -8,9 +8,10 @@
  * 3. If team.md is missing, falls back to log-participant discovery
  */
 
-import { SquadMember, Task, WorkDetails, OrchestrationLogEntry } from '../models';
+import { SquadMember, Task, WorkDetails, OrchestrationLogEntry, DecisionEntry } from '../models';
 import { OrchestrationLogService } from './OrchestrationLogService';
 import { TeamMdService } from './TeamMdService';
+import { DecisionService } from './DecisionService';
 
 /**
  * Provides squad data to the UI layer.
@@ -19,17 +20,20 @@ import { TeamMdService } from './TeamMdService';
 export class SquadDataProvider {
     private orchestrationService: OrchestrationLogService;
     private teamMdService: TeamMdService;
+    private decisionService: DecisionService;
     private teamRoot: string;
 
     // Cached data
     private cachedLogEntries: OrchestrationLogEntry[] | null = null;
     private cachedMembers: SquadMember[] | null = null;
     private cachedTasks: Task[] | null = null;
+    private cachedDecisions: DecisionEntry[] | null = null;
 
     constructor(teamRoot: string) {
         this.teamRoot = teamRoot;
         this.orchestrationService = new OrchestrationLogService();
         this.teamMdService = new TeamMdService();
+        this.decisionService = new DecisionService();
     }
 
     /**
@@ -104,6 +108,18 @@ export class SquadDataProvider {
     }
 
     /**
+     * Returns all decisions from the workspace.
+     */
+    async getDecisions(): Promise<DecisionEntry[]> {
+        if (this.cachedDecisions) {
+            return this.cachedDecisions;
+        }
+
+        this.cachedDecisions = await this.decisionService.getDecisions(this.teamRoot);
+        return this.cachedDecisions;
+    }
+
+    /**
      * Returns all tasks assigned to a specific member.
      * @param memberId - The name of the member to get tasks for
      */
@@ -152,11 +168,15 @@ export class SquadDataProvider {
         this.cachedLogEntries = null;
         this.cachedMembers = null;
         this.cachedTasks = null;
+        this.cachedDecisions = null;
     }
 
-    // ─── Private Methods ───────────────────────────────────────────────────
+    // ─── Public Data Access Methods ───────────────────────────────────────
 
-    private async getLogEntries(): Promise<OrchestrationLogEntry[]> {
+    /**
+     * Returns all parsed orchestration log entries.
+     */
+    async getLogEntries(): Promise<OrchestrationLogEntry[]> {
         if (this.cachedLogEntries) {
             return this.cachedLogEntries;
         }
@@ -165,7 +185,10 @@ export class SquadDataProvider {
         return this.cachedLogEntries;
     }
 
-    private async getTasks(): Promise<Task[]> {
+    /**
+     * Returns all active tasks from orchestration logs.
+     */
+    async getTasks(): Promise<Task[]> {
         if (this.cachedTasks) {
             return this.cachedTasks;
         }
