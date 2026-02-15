@@ -158,3 +158,8 @@ Two critical issues in the Add Skill workflow:
 3. Added "Recent Sessions" panel to Dashboard Activity tab with rich session context (topic, date, participants, decision counts)
 — decided by Rusty
 
+### 2026-02-15: Decision Tree Items Open in Markdown Preview (#47)
+- **Problem:** Clicking a decision in the Decisions sidebar opened the file in the text editor via `vscode.window.showTextDocument()`, not as rendered markdown
+- **Fix:** Changed `squadui.openDecision` command in `extension.ts` to use `vscode.commands.executeCommand('markdown.showPreview', uri)` instead, which opens the file in VS Code's built-in markdown preview
+- **File:** `src/extension.ts` — `openDecision` command handler
+
