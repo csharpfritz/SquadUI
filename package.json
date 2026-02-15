@@ -122,6 +122,11 @@
           "command": "squadui.refreshTree",
           "when": "view == squadTeam",
           "group": "navigation"
+        },
+        {
+          "command": "squadui.openDashboard",
+          "when": "view == squadTeam",
+          "group": "navigation"
         }
       ],
       "view/item/context": [

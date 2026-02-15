@@ -94,7 +94,7 @@ export function getDashboardHtml(data: DashboardData): string {
         }
         canvas {
             width: 100%;
-            height: 200px;
+            height: 250px;
         }
 
         /* Heatmap Grid */
@@ -114,6 +114,8 @@ export function getDashboardHtml(data: DashboardData): string {
         .heatmap-cell .member-name {
             font-weight: 600;
             margin-bottom: 8px;
+            cursor: pointer;
+            text-decoration: underline;
         }
         .heatmap-cell .activity-bar {
             height: 8px;
@@ -140,6 +142,13 @@ export function getDashboardHtml(data: DashboardData): string {
             margin-bottom: 8px;
             font-size: 1.05em;
         }
+        .swimlane-header .member-link {
+            cursor: pointer;
+            text-decoration: underline;
+        }
+        .swimlane-header .member-link:hover {
+            color: var(--vscode-textLink-foreground);
+        }
         .swimlane-header .role {
             color: var(--vscode-descriptionForeground);
             font-weight: 400;
@@ -161,7 +170,7 @@ export function getDashboardHtml(data: DashboardData): string {
             margin: 6px 0;
             padding: 8px 12px;
             border-radius: 4px;
-            cursor: help;
+            cursor: pointer;
             transition: background-color 0.2s;
             position: relative;
         }
@@ -338,6 +347,9 @@ export function getDashboardHtml(data: DashboardData): string {
     </div>
 
     <script>
+        // VS Code webview API
+        const vscode = acquireVsCodeApi();
+
         // Data from backend
         const velocityData = ${velocityDataJson};
         const activityData = ${activityDataJson};
@@ -358,45 +370,104 @@ export function getDashboardHtml(data: DashboardData): string {
             });
         });
 
+        // Resolve CSS variable to actual color for canvas usage
+        function resolveColor(varName, fallback) {
+            const resolved = getComputedStyle(document.documentElement).getPropertyValue(varName).trim();
+            return resolved || fallback;
+        }
+
         // Render velocity chart (simple line chart with Canvas)
         function renderVelocityChart() {
             const canvas = document.getElementById('velocity-chart');
             const ctx = canvas.getContext('2d');
             const timeline = velocityData.timeline;
 
+            // Resolve theme colors for canvas drawing
+            const lineColor = resolveColor('--vscode-charts-blue', '#3794ff');
+            const axisColor = resolveColor('--vscode-panel-border', '#444');
+            const labelColor = resolveColor('--vscode-foreground', '#ccc');
+            const mutedColor = resolveColor('--vscode-descriptionForeground', '#999');
+
             if (!timeline || timeline.length === 0) {
-                ctx.fillStyle = 'var(--vscode-descriptionForeground)';
-                ctx.font = '14px var(--vscode-font)';
+                canvas.width = canvas.offsetWidth;
+                canvas.height = 250;
+                ctx.fillStyle = mutedColor;
+                ctx.font = '14px sans-serif';
                 ctx.fillText('No data available', 20, 100);
                 return;
             }
 
             // Set canvas size
             canvas.width = canvas.offsetWidth;
-            canvas.height = 200;
+            canvas.height = 250;
 
-            const padding = 40;
-            const width = canvas.width - padding * 2;
-            const height = canvas.height - padding * 2;
+            const paddingLeft = 55;
+            const paddingRight = 20;
+            const paddingTop = 20;
+            const paddingBottom = 45;
+            const width = canvas.width - paddingLeft - paddingRight;
+            const height = canvas.height - paddingTop - paddingBottom;
             const maxValue = Math.max(...timeline.map(d => d.completedTasks), 1);
             const stepX = width / (timeline.length - 1 || 1);
 
             // Draw axes
-            ctx.strokeStyle = 'var(--vscode-panel-border)';
+            ctx.strokeStyle = axisColor;
             ctx.lineWidth = 1;
             ctx.beginPath();
-            ctx.moveTo(padding, padding);
-            ctx.lineTo(padding, padding + height);
-            ctx.lineTo(padding + width, padding + height);
+            ctx.moveTo(paddingLeft, paddingTop);
+            ctx.lineTo(paddingLeft, paddingTop + height);
+            ctx.lineTo(paddingLeft + width, paddingTop + height);
             ctx.stroke();
 
+            // Y-axis labels (0, mid, max)
+            ctx.fillStyle = labelColor;
+            ctx.font = '11px sans-serif';
+            ctx.textAlign = 'right';
+            ctx.textBaseline = 'middle';
+            const yLabels = [0, Math.round(maxValue / 2), maxValue];
+            yLabels.forEach(val => {
+                const y = paddingTop + height - (val / maxValue) * height;
+                ctx.fillText(String(val), paddingLeft - 8, y);
+                // Draw subtle grid line
+                if (val > 0) {
+                    ctx.strokeStyle = axisColor;
+                    ctx.globalAlpha = 0.3;
+                    ctx.beginPath();
+                    ctx.moveTo(paddingLeft, y);
+                    ctx.lineTo(paddingLeft + width, y);
+                    ctx.stroke();
+                    ctx.globalAlpha = 1.0;
+                }
+            });
+
+            // X-axis date labels (show ~6 evenly spaced dates)
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'top';
+            ctx.fillStyle = labelColor;
+            const labelCount = Math.min(6, timeline.length);
+            const labelStep = Math.max(1, Math.floor((timeline.length - 1) / (labelCount - 1)));
+            for (let i = 0; i < timeline.length; i += labelStep) {
+                const x = paddingLeft + i * stepX;
+                const dateStr = timeline[i].date;
+                const parts = dateStr.split('-');
+                const label = parts[1] + '/' + parts[2]; // MM/DD
+                ctx.fillText(label, x, paddingTop + height + 8);
+            }
+            // Always show last date
+            if ((timeline.length - 1) % labelStep !== 0) {
+                const lastX = paddingLeft + (timeline.length - 1) * stepX;
+                const lastDate = timeline[timeline.length - 1].date;
+                const lastParts = lastDate.split('-');
+                ctx.fillText(lastParts[1] + '/' + lastParts[2], lastX, paddingTop + height + 8);
+            }
+
             // Draw line
-            ctx.strokeStyle = 'var(--vscode-charts-blue)';
+            ctx.strokeStyle = lineColor;
             ctx.lineWidth = 2;
             ctx.beginPath();
             timeline.forEach((point, i) => {
-                const x = padding + i * stepX;
-                const y = padding + height - (point.completedTasks / maxValue) * height;
+                const x = paddingLeft + i * stepX;
+                const y = paddingTop + height - (point.completedTasks / maxValue) * height;
                 if (i === 0) {
                     ctx.moveTo(x, y);
                 } else {
@@ -406,10 +477,10 @@ export function getDashboardHtml(data: DashboardData): string {
             ctx.stroke();
 
             // Draw points
-            ctx.fillStyle = 'var(--vscode-charts-blue)';
+            ctx.fillStyle = lineColor;
             timeline.forEach((point, i) => {
-                const x = padding + i * stepX;
-                const y = padding + height - (point.completedTasks / maxValue) * height;
+                const x = paddingLeft + i * stepX;
+                const y = paddingTop + height - (point.completedTasks / maxValue) * height;
                 ctx.beginPath();
                 ctx.arc(x, y, 3, 0, Math.PI * 2);
                 ctx.fill();
@@ -431,7 +502,7 @@ export function getDashboardHtml(data: DashboardData): string {
                 const cell = document.createElement('div');
                 cell.className = 'heatmap-cell';
                 cell.innerHTML = \`
-                    <div class="member-name">\${point.member}</div>
+                    <div class="member-name" data-action="open-member" data-member-name="\${point.member}">\${point.member}</div>
                     <div class="activity-bar">
                         <div class="activity-fill" style="width: \${point.activityLevel * 100}%"></div>
                     </div>
@@ -473,7 +544,7 @@ export function getDashboardHtml(data: DashboardData): string {
                         const statusText = isDone ? 'Completed' : 'In Progress';
                         
                         tasksHtml += \`
-                            <li class="task-item \${statusClass}" title="\${escapedTitle}">
+                            <li class="task-item \${statusClass}" title="\${escapedTitle}" data-action="open-task" data-task-id="\${task.id}">
                                 <span class="task-icon">\${icon}</span>
                                 <span class="task-title">\${escapedTitle}</span>
                                 <span class="task-dates">(\${dateRange})</span>
@@ -490,7 +561,7 @@ export function getDashboardHtml(data: DashboardData): string {
 
                 swimlane.innerHTML = \`
                     <div class="swimlane-header">
-                        \${lane.member} <span class="role">· \${lane.role}</span>
+                        <span class="member-link" data-action="open-member" data-member-name="\${lane.member}">\${lane.member}</span> <span class="role">· \${lane.role}</span>
                     </div>
                     \${tasksHtml}
                 \`;
@@ -502,13 +573,18 @@ export function getDashboardHtml(data: DashboardData): string {
         renderVelocityChart();
         renderHeatmap();
         renderActivitySwimlanes();
-        renderDecisions();
 
         // Render decisions
         function renderDecisions(filter = '') {
             const container = document.getElementById('decision-list');
             const entries = decisionData.entries;
             
+            if (!entries || entries.length === 0) {
+                container.innerHTML = '<div class="decisions-empty">No decisions recorded yet.<br><br>Decisions appear here as your team makes architectural and process decisions.<br>Create decision files in <code>.ai-team/decisions/</code> to get started.</div>';
+                container.style.display = 'block';
+                return;
+            }
+
             const lowerFilter = filter.toLowerCase();
             const filtered = entries.filter(d => 
                 d.title.toLowerCase().includes(lowerFilter) || 
@@ -518,7 +594,7 @@ export function getDashboardHtml(data: DashboardData): string {
             
             if (filtered.length === 0) {
                 container.innerHTML = '<div class="decisions-empty">No matching decisions found</div>';
-                container.style.display = 'block'; // Ensure it takes full width
+                container.style.display = 'block';
                 return;
             }
             
@@ -531,7 +607,7 @@ export function getDashboardHtml(data: DashboardData): string {
                     .replace(/\\[([^\\]]+)\\]\\([^)]+\\)/g, '$1');
 
                 return \`
-                    <div class="decision-card" title="View \${d.title}">
+                    <div class="decision-card" title="View \${d.title}" data-action="open-decision" data-file-path="\${escapeHtml(d.filePath || '')}" data-line-number="\${d.lineNumber || 0}">
                         <div class="decision-title">\${escapeHtml(d.title)}</div>
                         <div class="decision-meta">
                             <span>📅 \${d.date}</span>
@@ -550,6 +626,9 @@ export function getDashboardHtml(data: DashboardData): string {
             renderDecisions(e.target.value);
         });
 
+        // Initialize decisions after function is defined
+        renderDecisions();
+
         // Helper to escape HTML
         function escapeHtml(text) {
             return text
@@ -559,6 +638,35 @@ export function getDashboardHtml(data: DashboardData): string {
                 .replace(/"/g, "&quot;")
                 .replace(/'/g, "&#039;");
         }
+
+        // Event delegation for clickable items
+        document.body.addEventListener('click', (e) => {
+            const target = e.target.closest('[data-action]');
+            if (!target) return;
+
+            const action = target.dataset.action;
+            switch (action) {
+                case 'open-decision':
+                    vscode.postMessage({
+                        command: 'openDecision',
+                        filePath: target.dataset.filePath,
+                        lineNumber: parseInt(target.dataset.lineNumber || '0', 10)
+                    });
+                    break;
+                case 'open-task':
+                    vscode.postMessage({
+                        command: 'openTask',
+                        taskId: target.dataset.taskId
+                    });
+                    break;
+                case 'open-member':
+                    vscode.postMessage({
+                        command: 'openMember',
+                        memberName: target.dataset.memberName
+                    });
+                    break;
+            }
+        });
     </script>
 </body>
 </html>

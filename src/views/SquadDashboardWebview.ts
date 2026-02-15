@@ -64,6 +64,20 @@ export class SquadDashboardWebview {
             dark: vscode.Uri.joinPath(this.extensionUri, 'images', 'icon.png')
         };
 
+        this.panel.webview.onDidReceiveMessage(async (message) => {
+            switch (message.command) {
+                case 'openDecision':
+                    await vscode.commands.executeCommand('squadui.openDecision', message.filePath, message.lineNumber ?? 0);
+                    break;
+                case 'openTask':
+                    await vscode.commands.executeCommand('squadui.showWorkDetails', message.taskId);
+                    break;
+                case 'openMember':
+                    await vscode.commands.executeCommand('squadui.viewCharter', message.memberName);
+                    break;
+            }
+        }, undefined, []);
+
         this.panel.onDidDispose(() => {
             this.panel = undefined;
         });
