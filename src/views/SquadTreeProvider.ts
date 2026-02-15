@@ -70,6 +70,15 @@ export class TeamTreeProvider implements vscode.TreeDataProvider<SquadTreeItem> 
     private async getSquadMemberItems(): Promise<SquadTreeItem[]> {
         const members = await this.dataProvider.getSquadMembers();
         
+        // Sort: regular members first, then @copilot, then infra (scribe/ralph)
+        const sortOrder = (name: string): number => {
+            const l = name.toLowerCase();
+            if (l === 'scribe' || l === 'ralph') { return 2; }
+            if (l === '@copilot' || l === 'copilot') { return 1; }
+            return 0;
+        };
+        members.sort((a, b) => sortOrder(a.name) - sortOrder(b.name));
+
         return Promise.all(members.map(async member => {
             const lowerName = member.name.toLowerCase();
             const isInfra = lowerName === 'scribe' || lowerName === 'ralph';

@@ -2,7 +2,7 @@
   "name": "squadui",
   "displayName": "SquadUI",
   "description": "Visualize Squad team members and their tasks",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "publisher": "csharpfritz",
   "icon": "images/icon.png",
   "repository": {
@@ -119,11 +119,6 @@
           "group": "navigation"
         },
         {
-          "command": "squadui.addSkill",
-          "when": "view == squadSkills",
-          "group": "navigation"
-        },
-        {
           "command": "squadui.refreshTree",
           "when": "view == squadTeam",
           "group": "navigation"
@@ -166,6 +161,10 @@
         },
         {
           "command": "squadui.removeSkill",
+          "when": "false"
+        },
+        {
+          "command": "squadui.addSkill",
           "when": "false"
         }
       ]

@@ -5,6 +5,30 @@ All notable changes to the SquadUI extension will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.0] - 2026-02-15
+
+### Added
+- **Cross-project compatibility**: Auto-detect H2 vs H3 decision heading levels for different `.ai-team/` structures
+- **Broader task extraction**: Support for `## What Happened`, `**Work done:**`, and unbolded agent name formats in session logs
+- **@copilot expandable node**: Copilot team member now shows GitHub issues as child items
+
+### Changed
+- **Member ordering**: @copilot now appears above Scribe and Ralph in the Team panel (since it may have active tasks)
+- **Skill labels**: Stripped "Skill: " prefix and removed "local" source indicator
+- **Decision labels**: Stripped date prefixes, "User directive —", "Decision:", "Design Decision:", and other generic prefixes
+- **Scribe & Ralph**: Unique icons (quill and eye), no expandable children
+- **@copilot**: Robot icon, no charter click-through
+- **Removed redundant "View" button** from team member context menu
+- **Removed collapse-all** from Skills and Decisions panels (no expandable items)
+
+### Disabled
+- **Add Skill button**: Temporarily removed from Skills panel header (feature incomplete — backlog item)
+
+### Fixed
+- Skill click error: now passes slug instead of display name to `viewSkill` command
+- Decision panel: prefers H1 heading for individual decision files over H2/H3
+- BlazorLora session log parsing: handles `## What Happened` section format
+
 ## [0.4.0] - 2026-02-14
 
 ### Added
@@ -41,5 +65,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Team.md parser service for member roster management
 - Orchestration log service for runtime activity tracking
 
+[0.5.0]: https://github.com/csharpfritz/SquadUI/releases/tag/v0.5.0
 [0.4.0]: https://github.com/csharpfritz/SquadUI/releases/tag/v0.4.0
 [0.1.0]: https://github.com/csharpfritz/SquadUI/releases/tag/v0.1.0
