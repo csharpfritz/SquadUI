@@ -245,3 +245,5 @@ Basher completed comprehensive test coverage during the initial two days of deve
 - Manual test plan documentation
 
 All test code and infrastructure are in place in src/test/suite/ and work as of the last test run. See .ai-team/decisions.md and commit history for detailed patterns established.
+
+📌 Team update (2026-02-15): Add Skill now fetches actual content from GitHub repos (copilot-instructions.md → SKILL.md → README.md fallback) and prompts on duplicate installs instead of silently overwriting — decided by Rusty

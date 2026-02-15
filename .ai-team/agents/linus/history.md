@@ -146,3 +146,6 @@ Created `src/services/SkillCatalogService.ts` (issue #38) — a unified service 
 
 📌 **Team decision merged (2026-02-15):** Skills install as metadata stubs, not actual content. SkillCatalogService never fetches skill.content from source repos. Action: Implement content fetching from skill.url to download SKILL.md/README.md before install. — decided by Rusty/Danny
 
+
+
+📌 Team update (2026-02-15): Add Skill content fetching strategy implemented: GitHub repos use copilot-instructions.md → SKILL.md → README.md priority chain; non-GitHub URLs fetch directly. fetchSkillContent() method is public for future reuse (e.g., preview features) — decided by Rusty
