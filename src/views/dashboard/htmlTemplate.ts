@@ -564,7 +564,7 @@ export function getDashboardHtml(data: DashboardData): string {
                 </div>
                 <div class="summary-card">
                     <span class="value" style="color: var(--vscode-charts-green);">\${summary.activeMembers}</span>
-                    <span class="label">Active</span>
+                    <span class="label">Working</span>
                 </div>
                 <div class="summary-card">
                     <span class="value" style="color: var(--vscode-charts-blue);">\${summary.totalOpenIssues}</span>
@@ -576,7 +576,7 @@ export function getDashboardHtml(data: DashboardData): string {
                 </div>
                 <div class="summary-card">
                     <span class="value" style="color: var(--vscode-charts-orange);">\${summary.totalActiveTasks}</span>
-                    <span class="label">Active Tasks</span>
+                    <span class="label">In Progress</span>
                 </div>
             \`;
 
@@ -592,7 +592,7 @@ export function getDashboardHtml(data: DashboardData): string {
                     : m.iconType === 'copilot' ? '🤖'
                     : (m.status === 'working' ? '⚡' : '👤');
                 const statusBadge = m.status === 'working'
-                    ? '<span style="color: var(--vscode-charts-green);">⚡ Active</span>'
+                    ? '<span style="color: var(--vscode-charts-green);">⚡ Working</span>'
                     : '<span style="color: var(--vscode-descriptionForeground);">💤 Idle</span>';
                 const displayName = stripMarkdownLinks(m.name);
 
@@ -609,7 +609,7 @@ export function getDashboardHtml(data: DashboardData): string {
                         <div class="member-card-stats">
                             <span class="member-stat">📋 \${m.openIssueCount} open</span>
                             <span class="member-stat">✅ \${m.closedIssueCount} closed</span>
-                            <span class="member-stat">🔄 \${m.activeTaskCount} tasks</span>
+                            <span class="member-stat">🔄 \${m.activeTaskCount} in progress</span>
                             <span class="member-stat">📊 \${m.recentActivityCount} sessions</span>
                         </div>
                     </div>
@@ -846,6 +846,19 @@ export function getDashboardHtml(data: DashboardData): string {
                 ctx.fillStyle = mutedColor;
                 ctx.font = '14px sans-serif';
                 ctx.fillText('No data available', 20, 100);
+                return;
+            }
+
+            // Check if all values are zero — show helpful empty state
+            const hasData = timeline.some(d => d.completedTasks > 0);
+            if (!hasData) {
+                canvas.width = canvas.offsetWidth;
+                canvas.height = 250;
+                ctx.fillStyle = mutedColor;
+                ctx.font = '14px sans-serif';
+                ctx.fillText('No completed tasks or closed issues in the last 30 days.', 20, 100);
+                ctx.font = '12px sans-serif';
+                ctx.fillText('Close GitHub issues or complete orchestration tasks to see velocity.', 20, 125);
                 return;
             }
 
