@@ -139,7 +139,13 @@ export class TeamTreeProvider implements vscode.TreeDataProvider<SquadTreeItem> 
                 task.id
             );
 
-            item.iconPath = new vscode.ThemeIcon('tasklist');
+            const taskIconId = task.status === 'completed' ? 'pass-filled'
+                : task.status === 'in_progress' ? 'sync~spin'
+                : 'circle-outline';
+            const taskIconColor = task.status === 'completed' ? new vscode.ThemeColor('charts.green')
+                : task.status === 'in_progress' ? new vscode.ThemeColor('charts.orange')
+                : undefined;
+            item.iconPath = new vscode.ThemeIcon(taskIconId, taskIconColor);
             item.description = task.status;
             item.tooltip = this.getTaskTooltip(task);
             

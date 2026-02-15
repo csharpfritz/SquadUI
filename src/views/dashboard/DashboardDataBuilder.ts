@@ -3,7 +3,7 @@
  * Builds data for velocity charts, activity timelines, and decision browser.
  */
 
-import { OrchestrationLogEntry, Task, SquadMember, DashboardData, VelocityDataPoint, ActivityHeatmapPoint, ActivitySwimlane, TimelineTask, DecisionEntry } from '../../models';
+import { OrchestrationLogEntry, Task, SquadMember, DashboardData, VelocityDataPoint, ActivityHeatmapPoint, ActivitySwimlane, TimelineTask, DecisionEntry, TeamMemberOverview, TeamSummary, MemberIssueMap, GitHubIssue, MilestoneBurndown, BurndownDataPoint } from '../../models';
 
 export class DashboardDataBuilder {
     /**
@@ -13,9 +13,16 @@ export class DashboardDataBuilder {
         logEntries: OrchestrationLogEntry[],
         members: SquadMember[],
         tasks: Task[],
-        decisions: DecisionEntry[]
+        decisions: DecisionEntry[],
+        openIssues?: MemberIssueMap,
+        closedIssues?: MemberIssueMap,
+        milestoneBurndowns?: MilestoneBurndown[]
     ): DashboardData {
         return {
+            team: this.buildTeamOverview(members, tasks, logEntries, openIssues, closedIssues),
+            burndown: {
+                milestones: milestoneBurndowns ?? [],
+            },
             velocity: {
                 timeline: this.buildVelocityTimeline(tasks),
                 heatmap: this.buildActivityHeatmap(members, logEntries),
@@ -146,6 +153,187 @@ export class DashboardDataBuilder {
             startDate: startDate.toISOString().split('T')[0],
             endDate: endDate ? endDate.toISOString().split('T')[0] : null,
             status: task.status,
+        };
+    }
+
+    /**
+     * Builds the Team overview: per-member cards and aggregate summary.
+     */
+    private buildTeamOverview(
+        members: SquadMember[],
+        tasks: Task[],
+        logEntries: OrchestrationLogEntry[],
+        openIssues?: MemberIssueMap,
+        closedIssues?: MemberIssueMap
+    ): { members: TeamMemberOverview[]; summary: TeamSummary } {
+        const now = new Date();
+        const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+
+        // Count recent log participation per member
+        const recentParticipation = new Map<string, number>();
+        for (const entry of logEntries) {
+            const entryDate = new Date(entry.date);
+            if (entryDate < sevenDaysAgo) { continue; }
+            for (const p of entry.participants) {
+                recentParticipation.set(p, (recentParticipation.get(p) ?? 0) + 1);
+            }
+        }
+
+        let totalOpenIssues = 0;
+        let totalClosedIssues = 0;
+        let totalActiveTasks = 0;
+        let activeMembers = 0;
+
+        const memberOverviews: TeamMemberOverview[] = members.map(member => {
+            const lowerName = member.name.toLowerCase();
+            const iconType = lowerName === 'scribe' ? 'scribe' as const
+                : lowerName === 'ralph' ? 'ralph' as const
+                : (lowerName === '@copilot' || lowerName === 'copilot') ? 'copilot' as const
+                : undefined;
+
+            const memberOpenIssues = openIssues?.get(lowerName) ?? [];
+            const memberClosedIssues = closedIssues?.get(lowerName) ?? [];
+            const memberTasks = tasks.filter(t => t.assignee === member.name && t.status === 'in_progress');
+
+            totalOpenIssues += memberOpenIssues.length;
+            totalClosedIssues += memberClosedIssues.length;
+            totalActiveTasks += memberTasks.length;
+            if (member.status === 'working') { activeMembers++; }
+
+            return {
+                name: member.name,
+                role: member.role,
+                status: member.status,
+                iconType,
+                openIssueCount: memberOpenIssues.length,
+                closedIssueCount: memberClosedIssues.length,
+                activeTaskCount: memberTasks.length,
+                recentActivityCount: recentParticipation.get(member.name) ?? 0,
+            };
+        });
+
+        const summary: TeamSummary = {
+            totalMembers: members.length,
+            activeMembers,
+            totalOpenIssues,
+            totalClosedIssues,
+            totalActiveTasks,
+        };
+
+        return { members: memberOverviews, summary };
+    }
+
+    // Stable color palette for member-colored chart areas
+    private static readonly MEMBER_COLORS = [
+        '#3794ff', '#89d185', '#d18616', '#c586c0',
+        '#4ec9b0', '#ce9178', '#569cd6', '#dcdcaa',
+        '#6a9955', '#f44747', '#b5cea8', '#9cdcfe',
+    ];
+
+    /**
+     * Builds burndown data for a single milestone from its issues.
+     * The burndown shows how many issues remain open over time,
+     * with stacked areas colored by assigned squad member.
+     */
+    buildMilestoneBurndown(
+        milestoneTitle: string,
+        milestoneNumber: number,
+        issues: GitHubIssue[],
+        dueDate?: string
+    ): MilestoneBurndown {
+        if (issues.length === 0) {
+            return {
+                title: milestoneTitle, number: milestoneNumber,
+                totalIssues: 0, memberNames: [], memberColors: [],
+                dataPoints: [], dueDate,
+            };
+        }
+
+        // Determine member for each issue (from squad: label, falling back to 'unassigned')
+        const SQUAD_PREFIX = 'squad:';
+        const issueMemberMap = new Map<number, string>();
+        const memberSet = new Set<string>();
+
+        for (const issue of issues) {
+            const squadLabel = issue.labels.find(l => l.name.startsWith(SQUAD_PREFIX));
+            const member = squadLabel
+                ? squadLabel.name.substring(SQUAD_PREFIX.length).toLowerCase()
+                : (issue.assignee?.toLowerCase() ?? 'unassigned');
+            issueMemberMap.set(issue.number, member);
+            memberSet.add(member);
+        }
+
+        // Stable sort: alphabetical, 'unassigned' last
+        const memberNames = Array.from(memberSet).sort((a, b) => {
+            if (a === 'unassigned') { return 1; }
+            if (b === 'unassigned') { return -1; }
+            return a.localeCompare(b);
+        });
+        const memberColors = memberNames.map(
+            (_, i) => DashboardDataBuilder.MEMBER_COLORS[i % DashboardDataBuilder.MEMBER_COLORS.length]
+        );
+
+        // Determine date range: milestone start = earliest created issue, end = today or due date
+        const createdDates = issues.map(i => new Date(i.createdAt).getTime());
+        const startDate = new Date(Math.min(...createdDates));
+        startDate.setHours(0, 0, 0, 0);
+
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const endDateObj = dueDate ? new Date(Math.max(today.getTime(), new Date(dueDate).getTime())) : today;
+
+        // Build daily close events: date → set of issue numbers closed on that date
+        const closeEvents = new Map<string, Set<number>>();
+        for (const issue of issues) {
+            if (issue.closedAt) {
+                const closedDate = new Date(issue.closedAt).toISOString().split('T')[0];
+                const existing = closeEvents.get(closedDate) ?? new Set<number>();
+                existing.add(issue.number);
+                closeEvents.set(closedDate, existing);
+            }
+        }
+
+        // Walk day-by-day and compute remaining open issues
+        const dataPoints: BurndownDataPoint[] = [];
+        const closedSoFar = new Set<number>();
+
+        for (let d = new Date(startDate); d <= endDateObj; d.setDate(d.getDate() + 1)) {
+            const dateKey = d.toISOString().split('T')[0];
+
+            // Apply any closes on this date
+            const todayCloses = closeEvents.get(dateKey);
+            if (todayCloses) {
+                for (const num of todayCloses) { closedSoFar.add(num); }
+            }
+
+            // Count remaining open by member
+            const byMember: Record<string, number> = {};
+            for (const name of memberNames) { byMember[name] = 0; }
+
+            let remaining = 0;
+            for (const issue of issues) {
+                // Only count issues that were created on or before this date
+                const createdDate = new Date(issue.createdAt).toISOString().split('T')[0];
+                if (createdDate > dateKey) { continue; }
+
+                if (!closedSoFar.has(issue.number)) {
+                    remaining++;
+                    const member = issueMemberMap.get(issue.number) ?? 'unassigned';
+                    byMember[member] = (byMember[member] ?? 0) + 1;
+                }
+            }
+
+            dataPoints.push({ date: dateKey, remaining, byMember });
+        }
+
+        return {
+            title: milestoneTitle,
+            number: milestoneNumber,
+            totalIssues: issues.length,
+            memberNames,
+            memberColors,
+            dataPoints,
+            dueDate,
         };
     }
 }

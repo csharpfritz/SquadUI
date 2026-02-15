@@ -6,6 +6,8 @@
 import { DashboardData } from '../../models';
 
 export function getDashboardHtml(data: DashboardData): string {
+    const teamDataJson = JSON.stringify(data.team);
+    const burndownDataJson = JSON.stringify(data.burndown);
     const velocityDataJson = JSON.stringify(data.velocity);
     const activityDataJson = JSON.stringify(data.activity);
     const decisionDataJson = JSON.stringify(data.decisions);
@@ -299,18 +301,181 @@ export function getDashboardHtml(data: DashboardData): string {
             text-align: center;
             padding: 40px;
         }
+
+        /* Team Tab */
+        .team-summary {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+        }
+        .summary-card {
+            background-color: var(--vscode-editor-background);
+            border: 1px solid var(--vscode-panel-border);
+            border-radius: 4px;
+            padding: 16px 24px;
+            text-align: center;
+            min-width: 120px;
+        }
+        .summary-card .value {
+            font-size: 2em;
+            font-weight: 700;
+            display: block;
+            margin-bottom: 4px;
+        }
+        .summary-card .label {
+            font-size: 0.85em;
+            color: var(--vscode-descriptionForeground);
+        }
+        .member-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            gap: 16px;
+        }
+        .member-card {
+            background-color: var(--vscode-editor-background);
+            border: 1px solid var(--vscode-panel-border);
+            border-radius: 6px;
+            padding: 16px;
+            transition: transform 0.15s, box-shadow 0.15s;
+        }
+        .member-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            border-color: var(--vscode-focusBorder);
+        }
+        .member-card-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        .member-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            background-color: var(--vscode-badge-background);
+            color: var(--vscode-badge-foreground);
+            flex-shrink: 0;
+        }
+        .member-card-name {
+            font-weight: 600;
+            font-size: 1.05em;
+            cursor: pointer;
+            text-decoration: underline;
+        }
+        .member-card-name:hover {
+            color: var(--vscode-textLink-foreground);
+        }
+        .member-card-role {
+            font-size: 0.85em;
+            color: var(--vscode-descriptionForeground);
+        }
+        .member-card-stats {
+            display: flex;
+            gap: 12px;
+            font-size: 0.85em;
+            margin-top: 8px;
+            flex-wrap: wrap;
+        }
+        .member-stat {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        /* Burndown Tab */
+        .burndown-container {
+            display: flex;
+            flex-direction: column;
+            gap: 32px;
+        }
+        .burndown-chart-wrapper {
+            background-color: var(--vscode-editor-background);
+            border: 1px solid var(--vscode-panel-border);
+            border-radius: 4px;
+            padding: 16px;
+        }
+        .burndown-title {
+            font-size: 1.2em;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+        .burndown-subtitle {
+            font-size: 0.85em;
+            color: var(--vscode-descriptionForeground);
+            margin-bottom: 16px;
+        }
+        .burndown-legend {
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+            margin-top: 12px;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.85em;
+        }
+        .legend-swatch {
+            width: 14px;
+            height: 14px;
+            border-radius: 3px;
+        }
+        .milestone-selector {
+            padding: 6px 12px;
+            background-color: var(--vscode-input-background);
+            color: var(--vscode-input-foreground);
+            border: 1px solid var(--vscode-input-border);
+            border-radius: 2px;
+            font-family: var(--vscode-font);
+            font-size: 13px;
+        }
+        .burndown-empty {
+            color: var(--vscode-descriptionForeground);
+            font-style: italic;
+            text-align: center;
+            padding: 40px;
+        }
     </style>
 </head>
 <body>
     <!-- Tab Navigation -->
     <div class="tabs">
-        <button class="tab active" data-tab="velocity">Velocity</button>
+        <button class="tab active" data-tab="team">Team</button>
+        <button class="tab" data-tab="burndown">Burndown</button>
+        <button class="tab" data-tab="velocity">Velocity</button>
         <button class="tab" data-tab="activity">Activity</button>
         <button class="tab" data-tab="decisions">Decisions</button>
     </div>
 
+    <!-- Team Tab -->
+    <div class="tab-content active" id="team-tab">
+        <h2>Team Overview</h2>
+        <p>Your squad at a glance — members, workload, and activity.</p>
+        <div class="team-summary" id="team-summary"></div>
+        <div class="member-cards" id="member-cards"></div>
+    </div>
+
+    <!-- Burndown Tab -->
+    <div class="tab-content" id="burndown-tab">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+            <div>
+                <h2>Milestone Burndown</h2>
+                <p>Track remaining work over time, colored by team member.</p>
+            </div>
+            <select id="milestone-selector" class="milestone-selector"></select>
+        </div>
+        <div id="burndown-container" class="burndown-container"></div>
+    </div>
+
     <!-- Velocity Tab -->
-    <div class="tab-content active" id="velocity-tab">
+    <div class="tab-content" id="velocity-tab">
         <h2>Team Velocity & Health</h2>
         <p>Track task completion trends and team activity levels over time.</p>
         
@@ -356,6 +521,8 @@ export function getDashboardHtml(data: DashboardData): string {
         const vscode = acquireVsCodeApi();
 
         // Data from backend
+        const teamData = ${teamDataJson};
+        const burndownData = ${burndownDataJson};
         const velocityData = ${velocityDataJson};
         const activityData = ${activityDataJson};
         const decisionData = ${decisionDataJson};
@@ -379,6 +546,286 @@ export function getDashboardHtml(data: DashboardData): string {
         function resolveColor(varName, fallback) {
             const resolved = getComputedStyle(document.documentElement).getPropertyValue(varName).trim();
             return resolved || fallback;
+        }
+
+        // ─── Team Overview ──────────────────────────────────────────────
+
+        function renderTeamOverview() {
+            const summaryEl = document.getElementById('team-summary');
+            const cardsEl = document.getElementById('member-cards');
+            const summary = teamData.summary;
+            const members = teamData.members;
+
+            // Summary cards
+            summaryEl.innerHTML = \`
+                <div class="summary-card">
+                    <span class="value">\${summary.totalMembers}</span>
+                    <span class="label">Members</span>
+                </div>
+                <div class="summary-card">
+                    <span class="value" style="color: var(--vscode-charts-green);">\${summary.activeMembers}</span>
+                    <span class="label">Active</span>
+                </div>
+                <div class="summary-card">
+                    <span class="value" style="color: var(--vscode-charts-blue);">\${summary.totalOpenIssues}</span>
+                    <span class="label">Open Issues</span>
+                </div>
+                <div class="summary-card">
+                    <span class="value" style="color: var(--vscode-charts-purple);">\${summary.totalClosedIssues}</span>
+                    <span class="label">Closed</span>
+                </div>
+                <div class="summary-card">
+                    <span class="value" style="color: var(--vscode-charts-orange);">\${summary.totalActiveTasks}</span>
+                    <span class="label">Active Tasks</span>
+                </div>
+            \`;
+
+            // Member cards
+            if (members.length === 0) {
+                cardsEl.innerHTML = '<div class="decisions-empty">No team members found.<br>Initialize a squad with <code>Squad: Initialize</code>.</div>';
+                return;
+            }
+
+            cardsEl.innerHTML = members.map(m => {
+                const icon = m.iconType === 'scribe' ? '✏️'
+                    : m.iconType === 'ralph' ? '👁️'
+                    : m.iconType === 'copilot' ? '🤖'
+                    : (m.status === 'working' ? '⚡' : '👤');
+                const statusBadge = m.status === 'working'
+                    ? '<span style="color: var(--vscode-charts-green);">⚡ Active</span>'
+                    : '<span style="color: var(--vscode-descriptionForeground);">💤 Idle</span>';
+                const displayName = stripMarkdownLinks(m.name);
+
+                return \`
+                    <div class="member-card">
+                        <div class="member-card-header">
+                            <div class="member-avatar">\${icon}</div>
+                            <div>
+                                <div class="member-card-name" data-action="open-member" data-member-name="\${escapeHtml(displayName)}">\${escapeHtml(displayName)}</div>
+                                <div class="member-card-role">\${escapeHtml(m.role)}</div>
+                            </div>
+                        </div>
+                        <div>\${statusBadge}</div>
+                        <div class="member-card-stats">
+                            <span class="member-stat">📋 \${m.openIssueCount} open</span>
+                            <span class="member-stat">✅ \${m.closedIssueCount} closed</span>
+                            <span class="member-stat">🔄 \${m.activeTaskCount} tasks</span>
+                            <span class="member-stat">📊 \${m.recentActivityCount} sessions</span>
+                        </div>
+                    </div>
+                \`;
+            }).join('');
+        }
+
+        // ─── Burndown Chart ─────────────────────────────────────────────
+
+        let currentMilestoneIndex = 0;
+
+        function renderBurndownChart() {
+            const container = document.getElementById('burndown-container');
+            const selector = document.getElementById('milestone-selector');
+            const milestones = burndownData.milestones;
+
+            if (!milestones || milestones.length === 0) {
+                container.innerHTML = '<div class="burndown-empty">No milestone data available.<br><br>Assign issues to a GitHub milestone to see burndown charts.</div>';
+                selector.style.display = 'none';
+                return;
+            }
+
+            // Populate milestone selector
+            selector.innerHTML = milestones.map((ms, i) =>
+                \`<option value="\${i}" \${i === currentMilestoneIndex ? 'selected' : ''}>\${escapeHtml(ms.title)} (\${ms.totalIssues} issues)</option>\`
+            ).join('');
+            selector.style.display = 'block';
+
+            selector.addEventListener('change', (e) => {
+                currentMilestoneIndex = parseInt(e.target.value, 10);
+                drawBurndown(milestones[currentMilestoneIndex], container);
+            });
+
+            drawBurndown(milestones[currentMilestoneIndex], container);
+        }
+
+        function drawBurndown(milestone, container) {
+            const dp = milestone.dataPoints;
+            if (!dp || dp.length === 0) {
+                container.innerHTML = '<div class="burndown-empty">No data points for this milestone.</div>';
+                return;
+            }
+
+            // Build legend
+            const legendHtml = milestone.memberNames.map((name, i) => \`
+                <div class="legend-item">
+                    <div class="legend-swatch" style="background-color: \${milestone.memberColors[i]};"></div>
+                    <span>\${escapeHtml(name)}</span>
+                </div>
+            \`).join('');
+
+            const dueInfo = milestone.dueDate ? \`Due: \${milestone.dueDate}\` : '';
+
+            container.innerHTML = \`
+                <div class="burndown-chart-wrapper">
+                    <div class="burndown-title">\${escapeHtml(milestone.title)}</div>
+                    <div class="burndown-subtitle">\${milestone.totalIssues} total issues \${dueInfo ? '· ' + dueInfo : ''}</div>
+                    <canvas id="burndown-canvas" style="width:100%; height:350px;"></canvas>
+                    <div class="burndown-legend">\${legendHtml}</div>
+                </div>
+            \`;
+
+            // Draw the stacked area chart
+            requestAnimationFrame(() => drawBurndownCanvas(milestone));
+        }
+
+        function drawBurndownCanvas(milestone) {
+            const canvas = document.getElementById('burndown-canvas');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            const dp = milestone.dataPoints;
+            const members = milestone.memberNames;
+            const colors = milestone.memberColors;
+
+            canvas.width = canvas.offsetWidth;
+            canvas.height = 350;
+
+            const paddingLeft = 55;
+            const paddingRight = 20;
+            const paddingTop = 20;
+            const paddingBottom = 50;
+            const w = canvas.width - paddingLeft - paddingRight;
+            const h = canvas.height - paddingTop - paddingBottom;
+
+            const maxVal = Math.max(milestone.totalIssues, 1);
+            const stepX = w / (dp.length - 1 || 1);
+
+            const axisColor = resolveColor('--vscode-panel-border', '#444');
+            const labelColor = resolveColor('--vscode-foreground', '#ccc');
+
+            // Draw axes
+            ctx.strokeStyle = axisColor;
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(paddingLeft, paddingTop);
+            ctx.lineTo(paddingLeft, paddingTop + h);
+            ctx.lineTo(paddingLeft + w, paddingTop + h);
+            ctx.stroke();
+
+            // Y-axis labels
+            ctx.fillStyle = labelColor;
+            ctx.font = '11px sans-serif';
+            ctx.textAlign = 'right';
+            ctx.textBaseline = 'middle';
+            const ySteps = [0, Math.round(maxVal / 4), Math.round(maxVal / 2), Math.round(3 * maxVal / 4), maxVal];
+            ySteps.forEach(val => {
+                const y = paddingTop + h - (val / maxVal) * h;
+                ctx.fillText(String(val), paddingLeft - 8, y);
+                if (val > 0) {
+                    ctx.strokeStyle = axisColor;
+                    ctx.globalAlpha = 0.2;
+                    ctx.beginPath();
+                    ctx.moveTo(paddingLeft, y);
+                    ctx.lineTo(paddingLeft + w, y);
+                    ctx.stroke();
+                    ctx.globalAlpha = 1.0;
+                }
+            });
+
+            // X-axis date labels
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'top';
+            const xLabelCount = Math.min(8, dp.length);
+            const xStep = Math.max(1, Math.floor((dp.length - 1) / (xLabelCount - 1)));
+            for (let i = 0; i < dp.length; i += xStep) {
+                const x = paddingLeft + i * stepX;
+                const parts = dp[i].date.split('-');
+                ctx.fillText(parts[1] + '/' + parts[2], x, paddingTop + h + 8);
+            }
+            // Last date
+            if ((dp.length - 1) % xStep !== 0) {
+                const lastX = paddingLeft + (dp.length - 1) * stepX;
+                const parts = dp[dp.length - 1].date.split('-');
+                ctx.fillText(parts[1] + '/' + parts[2], lastX, paddingTop + h + 8);
+            }
+
+            // Draw ideal burndown line (straight line from total to 0)
+            ctx.strokeStyle = labelColor;
+            ctx.globalAlpha = 0.3;
+            ctx.setLineDash([6, 4]);
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.moveTo(paddingLeft, paddingTop + h - (maxVal / maxVal) * h);
+            ctx.lineTo(paddingLeft + w, paddingTop + h);
+            ctx.stroke();
+            ctx.setLineDash([]);
+            ctx.globalAlpha = 1.0;
+
+            // Draw stacked areas (bottom-up: each member's area stacks on top of previous)
+            // We need to compute cumulative values for stacking
+            for (let mi = members.length - 1; mi >= 0; mi--) {
+                ctx.beginPath();
+                ctx.globalAlpha = 0.5;
+
+                // Top edge: cumulative sum up to this member
+                for (let di = 0; di < dp.length; di++) {
+                    let cumulative = 0;
+                    for (let k = 0; k <= mi; k++) {
+                        cumulative += (dp[di].byMember[members[k]] || 0);
+                    }
+                    const x = paddingLeft + di * stepX;
+                    const y = paddingTop + h - (cumulative / maxVal) * h;
+                    if (di === 0) { ctx.moveTo(x, y); }
+                    else { ctx.lineTo(x, y); }
+                }
+
+                // Bottom edge: cumulative sum up to previous member (or baseline)
+                for (let di = dp.length - 1; di >= 0; di--) {
+                    let cumulative = 0;
+                    for (let k = 0; k < mi; k++) {
+                        cumulative += (dp[di].byMember[members[k]] || 0);
+                    }
+                    const x = paddingLeft + di * stepX;
+                    const y = paddingTop + h - (cumulative / maxVal) * h;
+                    ctx.lineTo(x, y);
+                }
+
+                ctx.closePath();
+                ctx.fillStyle = colors[mi];
+                ctx.fill();
+                ctx.globalAlpha = 1.0;
+            }
+
+            // Draw total remaining line on top
+            ctx.strokeStyle = resolveColor('--vscode-foreground', '#ccc');
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            for (let di = 0; di < dp.length; di++) {
+                const x = paddingLeft + di * stepX;
+                const y = paddingTop + h - (dp[di].remaining / maxVal) * h;
+                if (di === 0) { ctx.moveTo(x, y); }
+                else { ctx.lineTo(x, y); }
+            }
+            ctx.stroke();
+
+            // Draw due date marker if present
+            if (milestone.dueDate && dp.length > 1) {
+                const dueDateStr = milestone.dueDate.split('T')[0];
+                const dueIndex = dp.findIndex(d => d.date >= dueDateStr);
+                if (dueIndex >= 0) {
+                    const dueX = paddingLeft + dueIndex * stepX;
+                    ctx.strokeStyle = resolveColor('--vscode-charts-red', '#f44747');
+                    ctx.lineWidth = 2;
+                    ctx.setLineDash([4, 4]);
+                    ctx.beginPath();
+                    ctx.moveTo(dueX, paddingTop);
+                    ctx.lineTo(dueX, paddingTop + h);
+                    ctx.stroke();
+                    ctx.setLineDash([]);
+
+                    ctx.fillStyle = resolveColor('--vscode-charts-red', '#f44747');
+                    ctx.font = '11px sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('Due', dueX, paddingTop - 5);
+                }
+            }
         }
 
         // Render velocity chart (simple line chart with Canvas)
@@ -575,6 +1022,8 @@ export function getDashboardHtml(data: DashboardData): string {
         }
 
         // Initialize visualizations
+        renderTeamOverview();
+        renderBurndownChart();
         renderVelocityChart();
         renderHeatmap();
         renderActivitySwimlanes();

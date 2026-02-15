@@ -22,6 +22,13 @@ import { DashboardData, DecisionEntry, ActivitySwimlane, OrchestrationLogEntry }
 /** Creates minimal valid DashboardData for testing. */
 function makeMinimalDashboardData(): DashboardData {
     return {
+        team: {
+            members: [],
+            summary: { totalMembers: 0, activeMembers: 0, totalOpenIssues: 0, totalClosedIssues: 0, totalActiveTasks: 0 },
+        },
+        burndown: {
+            milestones: [],
+        },
         velocity: {
             timeline: [
                 { date: '2026-02-01', completedTasks: 1 },

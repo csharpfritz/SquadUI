@@ -8,7 +8,7 @@
  */
 
 import * as https from 'https';
-import { GitHubIssue, GitHubLabel, IssueSourceConfig } from '../models';
+import { GitHubIssue, GitHubLabel, GitHubMilestone, IssueSourceConfig } from '../models';
 import { TeamMdService } from './TeamMdService';
 
 /** Default cache TTL: 5 minutes */
@@ -277,6 +277,70 @@ export class GitHubIssuesService {
     }
 
     /**
+     * Fetches all issues (open + closed) for a specific milestone.
+     * Used to build burndown charts.
+     */
+    async getMilestoneIssues(workspaceRoot: string, milestoneNumber: number): Promise<GitHubIssue[]> {
+        const config = await this.getIssueSource(workspaceRoot);
+        if (!config) { return []; }
+
+        const allIssues: GitHubIssue[] = [];
+        let page = 1;
+        const perPage = 100;
+
+        for (const state of ['open', 'closed'] as const) {
+            page = 1;
+            // eslint-disable-next-line no-constant-condition
+            while (true) {
+                const apiPath = `/repos/${config.owner}/${config.repo}/issues?state=${state}&milestone=${milestoneNumber}&per_page=${perPage}&page=${page}`;
+                try {
+                    const raw = await this.apiGet<GitHubApiIssue[]>(apiPath);
+                    for (const item of raw) {
+                        if (item.pull_request) { continue; }
+                        allIssues.push(this.mapApiIssue(item));
+                    }
+                    if (raw.length < perPage) { break; }
+                    page++;
+                } catch {
+                    break;
+                }
+            }
+        }
+
+        return allIssues;
+    }
+
+    /**
+     * Fetches available milestones from the repository.
+     * Returns open milestones sorted by most recently created.
+     */
+    async getMilestones(workspaceRoot: string): Promise<GitHubMilestone[]> {
+        const config = await this.getIssueSource(workspaceRoot);
+        if (!config) { return []; }
+
+        try {
+            const apiPath = `/repos/${config.owner}/${config.repo}/milestones?state=open&sort=created&direction=desc&per_page=10`;
+            const raw = await this.apiGet<Array<{
+                number: number; title: string; state: string;
+                open_issues: number; closed_issues: number;
+                due_on: string | null; created_at: string;
+            }>>(apiPath);
+
+            return raw.map(m => ({
+                number: m.number,
+                title: m.title,
+                state: m.state as 'open' | 'closed',
+                openIssues: m.open_issues,
+                closedIssues: m.closed_issues,
+                dueOn: m.due_on ?? undefined,
+                createdAt: m.created_at,
+            }));
+        } catch {
+            return [];
+        }
+    }
+
+    /**
      * Invalidates both issue and issue-source caches.
      * Use when team.md changes.
      */
@@ -415,6 +479,16 @@ export class GitHubIssuesService {
      * Maps a raw GitHub API issue response to our GitHubIssue interface.
      */
     private mapApiIssue(raw: GitHubApiIssue): GitHubIssue {
+        const milestone: GitHubMilestone | undefined = raw.milestone ? {
+            number: raw.milestone.number,
+            title: raw.milestone.title,
+            state: raw.milestone.state as 'open' | 'closed',
+            openIssues: raw.milestone.open_issues,
+            closedIssues: raw.milestone.closed_issues,
+            dueOn: raw.milestone.due_on ?? undefined,
+            createdAt: raw.milestone.created_at,
+        } : undefined;
+
         return {
             number: raw.number,
             title: raw.title,
@@ -430,6 +504,8 @@ export class GitHubIssuesService {
             htmlUrl: raw.html_url,
             createdAt: raw.created_at,
             updatedAt: raw.updated_at,
+            closedAt: raw.closed_at ?? undefined,
+            milestone,
         };
     }
 
@@ -503,5 +579,15 @@ interface GitHubApiIssue {
     html_url: string;
     created_at: string;
     updated_at: string;
+    closed_at: string | null;
+    milestone: {
+        number: number;
+        title: string;
+        state: string;
+        open_issues: number;
+        closed_issues: number;
+        due_on: string | null;
+        created_at: string;
+    } | null;
     pull_request?: unknown;
 }

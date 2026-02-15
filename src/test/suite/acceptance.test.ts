@@ -185,13 +185,13 @@ suite('Acceptance: Orchestration Logs → Tree View', () => {
             }
         });
 
-        test('task items use tasklist icon', () => {
+        test('task items use status-specific icons', () => {
+            const validIcons = ['circle-outline', 'sync~spin', 'pass-filled'];
             for (const task of taskItems) {
                 assert.ok(task.iconPath instanceof vscode.ThemeIcon);
-                assert.strictEqual(
-                    (task.iconPath as vscode.ThemeIcon).id,
-                    'tasklist',
-                    'Task icon should be "tasklist"'
+                assert.ok(
+                    validIcons.includes((task.iconPath as vscode.ThemeIcon).id),
+                    `Task icon should be one of ${validIcons.join(', ')} but was "${(task.iconPath as vscode.ThemeIcon).id}"`
                 );
             }
         });

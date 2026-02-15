@@ -187,6 +187,26 @@ export interface GitHubLabel {
 }
 
 /**
+ * A GitHub milestone.
+ */
+export interface GitHubMilestone {
+    /** Milestone number */
+    number: number;
+    /** Milestone title (e.g., "v0.7.0") */
+    title: string;
+    /** Current state */
+    state: 'open' | 'closed';
+    /** Number of open issues */
+    openIssues: number;
+    /** Number of closed issues */
+    closedIssues: number;
+    /** Optional due date (ISO 8601) */
+    dueOn?: string;
+    /** Creation timestamp (ISO 8601) */
+    createdAt: string;
+}
+
+/**
  * A GitHub issue fetched from the repository.
  */
 export interface GitHubIssue {
@@ -216,6 +236,12 @@ export interface GitHubIssue {
 
     /** ISO 8601 last-updated timestamp */
     updatedAt: string;
+
+    /** ISO 8601 closed timestamp, if closed */
+    closedAt?: string;
+
+    /** Milestone this issue belongs to, if any */
+    milestone?: GitHubMilestone;
 }
 
 /**
@@ -266,6 +292,17 @@ export interface IGitHubIssuesService {
      * @param workspaceRoot - Workspace root for reading issue source config
      */
     getClosedIssuesByMember(workspaceRoot: string): Promise<MemberIssueMap>;
+
+    /**
+     * Fetches all issues (open + closed) for a specific milestone.
+     * Used to build burndown charts.
+     */
+    getMilestoneIssues(workspaceRoot: string, milestoneNumber: number): Promise<GitHubIssue[]>;
+
+    /**
+     * Fetches available milestones from the repository.
+     */
+    getMilestones(workspaceRoot: string): Promise<GitHubMilestone[]>;
 }
 
 // ─── Dashboard Models ───────────────────────────────────────────────────────
@@ -319,9 +356,95 @@ export interface ActivitySwimlane {
 }
 
 /**
+ * Overview data for a single team member on the Team dashboard tab.
+ */
+export interface TeamMemberOverview {
+    /** Display name */
+    name: string;
+    /** Role in the squad */
+    role: string;
+    /** Current status */
+    status: MemberStatus;
+    /** Special icon type (scribe, ralph, copilot, or undefined for regular members) */
+    iconType?: 'scribe' | 'ralph' | 'copilot';
+    /** Number of open issues assigned */
+    openIssueCount: number;
+    /** Number of closed issues assigned */
+    closedIssueCount: number;
+    /** Number of in-progress tasks */
+    activeTaskCount: number;
+    /** Recent log participation count (last 7 days) */
+    recentActivityCount: number;
+}
+
+/**
+ * Summary statistics for the whole team.
+ */
+export interface TeamSummary {
+    /** Total members on the roster */
+    totalMembers: number;
+    /** Members currently working */
+    activeMembers: number;
+    /** Total open issues across all members */
+    totalOpenIssues: number;
+    /** Total closed issues across all members */
+    totalClosedIssues: number;
+    /** Total in-progress tasks */
+    totalActiveTasks: number;
+}
+
+// ─── Burndown Chart Models ──────────────────────────────────────────────────
+
+/**
+ * A single data point on the burndown chart.
+ * Each point captures the remaining open issues on a given date,
+ * broken down by assigned squad member.
+ */
+export interface BurndownDataPoint {
+    /** Date in YYYY-MM-DD format */
+    date: string;
+    /** Total remaining open issues on this date */
+    remaining: number;
+    /** Per-member breakdown: member name → open issues count on this date */
+    byMember: Record<string, number>;
+}
+
+/**
+ * Complete burndown data for one milestone.
+ */
+export interface MilestoneBurndown {
+    /** Milestone title */
+    title: string;
+    /** Milestone number */
+    number: number;
+    /** Total issues in the milestone */
+    totalIssues: number;
+    /** Names of members who have issues in this milestone (stable ordering) */
+    memberNames: string[];
+    /** Hex colors assigned to each member (parallel array with memberNames) */
+    memberColors: string[];
+    /** Daily burndown data points */
+    dataPoints: BurndownDataPoint[];
+    /** Due date if set (YYYY-MM-DD) */
+    dueDate?: string;
+}
+
+/**
  * Complete data bundle for the dashboard webview.
  */
 export interface DashboardData {
+    /** Team overview tab data */
+    team: {
+        /** Per-member overview */
+        members: TeamMemberOverview[];
+        /** Aggregate team stats */
+        summary: TeamSummary;
+    };
+    /** Burndown chart tab data */
+    burndown: {
+        /** Available milestones with burndown data */
+        milestones: MilestoneBurndown[];
+    };
     /** Velocity tab data */
     velocity: {
         /** Timeline of completed tasks per day */

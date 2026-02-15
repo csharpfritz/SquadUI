@@ -6,7 +6,7 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs';
-import { DashboardData } from '../models';
+import { DashboardData, IGitHubIssuesService, MilestoneBurndown } from '../models';
 import { DashboardDataBuilder } from './dashboard/DashboardDataBuilder';
 import { getDashboardHtml } from './dashboard/htmlTemplate';
 import { SquadDataProvider } from '../services';
@@ -18,11 +18,16 @@ export class SquadDashboardWebview {
     private readonly extensionUri: vscode.Uri;
     private readonly dataProvider: SquadDataProvider;
     private readonly dataBuilder: DashboardDataBuilder;
+    private issuesService: IGitHubIssuesService | undefined;
 
     constructor(extensionUri: vscode.Uri, dataProvider: SquadDataProvider) {
         this.extensionUri = extensionUri;
         this.dataProvider = dataProvider;
         this.dataBuilder = new DashboardDataBuilder();
+    }
+
+    setIssuesService(service: IGitHubIssuesService): void {
+        this.issuesService = service;
     }
 
     /**
@@ -100,12 +105,28 @@ export class SquadDashboardWebview {
             const logEntries = await this.dataProvider.getLogEntries();
             const decisions = await this.dataProvider.getDecisions();
 
+            // Fetch GitHub issues if service is available
+            const workspaceRoot = this.dataProvider.getWorkspaceRoot();
+            let openIssues, closedIssues;
+            if (this.issuesService) {
+                try {
+                    openIssues = await this.issuesService.getIssuesByMember(workspaceRoot);
+                    closedIssues = await this.issuesService.getClosedIssuesByMember(workspaceRoot);
+                } catch { /* issues optional */ }
+            }
+
+            // Build milestone burndown data
+            const milestoneBurndowns = await this.buildBurndowns(workspaceRoot);
+
             // Build dashboard data
             const dashboardData: DashboardData = this.dataBuilder.buildDashboardData(
                 logEntries,
                 members,
                 tasks,
-                decisions
+                decisions,
+                openIssues,
+                closedIssues,
+                milestoneBurndowns
             );
 
             // Render HTML
@@ -113,6 +134,27 @@ export class SquadDashboardWebview {
         } catch (error) {
             const errorMessage = error instanceof Error ? error.message : 'Unknown error';
             this.panel.webview.html = this.getErrorHtml(errorMessage);
+        }
+    }
+
+    /**
+     * Fetches milestone data and builds burndown charts.
+     */
+    private async buildBurndowns(workspaceRoot: string): Promise<MilestoneBurndown[]> {
+        if (!this.issuesService) { return []; }
+        try {
+            const milestones = await this.issuesService.getMilestones(workspaceRoot);
+            const burndowns: MilestoneBurndown[] = [];
+            for (const ms of milestones) {
+                const issues = await this.issuesService.getMilestoneIssues(workspaceRoot, ms.number);
+                if (issues.length === 0) { continue; }
+                burndowns.push(this.dataBuilder.buildMilestoneBurndown(
+                    ms.title, ms.number, issues, ms.dueOn
+                ));
+            }
+            return burndowns;
+        } catch {
+            return [];
         }
     }
 

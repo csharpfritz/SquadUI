@@ -42,6 +42,11 @@ export function activate(context: vscode.ExtensionContext): void {
     const issuesService = new GitHubIssuesService();
     teamProvider.setIssuesService(issuesService);
 
+    // Create dashboard webview
+    dashboardWebview = new SquadDashboardWebview(context.extensionUri, dataProvider);
+    dashboardWebview.setIssuesService(issuesService);
+    context.subscriptions.push({ dispose: () => dashboardWebview?.dispose() });
+
     const teamView = vscode.window.createTreeView('squadTeam', {
         treeDataProvider: teamProvider,
         showCollapseAll: true
@@ -65,10 +70,6 @@ export function activate(context: vscode.ExtensionContext): void {
     // Create webview for issue details
     issueWebview = new IssueDetailWebview(context.extensionUri);
     context.subscriptions.push({ dispose: () => issueWebview?.dispose() });
-
-    // Create dashboard webview
-    dashboardWebview = new SquadDashboardWebview(context.extensionUri, dataProvider);
-    context.subscriptions.push({ dispose: () => dashboardWebview?.dispose() });
 
     // Register commands
     context.subscriptions.push(

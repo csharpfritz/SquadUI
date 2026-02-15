@@ -146,7 +146,7 @@ suite('TeamTreeProvider Test Suite', () => {
             assert.strictEqual((rusty.iconPath as vscode.ThemeIcon).id, 'person');
         });
 
-        test('tasks have tasklist icon', async () => {
+        test('tasks have status-specific icon', async () => {
             const memberItem = new SquadTreeItem(
                 'Danny',
                 vscode.TreeItemCollapsibleState.Collapsed,
@@ -156,10 +156,11 @@ suite('TeamTreeProvider Test Suite', () => {
             const children = await provider.getChildren(memberItem);
             const tasks = children.filter((c) => c.itemType === 'task');
 
+            const validIcons = ['circle-outline', 'sync~spin', 'pass-filled'];
             assert.ok(tasks.length > 0);
             tasks.forEach((task) => {
                 assert.ok(task.iconPath instanceof vscode.ThemeIcon);
-                assert.strictEqual((task.iconPath as vscode.ThemeIcon).id, 'tasklist');
+                assert.ok(validIcons.includes((task.iconPath as vscode.ThemeIcon).id));
             });
         });
     });

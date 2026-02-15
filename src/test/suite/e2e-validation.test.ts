@@ -372,16 +372,17 @@ suite('E2E MVP Validation (Issue #14)', () => {
             }
         });
 
-        test('task items have tasklist icon', async () => {
+        test('task items have status-specific icon', async () => {
             const carolItem = new SquadTreeItem(
                 'Carol', vscode.TreeItemCollapsibleState.Collapsed, 'member', 'Carol'
             );
             const children = await treeProvider.getChildren(carolItem);
             const tasks = children.filter(c => c.itemType === 'task');
 
+            const validIcons = ['circle-outline', 'sync~spin', 'pass-filled'];
             for (const task of tasks) {
                 assert.ok(task.iconPath instanceof vscode.ThemeIcon);
-                assert.strictEqual((task.iconPath as vscode.ThemeIcon).id, 'tasklist');
+                assert.ok(validIcons.includes((task.iconPath as vscode.ThemeIcon).id));
             }
         });
     });
