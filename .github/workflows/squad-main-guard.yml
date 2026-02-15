@@ -1,0 +1,88 @@
+name: Squad Protected Branch Guard
+
+on:
+  pull_request:
+    branches: [main, preview]
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  guard:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check for forbidden paths
+        uses: actions/github-script@v7
+        with:
+          script: |
+            // Fetch all files changed in this PR (paginated)
+            const files = [];
+            let page = 1;
+            while (true) {
+              const resp = await github.rest.pulls.listFiles({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: context.payload.pull_request.number,
+                per_page: 100,
+                page
+              });
+              files.push(...resp.data);
+              if (resp.data.length < 100) break;
+              page++;
+            }
+
+            // Check each file against forbidden path rules
+            const forbidden = files
+              .map(f => f.filename)
+              .filter(f => {
+                // .ai-team/** — ALL team state files, zero exceptions
+                if (f === '.ai-team' || f.startsWith('.ai-team/')) return true;
+                // team-docs/** EXCEPT team-docs/blog/** — blog content is allowed
+                if (f.startsWith('team-docs/')) {
+                  if (f.startsWith('team-docs/blog/')) return false;
+                  return true;
+                }
+                return false;
+              });
+
+            if (forbidden.length === 0) {
+              core.info('✅ No forbidden paths found in PR — all clear.');
+              return;
+            }
+
+            // Build a clear, actionable error message
+            const lines = [
+              '## 🚫 Forbidden files detected in PR to main',
+              '',
+              'The following files must NOT be merged into `main`.',
+              '`.ai-team/` is runtime team state — it belongs on dev branches only.',
+              '`team-docs/` internal content should stay on dev (only `team-docs/blog/` is allowed on main).',
+              '',
+              '### Forbidden files found:',
+              '',
+              ...forbidden.map(f => `- \`${f}\``),
+              '',
+              '### How to fix:',
+              '',
+              '```bash',
+              '# Remove tracked .ai-team/ files (keeps local copies):',
+              'git rm --cached -r .ai-team/',
+              '',
+              '# Remove tracked team-docs/ files (except blog/):',
+              'git rm --cached -r team-docs/',
+              'git checkout HEAD -- team-docs/blog/',
+              '',
+              '# Commit the removal and push:',
+              'git commit -m "chore: remove forbidden paths from PR"',
+              'git push',
+              '```',
+              '',
+              '> ⚠️ `.ai-team/` is in `.gitignore` but files previously force-added with `git add -f`',
+              '> remain tracked. `git rm --cached` untracks them without deleting your local copies.',
+            ];
+
+            core.setFailed(lines.join('\n'));
