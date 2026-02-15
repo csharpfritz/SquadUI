@@ -1,24 +1,10 @@
-# Team Decisions
-
-> Shared brain for the Squad. All agents read this. Append-only.
-
-<!-- Decisions below are recorded by Scribe from the inbox. -->
-
-## Extension Structure and Naming
-
-**Date:** 2026-02-13  
-**Author:** Rusty (Extension Dev)  
-**Status:** Proposed
-
-
----
-
 ### Context
 
 Scaffolding the VS Code extension requires establishing the foundational naming conventions and activation strategy.
 
 
 ---
+
 
 ### Decision
 
@@ -32,6 +18,7 @@ Scaffolding the VS Code extension requires establishing the foundational naming 
 
 ---
 
+
 ### Rationale
 
 - Lazy activation keeps VS Code fast for users who don't use Squad
@@ -40,6 +27,7 @@ Scaffolding the VS Code extension requires establishing the foundational naming 
 
 
 ---
+
 
 ### Impact
 
@@ -58,6 +46,7 @@ All future tree views and commands should register under the `squadui` container
 
 ---
 
+
 ### Location
 
 `.github/workflows/ci.yml`
@@ -74,6 +63,7 @@ All future tree views and commands should register under the `squadui` container
 
 
 ---
+
 
 ### Decisions Made
 
@@ -110,6 +100,7 @@ All future tree views and commands should register under the `squadui` container
 
 ---
 
+
 ### Implementation
 
 - File: `src/services/TeamMdService.ts`
@@ -118,6 +109,7 @@ All future tree views and commands should register under the `squadui` container
 
 
 ---
+
 
 ### Open Questions
 
@@ -159,12 +151,14 @@ None at this time.
 
 ---
 
+
 ### Vision
 
 Enable SquadUI to act as a control plane for squad initialization and team member lifecycle management. Users can initialize squads, add/remove members with roles, and specify character universes for AI-powered name casting—all without leaving VS Code.
 
 
 ---
+
 
 ### Core Features
 
@@ -353,6 +347,7 @@ export async function selectUniverse() {
 
 ---
 
+
 ### Data Persistence: team.md Structure
 
 All changes flow through **TeamMdService**, which reads/writes team.md:
@@ -400,6 +395,7 @@ All changes flow through **TeamMdService**, which reads/writes team.md:
 
 ---
 
+
 ### Integration Points
 
 #### With Existing Services
@@ -417,6 +413,7 @@ All changes flow through **TeamMdService**, which reads/writes team.md:
 
 ---
 
+
 ### File Structure (v0.3.0 additions)
 
 ```
@@ -431,6 +428,7 @@ src/
 
 
 ---
+
 
 ### Acceptance Criteria
 
@@ -456,6 +454,7 @@ src/
 
 ---
 
+
 ### Open Questions / Risks
 
 1. **Squad CLI Compatibility**: Assume `npx github:bradygaster/squad` is installable. If not, need fallback plan.
@@ -466,6 +465,7 @@ src/
 
 ---
 
+
 ### Related Issues
 
 - #24: Add squad init command
@@ -475,6 +475,7 @@ src/
 
 
 ---
+
 
 ### Success Metrics
 
@@ -496,6 +497,7 @@ src/
 
 ---
 
+
 ### Scope Decision
 
 - **v0 (MVP):** Tree view + webview UI, orchestration logs as data source, working/idle indicators
@@ -506,6 +508,7 @@ src/
 
 ---
 
+
 ### Directive
 
 Use GitHub issues and milestones for this project. Create color-coded labels for each team member assigned to tasks.
@@ -513,12 +516,14 @@ Use GitHub issues and milestones for this project. Create color-coded labels for
 
 ---
 
+
 ### Problem Statement
 
 The tree view shows no content when pointing the extension at `D:\blazorlora`, which has a `.ai-team/` folder with an EMPTY `.ai-team/orchestration-log/` folder.
 
 
 ---
+
 
 ### Data Flow Analysis
 
@@ -541,6 +546,7 @@ extension.ts
 
 
 ---
+
 
 ### Root Cause
 
@@ -575,6 +581,7 @@ When `entries` is empty (no orchestration logs exist), `memberNames` is empty, a
 
 ---
 
+
 ### The Design Gap
 
 The extension assumes orchestration logs are the primary source of truth for team membership. However:
@@ -586,12 +593,14 @@ The extension assumes orchestration logs are the primary source of truth for tea
 
 ---
 
+
 ### What SHOULD Happen
 
 The tree view should show all members from `team.md`, even if they have no logged activity. Members with activity would show as "working" with tasks; members without activity would show as "idle" with no tasks.
 
 
 ---
+
 
 ### Recommended Fix
 
@@ -641,6 +650,7 @@ Parser needs to:
 
 ---
 
+
 ### Test Cases to Add
 
 1. **Empty orchestration-log with team.md** → shows team.md members as idle
@@ -650,6 +660,7 @@ Parser needs to:
 
 
 ---
+
 
 ### Files to Modify
 
@@ -661,6 +672,7 @@ Parser needs to:
 
 
 ---
+
 
 ### For Linus
 
@@ -688,6 +700,7 @@ This diagnosis identifies the exact code paths. The fix requires creating `TeamM
 
 
 ---
+
 
 ### Decisions
 
@@ -718,6 +731,7 @@ This diagnosis identifies the exact code paths. The fix requires creating `TeamM
 
 ---
 
+
 ### Action Required
 
 - Repository secret `VSCE_PAT` must be configured with a VS Code Marketplace Personal Access Token before the first release
@@ -725,6 +739,7 @@ This diagnosis identifies the exact code paths. The fix requires creating `TeamM
 
 
 ---
+
 
 ### Implementation Phases
 
@@ -752,6 +767,7 @@ This diagnosis identifies the exact code paths. The fix requires creating `TeamM
 
 
 ---
+
 
 ### 1. PM Visibility Features — Proposal
 
@@ -817,6 +833,7 @@ PMs gain visibility into team velocity, workload balance, decision rationale, ce
 
 
 ---
+
 
 ### 2. Squad Visualization Features — UI Enhancement Proposals
 
@@ -918,6 +935,7 @@ The Squad Dashboard swimlane view needed visual refinement to distinguish task s
 
 ---
 
+
 ### Swimlane Visual Enhancements
 
 1. **Status-Based Color Coding:**
@@ -988,6 +1006,7 @@ Comprehensive fixes to skill identity handling and sidebar tree view presentatio
 
 ---
 
+
 ### 1. Skill Identity Architecture
 - Added slug property to the Skill model (set to directory name by parseInstalledSkill())
 - Tree items, iewSkill(), and emoveSkill() commands now pass/use slug for filesystem operations
@@ -995,6 +1014,7 @@ Comprehensive fixes to skill identity handling and sidebar tree view presentatio
 
 
 ---
+
 
 ### 2. Skill Display Enhancements  
 - Strip "Skill: " prefix from SKILL.md headings when displaying tree labels (case-insensitive)
@@ -1005,12 +1025,14 @@ ame: field from YAML frontmatter instead of raw directory name
 
 ---
 
+
 ### 3. Sidebar Subsection Filtering
 - parseDecisionsMd() filters out generic subsection headings (Context, Decision, Rationale, Impact, Members, Alumni, etc.)
 - Only actual decision titles appear in Decisions panel
 - Handles malformed ## # Title headings by stripping extra # 
 
 ---
+
 
 ### 2026-02-15: User directive — release checklist must include README and release notes
 
@@ -1071,12 +1093,14 @@ All 3 test files compile cleanly against current `main` with `tsc --noEmit` — 
 
 ---
 
+
 ### 2026-02-15: User directive — releases require human approval
 **By:** Jeffrey T. Fritz (via Copilot)
 **What:** Never tag or publish a release without explicit human approval. All releases must be explicitly approved by a human team member before tagging, pushing tags, or triggering release workflows.
 **Why:** User request — captured for team memory. Releases are a critical action that should always have a human gate.
 
 ---
+
 
 ### 2026-02-15: v0.6.0 Sprint Plan
 **By:** Danny
@@ -1197,12 +1221,14 @@ The Squad Dashboard had three usability issues: (1) the velocity chart was invis
 - Users can interpret chart data with proper axis labels
 - Decisions tab shows helpful guidance when no decisions exist
 - No new dependencies introduced; all fixes are in `htmlTemplate.ts`
+
 ### 2026-02-15: Dashboard decisions sort order
 **By:** Jeffrey T. Fritz (via Copilot)
 **What:** Decisions list on the dashboard should be sorted most-recent first (newest at top)
 **Why:** User request — captured for team memory
 
 ---
+
 
 ### 2026-02-15: Add Skill Error Handling — Network Failures Throw Exceptions
 **Date:** 2026-02-15
@@ -1212,6 +1238,7 @@ The Squad Dashboard had three usability issues: (1) the velocity chart was invis
 During QA, found that SkillCatalogService.fetchCatalog() returned empty arrays on network failures, causing misleading "No skills found" messages. Changed service to throw exceptions on network failures; command layer catches and shows appropriate error messages via showErrorMessage(). Improves UX and debugging while maintaining standard VS Code command patterns.
 
 ---
+
 
 ### 2026-02-15: Backlog Audit and Issue Cleanup
 **By:** Danny
@@ -1290,9 +1317,11 @@ DecisionService has bitten us twice already. These tests:
 **Requested by:** Jeffrey T. Fritz  
 **Status:** Assessment Complete
 
+
 ### Context
 
 Jeff asked: "What tests are we missing? What are we missing from the dashboard?" This is a full audit of test coverage gaps and dashboard completeness.
+
 
 ### Test Coverage Findings
 
@@ -1321,6 +1350,7 @@ Jeff asked: "What tests are we missing? What are we missing from the dashboard?"
 | 7da4364 | htmlTemplate.ts | Decision sort order in rendered output |
 | 39e3f8 | OrchestrationLogService.ts | Cross-project task extraction |
 
+
 ### Dashboard Findings
 
 #### What's Working ✅
@@ -1339,6 +1369,7 @@ Jeff asked: "What tests are we missing? What are we missing from the dashboard?"
 4. **No tab state persistence** — Switching away and back always resets to Velocity tab
 5. **No refresh button** — Dashboard only updates on open; no way to manually refresh without closing/reopening
 
+
 ### Recommendation
 
 **Next sprint test work (v0.7.0):**
@@ -1352,6 +1383,7 @@ Jeff asked: "What tests are we missing? What are we missing from the dashboard?"
 - Summary stats panel (medium effort, high value for at-a-glance monitoring)
 - Heatmap numeric labels (small effort)
 
+
 ### Impact
 
 This assessment should drive v0.7.0 test hardening sprint and dashboard polish backlog. All findings are documented for the team.
@@ -1364,9 +1396,11 @@ This assessment should drive v0.7.0 test hardening sprint and dashboard polish b
 **Author:** Rusty
 **Status:** Investigation complete — findings for team review
 
+
 ### Summary
 
 End-to-end investigation of the squadui.addSkill command. The core 3-step QuickPick flow is solid and well-structured. Error handling is good. However, there are significant gaps in what actually gets installed and how duplicates are handled.
+
 
 ### Critical Findings
 
@@ -1386,11 +1420,13 @@ ame + one-line description in QuickPick. No way to read what the skill actually 
 
 **Recommendation:** Add a "Preview" option alongside "Install" in the confirmation step, or use a QuickPick with detail panels.
 
+
 ### Action Items for Team
 
 1. **Linus (Backend):** Implement content fetching from skill.url — follow GitHub repo links to download actual SKILL.md/README.md content
 2. **Rusty (Extension):** Add duplicate detection in addSkillCommand, add preview webview/markdown preview step
 3. **Danny (Lead):** Prioritize these as v0.6.0 or v0.7.0 items
+
 
 ### Files Referenced
 - src/commands/addSkillCommand.ts — command flow
@@ -1416,6 +1452,7 @@ The Add Skill workflow had two critical bugs:
 
 ## Decisions
 
+
 ### Content Fetching Strategy
 
 - For GitHub repo URLs (`github.com/{owner}/{repo}`), we try fetching raw content from `main` branch in this priority order:
@@ -1425,6 +1462,7 @@ The Add Skill workflow had two critical bugs:
 - For non-GitHub URLs, fetch the URL directly as a raw file.
 - If all fetch attempts fail, fall back to the existing metadata stub (with a note that content couldn't be fetched).
 - The `fetchSkillContent()` method is public so it can be reused by future features (e.g., preview before install).
+
 
 ### Duplicate Protection
 
@@ -1441,6 +1479,7 @@ The Add Skill workflow had two critical bugs:
 
 ---
 
+
 ### 2026-02-15: Dashboard Decisions Null-Safety
 
 **By:** Rusty  
@@ -1449,6 +1488,7 @@ The Add Skill workflow had two critical bugs:
 
 ---
 
+
 ### 2026-02-15: Recent Activity in Team Sidebar
 
 **By:** Rusty  
@@ -1456,6 +1496,7 @@ The Add Skill workflow had two critical bugs:
 **Why:** Jeff requested "I need to see more of the actions taken in the sidebar panels." The Recent Activity section provides quick access to session logs directly from the sidebar. Each entry is clickable and opens the full log file. Implemented by extending TeamTreeProvider with a section header, using OrchestrationLogService.discoverLogFiles(), and registering squadui.openLogEntry command.
 
 ---
+
 
 ### 2026-02-15: Recent Sessions in Dashboard Activity Tab
 
@@ -1481,8 +1522,10 @@ Three bugs in SkillCatalogService.ts were breaking the skill search/catalog work
 
 ## Decision
 
+
 ### Bug 1: Update awesome-copilot URL
 Changed from `bradygaster/awesome-copilot` to `github/awesome-copilot` (the repo moved).
+
 
 ### Bug 2: Rewrite skills.sh parser
 The old parser used generic anchor regex and picked up navigation links. The new implementation:
@@ -1492,6 +1535,7 @@ The old parser used generic anchor regex and picked up navigation links. The new
 - Sets description to `{owner}/{repo}` (the meaningful context)
 - Removed Strategy 2 (JSON-LD) — skills.sh doesn't use it, was dead code
 - Updated `isBoilerplateLink()` to only accept 3-segment paths (/{owner}/{repo}/{skill})
+
 
 ### Bug 3: Null-safety for search
 Added `(skill.description || '')` in `searchSkills()` to prevent crashes on empty descriptions.
@@ -1514,11 +1558,13 @@ Added `(skill.description || '')` in `searchSkills()` to prevent crashes on empt
 **By:** Danny  
 **Context:** User requested two new features for next milestone: native VS Code init experience and squad CLI version checking.
 
+
 ### What
 
 Replace the current terminal-based squad initialization (`npx github:bradygaster/squad init` spawned in terminal) with a native VS Code experience that guides users through setup without leaving the editor.
 
 **This decision absorbs issue #26 (universe selector) into the init flow** rather than implementing it as a standalone command. The universe choice becomes step 1 of the init wizard instead of a separate user action.
+
 
 ### Why
 
@@ -1539,6 +1585,7 @@ Replace the current terminal-based squad initialization (`npx github:bradygaster
 - New design integrates this into init flow where it's actually used
 - Existing issue #26 will be superseded by new issue #41 (broader init redesign)
 
+
 ### Scope Trade-off
 
 **Not included in init redesign:**
@@ -1553,11 +1600,13 @@ Replace the current terminal-based squad initialization (`npx github:bradygaster
 - Post-setup sources configuration (PRD path, GitHub repo, human members, @copilot)
 - Pass `--universe` flag to squad init command
 
+
 ### Implementation Ownership
 
 - **Issue #41** (VS Code-native init + universe): squad:rusty (Extension Dev)
 - **Issue #42** (Version check + upgrade): squad:rusty (Extension Dev)
 - Related context in decisions.md already captures squad init architecture (terminal spawn, onInitComplete callback)
+
 
 ### Status
 
@@ -1573,15 +1622,13 @@ Issue #26 will be marked as superseded by #41 in a follow-up comment.
 
 **By:** Danny (Lead/Architect)
 
-### Decision
-
-Starting VS 2026 extension development as a parallel track alongside VS Code work. Three foundation issues created to form "VS 2026 Milestone 1" — the minimum viable set to ship a working tool window with team data.
 
 ### Issues Created
 
 - **#43** — VS 2026: Project scaffold and VSIX configuration (assigned: squad:virgil, Size: M, P1)
 - **#44** — VS 2026: Core services — .ai-team file parsing in C# (assigned: squad:virgil, Size: L, P1)
 - **#45** — VS 2026: Team roster tool window (assigned: squad:turk, Size: M, P1)
+
 
 ### Architecture Decision
 
@@ -1603,6 +1650,7 @@ Starting VS 2026 extension development as a parallel track alongside VS Code wor
 3. **Shared data format** — both extensions read the same `.ai-team/` files, enabling future cross-IDE dashboard/API
 4. **Clean ownership** — one codebase per IDE, clear responsibility boundaries
 
+
 ### Implications
 
 - **Git:** Both projects live in `main` branch, separate project folders
@@ -1611,24 +1659,11 @@ Starting VS 2026 extension development as a parallel track alongside VS Code wor
 - **Releases:** VS 2026 extension will have independent versioning from VS Code extension (e.g., both can be v0.1.0 simultaneously)
 - **Future:** Both extensions can eventually share a backend API/service if needed, but that's out of scope for MVP
 
+
 ### Risk Mitigation
 
 - Virgil confirms VisualStudio.Extensibility SDK knowledge (not legacy VSSDK)
 - Turk confirms WPF/XAML + MVVM expertise
 - Both review `.ai-team/` file format specs before implementation
 - Cross-check project structures match VS Code equivalents for maintainability
-
-### Rationale
-
-This is a "parallel tracks, shared data format" approach. The VS Code extension is mature (v0.6.0 shipped, dashboard/skills/decisions working). Starting VS 2026 now means Copilot-using Visual Studio developers get equivalent functionality without delaying VS Code work. Both teams operate independently, reducing merge conflicts and coordination overhead.
-
----
-
-## 2026-02-15: User directive — VS 2026 extension CI/CD separation
-
-**By:** Jeffrey T. Fritz (via Copilot)
-
-**What:** The VS 2026 extension must have separate build and publish CI processes from the VS Code extension.
-
-**Why:** User request — captured for team memory. Different languages (C#/.NET vs TypeScript), different package formats (VSIX vs .vsix), different marketplaces (VS Marketplace vs VS Code Marketplace). Independent pipelines prevent coupling and allow independent release cadences.
-
+

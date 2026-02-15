@@ -175,3 +175,5 @@ Two critical issues in the Add Skill workflow:
   - `src/views/WorkDetailsWebview.ts` — applies `renderMarkdownLinks()` to member name display and `stripMarkdownLinks()` for initials
 - **Tests:** Added `src/test/suite/markdownUtils.test.ts` with 12 regression tests covering both functions
 
+
+ Team update (2026-02-15): Markdown link handling utility centralized in markdownUtils.ts  separates display text extraction (for tree view) from HTML rendering (for dashboard webviews)  decided by Rusty
