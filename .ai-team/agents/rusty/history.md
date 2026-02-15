@@ -163,3 +163,15 @@ Two critical issues in the Add Skill workflow:
 - **Fix:** Changed `squadui.openDecision` command in `extension.ts` to use `vscode.commands.executeCommand('markdown.showPreview', uri)` instead, which opens the file in VS Code's built-in markdown preview
 - **File:** `src/extension.ts` — `openDecision` command handler
 
+### 2026-02-15: Fix Markdown Links in Member Names (#48)
+- **Problem:** When a squad member's name in team.md is a markdown link (e.g., `[Danny](https://example.com)`), the tree view sidebar displayed raw markdown syntax instead of plain text
+- **Fix:** Created `src/utils/markdownUtils.ts` with two reusable functions:
+  - `stripMarkdownLinks(text)` — extracts display text from `[text](url)` patterns (used in tree view labels and tooltips)
+  - `renderMarkdownLinks(text)` — converts `[text](url)` to `<a>` tags (used in dashboard HTML and work details webview)
+- **Files modified:**
+  - `src/utils/markdownUtils.ts` — new utility module
+  - `src/views/SquadTreeProvider.ts` — applies `stripMarkdownLinks()` to member name labels and tooltips
+  - `src/views/dashboard/htmlTemplate.ts` — adds client-side `renderMarkdownLinks()` and `stripMarkdownLinks()` for heatmap cells and swimlane headers
+  - `src/views/WorkDetailsWebview.ts` — applies `renderMarkdownLinks()` to member name display and `stripMarkdownLinks()` for initials
+- **Tests:** Added `src/test/suite/markdownUtils.test.ts` with 12 regression tests covering both functions
+

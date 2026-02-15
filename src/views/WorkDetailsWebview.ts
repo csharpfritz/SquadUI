@@ -5,6 +5,7 @@
 
 import * as vscode from 'vscode';
 import { WorkDetails, TaskStatus, MemberStatus } from '../models';
+import { stripMarkdownLinks, renderMarkdownLinks } from '../utils/markdownUtils';
 
 export class WorkDetailsWebview {
     public static readonly viewType = 'squadui.workDetails';
@@ -238,9 +239,9 @@ export class WorkDetailsWebview {
     <div class="section">
         <div class="section-title">Assigned To</div>
         <div class="member-card">
-            <div class="member-avatar">${this.getInitials(member.name)}</div>
+            <div class="member-avatar">${this.getInitials(stripMarkdownLinks(member.name))}</div>
             <div class="member-info">
-                <div class="member-name">${this.escapeHtml(member.name)}</div>
+                <div class="member-name">${renderMarkdownLinks(this.escapeHtml(member.name))}</div>
                 <div class="member-role">${this.escapeHtml(member.role)}</div>
             </div>
             <span class="badge ${memberStatusBadge.class}">${memberStatusBadge.label}</span>

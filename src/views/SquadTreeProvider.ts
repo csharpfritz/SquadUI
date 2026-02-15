@@ -8,6 +8,7 @@ import { SquadDataProvider } from '../services/SquadDataProvider';
 import { SkillCatalogService } from '../services/SkillCatalogService';
 import { DecisionService } from '../services/DecisionService';
 import { OrchestrationLogService } from '../services/OrchestrationLogService';
+import { stripMarkdownLinks } from '../utils/markdownUtils';
 
 /**
  * Represents an item in the squad tree view.
@@ -89,8 +90,10 @@ export class TeamTreeProvider implements vscode.TreeDataProvider<SquadTreeItem> 
             const isCopilot = lowerName === '@copilot' || lowerName === 'copilot';
             const noChildren = isInfra;
 
+            const displayName = stripMarkdownLinks(member.name);
+
             const item = new SquadTreeItem(
-                member.name,
+                displayName,
                 noChildren ? vscode.TreeItemCollapsibleState.None : vscode.TreeItemCollapsibleState.Collapsed,
                 'member',
                 member.name
@@ -243,7 +246,7 @@ export class TeamTreeProvider implements vscode.TreeDataProvider<SquadTreeItem> 
 
     private getMemberTooltip(member: SquadMember): vscode.MarkdownString {
         const md = new vscode.MarkdownString();
-        md.appendMarkdown(`**${member.name}**\n\n`);
+        md.appendMarkdown(`**${stripMarkdownLinks(member.name)}**\n\n`);
         md.appendMarkdown(`Role: ${member.role}\n\n`);
         md.appendMarkdown(`Status: ${member.status}`);
         if (member.currentTask) {

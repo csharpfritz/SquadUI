@@ -507,7 +507,7 @@ export function getDashboardHtml(data: DashboardData): string {
                 const cell = document.createElement('div');
                 cell.className = 'heatmap-cell';
                 cell.innerHTML = \`
-                    <div class="member-name" data-action="open-member" data-member-name="\${point.member}">\${point.member}</div>
+                    <div class="member-name" data-action="open-member" data-member-name="\${escapeHtml(stripMarkdownLinks(point.member))}">\${renderMarkdownLinks(escapeHtml(point.member))}</div>
                     <div class="activity-bar">
                         <div class="activity-fill" style="width: \${point.activityLevel * 100}%"></div>
                     </div>
@@ -566,7 +566,7 @@ export function getDashboardHtml(data: DashboardData): string {
 
                 swimlane.innerHTML = \`
                     <div class="swimlane-header">
-                        <span class="member-link" data-action="open-member" data-member-name="\${lane.member}">\${lane.member}</span> <span class="role">· \${lane.role}</span>
+                        <span class="member-link" data-action="open-member" data-member-name="\${escapeHtml(stripMarkdownLinks(lane.member))}">\${renderMarkdownLinks(escapeHtml(lane.member))}</span> <span class="role">· \${lane.role}</span>
                     </div>
                     \${tasksHtml}
                 \`;
@@ -697,6 +697,19 @@ export function getDashboardHtml(data: DashboardData): string {
                 .replace(/>/g, "&gt;")
                 .replace(/"/g, "&quot;")
                 .replace(/'/g, "&#039;");
+        }
+
+        // Convert markdown links [text](url) to <a> tags
+        function renderMarkdownLinks(text) {
+            return text.replace(
+                /\\[([^\\]]+)\\]\\(([^)]+)\\)/g,
+                '<a href="$2" target="_blank">$1</a>'
+            );
+        }
+
+        // Strip markdown links [text](url) to plain text
+        function stripMarkdownLinks(text) {
+            return text.replace(/\\[([^\\]]+)\\]\\([^)]+\\)/g, '$1');
         }
 
         // Event delegation for clickable items
