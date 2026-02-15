@@ -179,7 +179,7 @@ export class SkillCatalogService {
             const tableMatch = tableRowRegex.exec(line);
             if (tableMatch) {
                 const name = tableMatch[1].trim();
-                let relativeUrl = tableMatch[2].trim();
+                const relativeUrl = tableMatch[2].trim();
                 // Strip HTML tags from description (e.g., <br />)
                 const description = tableMatch[3].replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
 
