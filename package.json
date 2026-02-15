@@ -90,7 +90,7 @@
         "command": "squadui.addSkill",
         "title": "Add Skill",
         "category": "Squad",
-        "icon": "$(book)"
+        "icon": "$(add)"
       },
       {
         "command": "squadui.viewSkill",
@@ -126,6 +126,11 @@
         {
           "command": "squadui.openDashboard",
           "when": "view == squadTeam",
+          "group": "navigation"
+        },
+        {
+          "command": "squadui.addSkill",
+          "when": "view == squadSkills",
           "group": "navigation"
         }
       ],
@@ -166,10 +171,6 @@
         },
         {
           "command": "squadui.removeSkill",
-          "when": "false"
-        },
-        {
-          "command": "squadui.addSkill",
           "when": "false"
         }
       ]

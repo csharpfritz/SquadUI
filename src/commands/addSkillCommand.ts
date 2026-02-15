@@ -64,18 +64,28 @@ export function registerAddSkillCommand(
                 return;
             }
 
-            skills = await vscode.window.withProgress(
-                { location: vscode.ProgressLocation.Notification, title: 'Searching skills...' },
-                () => catalogService.searchSkills(query)
-            );
+            try {
+                skills = await vscode.window.withProgress(
+                    { location: vscode.ProgressLocation.Notification, title: 'Searching skills...' },
+                    () => catalogService.searchSkills(query)
+                );
+            } catch (err) {
+                vscode.window.showErrorMessage(`Failed to search skills: ${err instanceof Error ? err.message : 'Unknown error'}`);
+                return;
+            }
         } else {
             // Step 2b: Browse specific source
             const source = sourcePick.label.includes('awesome-copilot') ? 'awesome-copilot' as const : 'skills.sh' as const;
 
-            skills = await vscode.window.withProgress(
-                { location: vscode.ProgressLocation.Notification, title: `Fetching ${source} catalog...` },
-                () => catalogService.fetchCatalog(source)
-            );
+            try {
+                skills = await vscode.window.withProgress(
+                    { location: vscode.ProgressLocation.Notification, title: `Fetching ${source} catalog...` },
+                    () => catalogService.fetchCatalog(source)
+                );
+            } catch (err) {
+                vscode.window.showErrorMessage(`Failed to fetch ${source} catalog: ${err instanceof Error ? err.message : 'Unknown error'}`);
+                return;
+            }
         }
 
         if (skills.length === 0) {
@@ -112,12 +122,16 @@ export function registerAddSkillCommand(
 
         // Download with progress
         const teamRoot = workspaceFolder.uri.fsPath;
-        await vscode.window.withProgress(
-            { location: vscode.ProgressLocation.Notification, title: `Installing ${skill.name}...` },
-            () => catalogService.downloadSkill(skill, teamRoot)
-        );
+        try {
+            await vscode.window.withProgress(
+                { location: vscode.ProgressLocation.Notification, title: `Installing ${skill.name}...` },
+                () => catalogService.downloadSkill(skill, teamRoot)
+            );
 
-        vscode.window.showInformationMessage(`Installed skill: ${skill.name}`);
-        onSkillAdded();
+            vscode.window.showInformationMessage(`Installed skill: ${skill.name}`);
+            onSkillAdded();
+        } catch (err) {
+            vscode.window.showErrorMessage(`Failed to install skill: ${err instanceof Error ? err.message : 'Unknown error'}`);
+        }
     });
 }

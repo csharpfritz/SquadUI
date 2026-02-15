@@ -24,21 +24,35 @@ export class SkillCatalogService {
 
     /**
      * Fetches skill listings from one or both external sources.
-     * Returns empty array on network failure — never throws.
+     * Throws on network failure to allow command layer to show appropriate error.
      *
      * @param source - Which catalog to query: 'awesome-copilot', 'skills.sh', or 'all'
      */
     async fetchCatalog(source: 'awesome-copilot' | 'skills.sh' | 'all'): Promise<Skill[]> {
         const results: Skill[] = [];
+        const errors: string[] = [];
 
         if (source === 'awesome-copilot' || source === 'all') {
-            const awesomeSkills = await this.fetchAwesomeCopilot();
-            results.push(...awesomeSkills);
+            try {
+                const awesomeSkills = await this.fetchAwesomeCopilot();
+                results.push(...awesomeSkills);
+            } catch (err) {
+                errors.push(`awesome-copilot: ${err instanceof Error ? err.message : 'fetch failed'}`);
+            }
         }
 
         if (source === 'skills.sh' || source === 'all') {
-            const skillsShSkills = await this.fetchSkillsSh();
-            results.push(...skillsShSkills);
+            try {
+                const skillsShSkills = await this.fetchSkillsSh();
+                results.push(...skillsShSkills);
+            } catch (err) {
+                errors.push(`skills.sh: ${err instanceof Error ? err.message : 'fetch failed'}`);
+            }
+        }
+
+        // If all sources failed, throw with details
+        if (results.length === 0 && errors.length > 0) {
+            throw new Error(`Failed to fetch skills: ${errors.join(', ')}`);
         }
 
         if (source === 'all') {
@@ -121,15 +135,12 @@ export class SkillCatalogService {
 
     /**
      * Fetches and parses the awesome-copilot README from GitHub raw content.
+     * Throws on network failure.
      */
     private async fetchAwesomeCopilot(): Promise<Skill[]> {
-        try {
-            const url = 'https://raw.githubusercontent.com/bradygaster/awesome-copilot/main/README.md';
-            const readme = await this.httpsGet(url);
-            return this.parseAwesomeReadme(readme);
-        } catch {
-            return [];
-        }
+        const url = 'https://raw.githubusercontent.com/bradygaster/awesome-copilot/main/README.md';
+        const readme = await this.httpsGet(url);
+        return this.parseAwesomeReadme(readme);
     }
 
     /**
@@ -175,14 +186,11 @@ export class SkillCatalogService {
 
     /**
      * Fetches and parses the skills.sh leaderboard page.
+     * Throws on network failure.
      */
     private async fetchSkillsSh(): Promise<Skill[]> {
-        try {
-            const html = await this.httpsGet('https://skills.sh');
-            return this.parseSkillsShHtml(html);
-        } catch {
-            return [];
-        }
+        const html = await this.httpsGet('https://skills.sh');
+        return this.parseSkillsShHtml(html);
     }
 
     /**
