@@ -42,3 +42,7 @@
 ### 2026-02-14: Team Update — Release Pipeline Architecture (Decision Merged)
 
 📌 **Team decision captured:** Release pipeline is self-contained with full CI gates (lint/compile/test). Version verification fails fast if tag doesn't match package.json. Separate workflows prevent coupling. Pre-release flag for versions < 1.0.0. — decided by Livingston
+
+### 2026-02-15: Team Update — VS 2026 Extension CI/CD Separation Requirement
+
+📌 **Team update (2026-02-15):** VS 2026 extension must have separate build and publish CI processes from the VS Code extension. Different languages (C#/.NET vs TypeScript), different package formats (VSIX vs .vsix), different marketplaces (VS Marketplace vs VS Code Marketplace). Independent pipelines prevent coupling and allow independent release cadences. Plan for separate `.github/workflows/` files for VS 2026 extension build/release. — decided by Jeffrey T. Fritz (via Copilot)

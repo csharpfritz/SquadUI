@@ -10,3 +10,7 @@
 - **Key UI patterns to port:** Tree items with icons (ThemeIcon), collapsible sections, member status badges, click-to-open detail views
 
 ## Learnings
+
+### 2026-02-15: VS 2026 Extension Kickoff — Parallel Development Track
+
+📌 Team update (2026-02-15): VS 2026 extension is now a parallel development track with issues #43 (project scaffold/VSIX), #44 (core services/C# file parsing), and #45 (team roster tool window). Both VS Code (TypeScript) and VS 2026 (C#/.NET) extensions read the same `.ai-team/` file format with completely independent codebases. Turk owns WPF/XAML tool windows, MVVM view models, theme integration, and user interactions for VS 2026. Both teams operate independently to maximize velocity. — decided by Danny

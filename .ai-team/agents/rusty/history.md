@@ -41,6 +41,8 @@
 
 ### 2026-02-15: Add Skill Workflow — Deep Investigation
 
+📌 Team update (2026-02-15): Init redesign now absorbs issue #26 (universe selector) into the native VS Code init flow (#41). Universe selection becomes step 1 of the init wizard instead of a standalone command, improving UX and reducing command palette clutter. — decided by Danny
+
 #### Architecture
 - **Command:** `squadui.addSkill` registered in `src/commands/addSkillCommand.ts:38`, wired in `src/extension.ts:162-166`
 - **Trigger points:** Command Palette (no `when: false` gate) + `$(add)` button in Skills panel toolbar (`package.json:132-135`)

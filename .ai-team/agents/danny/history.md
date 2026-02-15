@@ -181,3 +181,72 @@ Recently changed files WITHOUT corresponding test updates:
 
 **Result:** README now fully represents v0.6.0 feature set without being overwhelming. Professional, marketplace-ready, scannable. Target audience (Copilot + Squad developers) can quickly understand what SquadUI offers and how to use it.
 
+### 2026-02-15: New Milestone Planning — Init Redesign & Version Check
+
+**Requested by:** Jeff — Two new features for next milestone after v0.6.0
+
+**Feature 1: VS Code-native init experience (#41)**
+- Replace terminal-based `squad init` with guided workflow in VS Code
+- Universe selector (absorbs issue #26) becomes step 1 of flow
+- Steps: Universe → Project description → Team proposal → Post-setup sources (PRD, repo, members, @copilot opt-in)
+- Runs squad CLI with `--universe` flag after collecting inputs
+- Size: M | Priority: P1
+
+**Feature 2: Squad CLI version check & upgrade (#42)**
+- On extension activation, check installed squad version vs latest on GitHub
+- Show notification if update available with one-click "Upgrade Now" button
+- Graceful handling: skip if CLI not installed, skip if network down
+- Manual check command available in command palette
+- Size: M | Priority: P1
+
+**Decisions made:**
+- **Init redesign absorbs #26 (universe selector)** — integrates universe choice as step 1 of init flow instead of standalone command. Rationale: better UX (stay in IDE), architectural simplification (no separate state management), makes semantic sense (universe choice only relevant during init). Decision doc: `.ai-team/decisions/inbox/danny-init-redesign.md`
+
+**GitHub issues created:**
+- #41: VS Code-native init experience (M, P1, enhancement)
+- #42: Version check & upgrade (M, P1, enhancement)
+
+**Routing:**
+- Both issues assigned `squad:rusty` (Extension Dev — primary concerns are VS Code API usage, terminal/notification handling, dialogs)
+- Rusty owns initSquadCommand.ts; version check is new service in similar domain
+
+**Key file references for implementation:**
+- `src/commands/initSquadCommand.ts` — current terminal-spawn approach; will be rewritten
+- `src/extension.ts` — entry point; version check called on activation
+- `src/services/` — new SquadVersionService.ts will live here alongside existing services
+- `package.json` — already has `squadui.initSquad` command registered; no changes needed
+
+### 2026-02-15: VS 2026 Extension Kickoff
+
+**Requested by:** Jeffrey T. Fritz — Start building Visual Studio 2026 extension in parallel with VS Code work
+
+**Decision:** Launch VS 2026 extension as independent parallel track. Separate C# project folder, same monorepo, shared `.ai-team/` file format but independent implementations.
+
+**Team Assignment:**
+- **Virgil** (VS 2026 Extension Dev) — VSIX/MEF infrastructure, core services (file parsing, caching, file watching)
+- **Turk** (VS 2026 Extension UI) — WPF/XAML tool windows, MVVM view models, theme integration
+
+**GitHub issues created (VS 2026 Milestone 1):**
+- **#43** — VS 2026: Project scaffold and VSIX configuration (squad:virgil, M, P1)
+  - C# project structure, VSIX manifest, VisualStudio.Extensibility SDK setup, extension activation
+- **#44** — VS 2026: Core services — .ai-team file parsing in C# (squad:virgil, L, P1)
+  - Port TeamMdService, DecisionService, SkillCatalogService, FileWatcherService from TypeScript
+  - Shared models (TeamMember, DecisionEntry, Skill, etc.)
+  - Depends on: #43
+- **#45** — VS 2026: Team roster tool window (squad:turk, M, P1)
+  - WPF/XAML tool window showing team members, TreeView with member details
+  - MVVM architecture, VS theme integration, auto-refresh on file changes
+  - Depends on: #44
+
+**Architecture Decisions:**
+- Project folder: `vs2026/` (separate from VS Code's `src/`)
+- No code dependencies between TypeScript and C# tracks
+- Both extensions read same `.ai-team/` files; independent implementations
+- VisualStudio.Extensibility SDK (NOT legacy VSSDK)
+- Parallel velocity: no blocking dependencies, independent teams
+
+**Rationale:**
+VS Code extension mature (v0.6.0). Starting VS 2026 now enables Visual Studio developers access to Squad visualization without delaying VS Code work. Different languages, different APIs, different teams = independent parallel tracks with shared data format.
+
+**Decision doc:** `.ai-team/decisions/inbox/danny-vs2026-kickoff.md`
+

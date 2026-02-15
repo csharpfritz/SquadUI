@@ -1507,3 +1507,128 @@ Added `(skill.description || '')` in `searchSkills()` to prevent crashes on empt
 
 - `src/services/SkillCatalogService.ts` — Fixed URL, rewrote parser, added null-safety
 
+---
+
+## 2026-02-15: Init Redesign Absorbs Universe Selector
+
+**By:** Danny  
+**Context:** User requested two new features for next milestone: native VS Code init experience and squad CLI version checking.
+
+### What
+
+Replace the current terminal-based squad initialization (`npx github:bradygaster/squad init` spawned in terminal) with a native VS Code experience that guides users through setup without leaving the editor.
+
+**This decision absorbs issue #26 (universe selector) into the init flow** rather than implementing it as a standalone command. The universe choice becomes step 1 of the init wizard instead of a separate user action.
+
+### Why
+
+**User experience improvement:**
+- Users stay in the IDE instead of context-switching to a terminal
+- Step-by-step guided flow (universe → description → team proposal → post-setup sources)
+- Better discoverability: "Initialize" command surfaces universe choice naturally
+- Single cohesive onboarding rather than scattered commands
+
+**Architectural simplification:**
+- Eliminates need for separate `selectUniverse` command that would need its own state management
+- Universe selection flows naturally as part of init—makes sense only in that context
+- Reduces command clutter in command palette
+
+**Issue #26 context:**
+- Opened as "allow users to specify character universe for casting"
+- Originally scoped as standalone command with persistent storage in team.md
+- New design integrates this into init flow where it's actually used
+- Existing issue #26 will be superseded by new issue #41 (broader init redesign)
+
+### Scope Trade-off
+
+**Not included in init redesign:**
+- Changing how `squad add-member` works (future enhancement can add universe selector there)
+- Persistent universe storage in extension state (squad CLI handles this via flags)
+- Custom universe definitions (hardcoded list + "Custom" option sufficient for MVP)
+
+**Included:**
+- Universe QuickPick with common options (Marvel, DC, Star Wars, Sci-Fi, Custom)
+- Project description InputBox
+- Team proposal preview (confirm/adjust)
+- Post-setup sources configuration (PRD path, GitHub repo, human members, @copilot)
+- Pass `--universe` flag to squad init command
+
+### Implementation Ownership
+
+- **Issue #41** (VS Code-native init + universe): squad:rusty (Extension Dev)
+- **Issue #42** (Version check + upgrade): squad:rusty (Extension Dev)
+- Related context in decisions.md already captures squad init architecture (terminal spawn, onInitComplete callback)
+
+### Status
+
+Two GitHub issues created:
+- #41: VS Code-native init experience with universe selector (M, P1)
+- #42: Squad CLI version check and upgrade notification (M, P1)
+
+Issue #26 will be marked as superseded by #41 in a follow-up comment.
+
+---
+
+## 2026-02-15: VS 2026 extension — parallel development track
+
+**By:** Danny (Lead/Architect)
+
+### Decision
+
+Starting VS 2026 extension development as a parallel track alongside VS Code work. Three foundation issues created to form "VS 2026 Milestone 1" — the minimum viable set to ship a working tool window with team data.
+
+### Issues Created
+
+- **#43** — VS 2026: Project scaffold and VSIX configuration (assigned: squad:virgil, Size: M, P1)
+- **#44** — VS 2026: Core services — .ai-team file parsing in C# (assigned: squad:virgil, Size: L, P1)
+- **#45** — VS 2026: Team roster tool window (assigned: squad:turk, Size: M, P1)
+
+### Architecture Decision
+
+#### Code Organization
+
+- VS 2026 extension lives in **separate project folder** (`vs2026/` or `src-vs2026/`) in the same monorepo
+- Both extensions (VS Code TypeScript + VS 2026 C#/.NET) read the **same `.ai-team/` file format**
+- **NO code dependencies** between TypeScript and C# codebases — completely independent implementations
+
+#### Team Assignment
+
+- **Virgil** (VS 2026 Extension Dev) — VSIX infrastructure, MEF registration, core services (TeamMdService, DecisionService, SkillCatalogService, FileWatcherService), command registration
+- **Turk** (VS 2026 Extension UI) — WPF/XAML tool windows, MVVM view models, theme integration, user interactions
+
+#### Why This Approach Works
+
+1. **No integration complexity** — different languages (TypeScript vs C#), different APIs (VS Code Extension API vs VisualStudio.Extensibility SDK), different UI frameworks (Webview/HTML vs WPF/XAML)
+2. **Parallel velocity** — Virgil and Turk work independently without blocking each other or VS Code track
+3. **Shared data format** — both extensions read the same `.ai-team/` files, enabling future cross-IDE dashboard/API
+4. **Clean ownership** — one codebase per IDE, clear responsibility boundaries
+
+### Implications
+
+- **Git:** Both projects live in `main` branch, separate project folders
+- **CI/CD:** GitHub Actions will need VS 2026 project recognition and build steps
+- **Testing:** C# unit tests separate from TypeScript tests
+- **Releases:** VS 2026 extension will have independent versioning from VS Code extension (e.g., both can be v0.1.0 simultaneously)
+- **Future:** Both extensions can eventually share a backend API/service if needed, but that's out of scope for MVP
+
+### Risk Mitigation
+
+- Virgil confirms VisualStudio.Extensibility SDK knowledge (not legacy VSSDK)
+- Turk confirms WPF/XAML + MVVM expertise
+- Both review `.ai-team/` file format specs before implementation
+- Cross-check project structures match VS Code equivalents for maintainability
+
+### Rationale
+
+This is a "parallel tracks, shared data format" approach. The VS Code extension is mature (v0.6.0 shipped, dashboard/skills/decisions working). Starting VS 2026 now means Copilot-using Visual Studio developers get equivalent functionality without delaying VS Code work. Both teams operate independently, reducing merge conflicts and coordination overhead.
+
+---
+
+## 2026-02-15: User directive — VS 2026 extension CI/CD separation
+
+**By:** Jeffrey T. Fritz (via Copilot)
+
+**What:** The VS 2026 extension must have separate build and publish CI processes from the VS Code extension.
+
+**Why:** User request — captured for team memory. Different languages (C#/.NET vs TypeScript), different package formats (VSIX vs .vsix), different marketplaces (VS Marketplace vs VS Code Marketplace). Independent pipelines prevent coupling and allow independent release cadences.
+
