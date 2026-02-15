@@ -48,7 +48,10 @@ export class DecisionService {
             'test cases to add', 'files to modify', 'for linus',
             'implementation phases', 'sprint goal', 'context & opportunity',
             'work items', 'risks & open questions', 'next steps', 'outcome',
-            'success criteria'
+            'success criteria', 'vision', 'core features', 'overview',
+            'goals', 'non-goals', 'assumptions', 'constraints',
+            'background', 'summary', 'appendix', 'references',
+            'changelog', 'history', 'todo', 'notes'
         ]);
 
         // Match decisions at both ## and ### levels:
