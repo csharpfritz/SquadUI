@@ -46,3 +46,36 @@
 ### 2026-02-14: Team Update — Sidebar Reorganization
 
 📌 **Team update (2026-02-14):** Sidebar reorganized into Team/Skills/Decisions views — decided by Rusty
+
+### 2026-02-15: v0.6.0 Sprint Planning
+
+📌 Team update (2026-02-15): User directive — releases require explicit human approval before tagging/publishing — decided by Jeffrey T. Fritz
+
+📌 Team update (2026-02-15): Dashboard Chart & Decisions Rendering Fixes (canvas colors, axis labels, empty state) — decided by Rusty
+
+**Context:** Jeff requested planning for next milestone after v0.5.1 shipped. v0.5.0/v0.5.1 polished sidebar heavily (icons, labels, ordering, cross-project compat).
+
+**Key findings:**
+- **Skills infrastructure is COMPLETE** — SkillCatalogService (#38) exists, Add Skill command (#40) fully implemented, Skills tree view (#37) shipped in v0.5.0
+- **Add Skill is DISABLED** — button hidden in package.json `commandPalette when:false`, removed from Skills panel toolbar. Jeff disabled pending QA.
+- **The gap:** No end-to-end QA validation. Once tested, re-enabling is a one-line change.
+- **Open issues audit needed** — #25 (member management), #26 (universe selector), #27 (command palette) need review for staleness/completion
+
+**Sprint scope decision:**
+- **Focus:** Ship Add Skill feature by QA'ing + re-enabling. Close skills management loop.
+- **Secondary:** Dashboard polish (2-3 quick visual wins), backlog issue audit, @copilot integration QA
+- **Deferred:** Member management clarification, universe selector (low priority), test harness (v0.7.0), BlazorLora fixes (depends on QA findings)
+
+**Sprint composition:** 6 work items (4 small, 2 extra-small) — achievable in one focused session.
+
+**Planning principles applied:**
+1. **Ship what's nearly done** — Don't start new features when existing ones are 95% complete
+2. **QA gates quality** — Never ship user-facing features without validation
+3. **Polish compounds** — Small visual improvements across dashboard add up to professional feel
+4. **Backlog hygiene matters** — Stale issues create confusion; audit regularly
+
+**Risks flagged for Jeff:**
+- Add Skill QA may find bugs (fix vs defer decision needed)
+- Dashboard polish scope undefined (needs Jeff input on priorities)
+- BlazorLora "copilot completed tasks" issue not well-specified
+- Issue #27 appears complete (command palette already has "Squad" category)

@@ -248,6 +248,12 @@ Dashboard webview scaffolded with single unified tab interface (Velocity + Activ
 ### 2026-02-15: Sidebar Tree View Label Fixes (3 issues)
 - **Skill prefix stripping:** `SkillCatalogService.parseInstalledSkill()` now strips leading "Skill: " prefix (case-insensitive) from extracted heading names, so "Skill: VS Code Terminal Command Pattern" becomes "VS Code Terminal Command Pattern" in the tree
 - **Skill click error:** `SkillsTreeProvider.getSkillItems()` in `SquadTreeProvider.ts` changed `arguments: [skill.name]` → `arguments: [skill.slug]` to pass directory name (not display name) to `viewSkill` command, preventing file-not-found errors
+
+📌 Team update (2026-02-15): User directive — releases require explicit human approval before tagging/publishing — decided by Jeffrey T. Fritz
+
+📌 Team update (2026-02-15): v0.6.0 Sprint Plan (QA skill flow, enable Add Skill button, dashboard polish, backlog audit) — decided by Danny
+
+📌 Team update (2026-02-15): Dashboard Chart & Decisions Rendering Fixes (canvas color resolution, axis labels, empty state guidance) — decided by Rusty
 - **Decision subsection filtering:** `DecisionService.parseDecisionsMd()` now skips `## ` headings that are generic subsection names (Context, Decision, Rationale, Impact, etc.) — only real decision titles appear in the panel. Also strips malformed `## # ` heading prefixes.
 - Key files: `src/services/SkillCatalogService.ts`, `src/views/SquadTreeProvider.ts`, `src/services/DecisionService.ts`
 - 3 pre-existing test failures remain (unrelated — they reference old unified "Team section" node from before sidebar split)
@@ -255,3 +261,23 @@ Dashboard webview scaffolded with single unified tab interface (Velocity + Activ
 ### 2026-02-15: Team Update — Skill Identity & Sidebar Label Fixes (Decisions Merged)
 
 📌 **Team decision captured:** Consolidated decisions on skill identity and sidebar labels. Skills use directory slug (canonical identifier) for all filesystem operations, separated from display name (from frontmatter/heading). Sidebar labels strip "Skill: " prefix. Decisions panel filters out generic subsection headings (Context, Decision, Rationale, Impact, etc.) to show only actual decision titles. — decided by Rusty
+
+### 2026-02-15: Dashboard Chart & Decisions Rendering Fixes
+- **Canvas CSS variable resolution:** Canvas 2D context does NOT support CSS custom properties (`var(--foo)`) in `fillStyle`/`strokeStyle`. Must use `getComputedStyle(document.documentElement).getPropertyValue('--var-name')` to resolve to actual color values. Added `resolveColor()` helper with hardcoded fallbacks (`#3794ff` for charts-blue, `#444` for panel-border, `#ccc` for foreground, `#999` for descriptionForeground).
+- **Axis labels added to velocity chart:** Y-axis shows 0, midpoint, and max task count. X-axis shows ~6 evenly spaced dates in MM/DD format, always including the last date. Subtle grid lines at 30% opacity for mid/max values.
+- **Chart padding increased:** Left padding 55px (for Y-axis labels), bottom padding 45px (for X-axis dates), top 20px, right 20px. Canvas height increased from 200px to 250px.
+- **Decisions empty state fix:** `renderDecisions()` call moved AFTER function definition (was called at line 505, defined at 508 — JS hoisting doesn't apply to function expressions in template literals). Added early-return guard for empty/missing `entries` array with informative empty state message.
+- **Key pattern:** In VS Code webview HTML templates, always resolve CSS variables via `getComputedStyle()` before using them in Canvas 2D context. CSS variables work fine in HTML/CSS but NOT in Canvas API calls.
+- Key file: `src/views/dashboard/htmlTemplate.ts`
+
+### 2026-02-15: Dashboard Button & Clickable Entries
+- Added `squadui.openDashboard` to `view/title` menu in `package.json` (navigation group, scoped to `view == squadTeam`) — shows graph icon in Team panel title bar
+- Added `acquireVsCodeApi()` in `htmlTemplate.ts` `<script>` section for webview-to-extension messaging
+- Implemented event delegation pattern: single `document.body` click handler on `[data-action]` elements dispatches `postMessage` calls
+- Four clickable element types: decision cards (`open-decision`), task items (`open-task`), swimlane member names (`open-member`), heatmap member names (`open-member`)
+- Decision cards pass `filePath` and `lineNumber` from `DecisionEntry` model (already serialized via `JSON.stringify`)
+- Task items pass `task.id` from `TimelineTask` model
+- Member names post `memberName` to trigger `squadui.viewCharter` command
+- `SquadDashboardWebview.createPanel()` now registers `onDidReceiveMessage` handler routing to existing commands: `openDecision`, `showWorkDetails`, `viewCharter`
+- CSS updates: `.task-item` cursor changed from `help` to `pointer`; `.heatmap-cell .member-name` gets `cursor: pointer; text-decoration: underline`; `.swimlane-header .member-link` gets pointer + underline + hover color
+- **Key pattern:** Event delegation with `data-action` attributes is the preferred approach for webview click handling — keeps render functions clean and avoids inline onclick handlers

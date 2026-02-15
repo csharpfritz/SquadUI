@@ -9,6 +9,10 @@
 
 <!-- Append new learnings below. Each entry is something lasting about the project. -->
 
+📌 Team update (2026-02-15): User directive — releases require explicit human approval before tagging/publishing — decided by Jeffrey T. Fritz
+
+📌 Team update (2026-02-15): v0.6.0 Sprint Plan (QA skill import flow, copilot issues integration, backlog audit) — decided by Danny
+
 ### 2026-02-13: Data Layer Integration Tests (Issue #12)
 
 Created comprehensive integration tests for the data layer services:
