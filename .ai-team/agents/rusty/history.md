@@ -37,3 +37,8 @@
  Add Skill Error Handling  network failures now throw exceptions for better UX instead of silent empty arrays  decided by Rusty
  Backlog Audit and Issue Cleanup  issues #27, #37, #38 closed; backlog triaged for v0.6.0 sprint  decided by Danny
  Markdown link handling utility  separates display text extraction (for tree view) from HTML rendering (for dashboard webviews)  decided by Rusty
+
+### File Watcher Broadening & Agent Mode Chat (2026-02-15)
+- **FileWatcherService WATCH_PATTERN:** Changed from `**/.ai-team/orchestration-log/**/*.md` to `**/.ai-team/**/*.md` — covers team.md, charters, decisions, skills, and orchestration logs. Debounce already in place prevents thrashing.
+- **addMemberCommand chat API:** `workbench.action.chat.open` accepts `agentId` and `agentMode` fields in addition to `query` and `isPartialQuery`. Using `@squad` prefix in query text provides belt-and-suspenders targeting of the Squad chat participant.
+- **Key paths:** `src/services/FileWatcherService.ts` (line 34 WATCH_PATTERN), `src/commands/addMemberCommand.ts` (lines 49–56 chat open call)
