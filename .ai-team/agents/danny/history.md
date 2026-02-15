@@ -156,3 +156,28 @@ Recently changed files WITHOUT corresponding test updates:
 
 **Notes for Jeff:** Ready for review. Version bump and changelog finalized. No commits/tags created per instructions. Compilation clean.
 
+### 2026-02-15: README.md Rewrite for v0.6.0
+
+**Task:** Rewrite README.md to comprehensively showcase all SquadUI features (requested by Jeff).
+
+**Completed:**
+- Expanded feature sections from 4 bullets to detailed subsections covering:
+  - **Sidebar Panels** — Team (with role badges, expandable member nodes, GitHub issues, activity logs), Skills (catalog browsing, add/view/remove), Decisions (chronological, click-through)
+  - **Dashboard** — Velocity tab (30-day timeline, 7-day heatmap), Activity tab (swimlane view, session logs), Decisions browser
+  - **Status Bar** — Real-time activity indicator and health status
+  - **Integration features** — File watching, GitHub integration, cross-project compat, markdown rendering
+- Added comprehensive **Commands table** with keyboard shortcuts (Ctrl+Shift+S for Add Member, Ctrl+Shift+D for Dashboard)
+- Restructured **Getting Started** with step-by-step flow (install → setup → view → add members → dashboard)
+- Enhanced **Development** section with test command
+- Added **Requirements** section (VS Code 1.85.0+)
+- Maintained existing assets: badges, screenshot reference, License section
+
+**Key decisions:**
+1. Used emoji sparingly (status badges 🟢/📋/🔄/🤖 only, no excessive decoration)
+2. Used tables for command reference (clear, scannable format matching marketplace style)
+3. Kept descriptions concise (1-2 lines per feature) to stay readable but comprehensive
+4. Emphasized audience: developers using GitHub Copilot and Squad
+5. Organized by UI surface (panels, dashboard, commands, status bar) to match user experience
+
+**Result:** README now fully represents v0.6.0 feature set without being overwhelming. Professional, marketplace-ready, scannable. Target audience (Copilot + Squad developers) can quickly understand what SquadUI offers and how to use it.
+
