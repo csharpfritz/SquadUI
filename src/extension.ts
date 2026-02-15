@@ -207,13 +207,45 @@ export function activate(context: vscode.ExtensionContext): void {
     );
 
     // Register open log entry command — opens orchestration log file
+    // Accepts either a direct file path OR (date, topic) pair from tree view
     context.subscriptions.push(
-        vscode.commands.registerCommand('squadui.openLogEntry', async (filePath: string) => {
-            if (!filePath) {
+        vscode.commands.registerCommand('squadui.openLogEntry', async (filePathOrDate: string, topic?: string) => {
+            if (!filePathOrDate) {
                 return;
             }
-            const doc = await vscode.workspace.openTextDocument(filePath);
-            await vscode.window.showTextDocument(doc, { preview: true });
+
+            let resolvedPath = filePathOrDate;
+
+            // If topic is provided, this is a (date, topic) call from the tree view — resolve the file
+            if (topic) {
+                const aiTeamDir = path.join(workspaceRoot, '.ai-team');
+                const logDirs = ['orchestration-log', 'log'];
+                let found = false;
+
+                for (const dir of logDirs) {
+                    const logDir = path.join(aiTeamDir, dir);
+                    if (!fs.existsSync(logDir)) { continue; }
+                    const files = fs.readdirSync(logDir);
+                    const match = files.find(f => f.includes(filePathOrDate) && f.includes(topic));
+                    if (match) {
+                        resolvedPath = path.join(logDir, match);
+                        found = true;
+                        break;
+                    }
+                }
+
+                if (!found) {
+                    vscode.window.showWarningMessage(`Log file not found for ${filePathOrDate} - ${topic}`);
+                    return;
+                }
+            }
+
+            try {
+                const doc = await vscode.workspace.openTextDocument(resolvedPath);
+                await vscode.window.showTextDocument(doc, { preview: true });
+            } catch (err) {
+                vscode.window.showWarningMessage(`Could not open log file: ${resolvedPath}`);
+            }
         })
     );
 

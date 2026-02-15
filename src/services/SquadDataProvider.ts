@@ -141,10 +141,20 @@ export class SquadDataProvider {
         }
 
         const members = await this.getSquadMembers();
-        const member = members.find(m => m.name === task.assignee);
+        // Case-insensitive member lookup to handle name mismatches between logs and team.md
+        const member = members.find(m => m.name.toLowerCase() === task.assignee?.toLowerCase());
 
         if (!member) {
-            return undefined;
+            // Still return work details with a placeholder member so the task can be viewed
+            const placeholderMember = {
+                name: task.assignee ?? 'Unknown',
+                role: 'Team Member',
+            };
+
+            return {
+                task,
+                member: placeholderMember as any,
+            };
         }
 
         // Find related log entries for this task

@@ -289,7 +289,7 @@ suite('TeamTreeProvider Test Suite', () => {
             }
         });
 
-        test('log-entry items have notebook icon', async function() {
+        test('log-entry items have history icon', async function() {
             const children = await provider.getChildren();
             const members = children.filter(c => c.itemType === 'member');
             if (members.length === 0) { this.skip(); }
@@ -298,7 +298,7 @@ suite('TeamTreeProvider Test Suite', () => {
             const logEntries = memberChildren.filter(c => c.itemType === 'log-entry');
             for (const entry of logEntries) {
                 assert.ok(entry.iconPath instanceof vscode.ThemeIcon);
-                assert.strictEqual((entry.iconPath as vscode.ThemeIcon).id, 'notebook');
+                assert.strictEqual((entry.iconPath as vscode.ThemeIcon).id, 'history');
             }
         });
 

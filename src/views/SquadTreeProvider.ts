@@ -326,7 +326,7 @@ export class TeamTreeProvider implements vscode.TreeDataProvider<SquadTreeItem> 
                     undefined,
                     undefined
                 );
-                item.iconPath = new vscode.ThemeIcon('notebook');
+                item.iconPath = new vscode.ThemeIcon('history');
                 item.description = entry.date;
                 item.tooltip = `${topic}\n${entry.date}`;
                 item.command = {

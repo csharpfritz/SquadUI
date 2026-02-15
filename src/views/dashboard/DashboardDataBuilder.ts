@@ -24,7 +24,7 @@ export class DashboardDataBuilder {
                 milestones: milestoneBurndowns ?? [],
             },
             velocity: {
-                timeline: this.buildVelocityTimeline(tasks),
+                timeline: this.buildVelocityTimeline(tasks, closedIssues),
                 heatmap: this.buildActivityHeatmap(members, logEntries),
             },
             activity: {
@@ -39,8 +39,9 @@ export class DashboardDataBuilder {
 
     /**
      * Builds velocity timeline: completed tasks per day over the last 30 days.
+     * Combines both orchestration-log tasks and closed GitHub issues.
      */
-    private buildVelocityTimeline(tasks: Task[]): VelocityDataPoint[] {
+    private buildVelocityTimeline(tasks: Task[], closedIssues?: MemberIssueMap): VelocityDataPoint[] {
         const now = new Date();
         const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
 
@@ -59,6 +60,24 @@ export class DashboardDataBuilder {
 
             const dateKey = completedDate.toISOString().split('T')[0];
             tasksByDate.set(dateKey, (tasksByDate.get(dateKey) ?? 0) + 1);
+        }
+
+        // Also count closed GitHub issues (by closedAt date)
+        if (closedIssues) {
+            const seenIssues = new Set<number>();
+            for (const issues of closedIssues.values()) {
+                for (const issue of issues) {
+                    if (seenIssues.has(issue.number)) { continue; }
+                    seenIssues.add(issue.number);
+                    if (issue.closedAt) {
+                        const closedDate = new Date(issue.closedAt);
+                        if (closedDate >= thirtyDaysAgo) {
+                            const dateKey = closedDate.toISOString().split('T')[0];
+                            tasksByDate.set(dateKey, (tasksByDate.get(dateKey) ?? 0) + 1);
+                        }
+                    }
+                }
+            }
         }
 
         // Fill in missing dates with 0 counts
