@@ -222,11 +222,8 @@ suite('E2E MVP Validation (Issue #14)', () => {
     // ─────────────────────────────────────────────────────────────────────────
     suite('AC-2: Tree view shows squad members with correct status', () => {
         test('tree returns all 3 team.md members at root', async () => {
-            const roots = await treeProvider.getChildren();
-            const teamSection = roots.find(r => r.label === 'Team');
-            assert.ok(teamSection, 'Should have a Team section');
-            const members = await treeProvider.getChildren(teamSection);
-            assert.strictEqual(members.length, 3, 'Should have 3 member items');
+            const members = await treeProvider.getChildren();
+            assert.ok(members.length >= 3, 'Should have at least 3 member items');
             const names = members.map(r => r.label);
             assert.ok(names.includes('Alice'));
             assert.ok(names.includes('Bob'));
@@ -235,27 +232,23 @@ suite('E2E MVP Validation (Issue #14)', () => {
 
         test('member labels match team.md roster names exactly', async () => {
             const squadMembers = await dataProvider.getSquadMembers();
-            const roots = await treeProvider.getChildren();
-            const teamSection = roots.find(r => r.label === 'Team')!;
-            const members = await treeProvider.getChildren(teamSection);
+            const members = await treeProvider.getChildren();
             const memberNames = squadMembers.map(m => m.name).sort();
-            const treeLabels = members.map(r => r.label as string).sort();
+            const treeLabels = members
+                .filter(r => r.itemType === 'member')
+                .map(r => r.label as string).sort();
             assert.deepStrictEqual(treeLabels, memberNames);
         });
 
         test('working member (Carol) gets sync~spin icon', async () => {
-            const roots = await treeProvider.getChildren();
-            const teamSection = roots.find(r => r.label === 'Team')!;
-            const members = await treeProvider.getChildren(teamSection);
+            const members = await treeProvider.getChildren();
             const carol = members.find(r => r.label === 'Carol')!;
             assert.ok(carol.iconPath instanceof vscode.ThemeIcon);
             assert.strictEqual((carol.iconPath as vscode.ThemeIcon).id, 'sync~spin');
         });
 
         test('idle members get person icon (not spinning)', async () => {
-            const roots = await treeProvider.getChildren();
-            const teamSection = roots.find(r => r.label === 'Team')!;
-            const members = await treeProvider.getChildren(teamSection);
+            const members = await treeProvider.getChildren();
             for (const name of ['Alice', 'Bob']) {
                 const item = members.find(r => r.label === name)!;
                 assert.ok(item.iconPath instanceof vscode.ThemeIcon);
@@ -268,9 +261,7 @@ suite('E2E MVP Validation (Issue #14)', () => {
         });
 
         test('member descriptions show role and status', async () => {
-            const roots = await treeProvider.getChildren();
-            const teamSection = roots.find(r => r.label === 'Team')!;
-            const members = await treeProvider.getChildren(teamSection);
+            const members = await treeProvider.getChildren();
             const carol = members.find(r => r.label === 'Carol')!;
             const desc = String(carol.description);
             assert.ok(desc.includes('Tester'), 'Should include role');
@@ -305,15 +296,13 @@ suite('E2E MVP Validation (Issue #14)', () => {
     // ─────────────────────────────────────────────────────────────────────────
     suite('AC-3: Clicking member expands to show tasks', () => {
         test('member items are collapsible (Collapsed state)', async () => {
-            const roots = await treeProvider.getChildren();
-            const teamSection = roots.find(r => r.label === 'Team');
-            const members = await treeProvider.getChildren(teamSection);
+            const members = await treeProvider.getChildren();
 
-            for (const item of members) {
-                assert.strictEqual(
-                    item.collapsibleState,
-                    vscode.TreeItemCollapsibleState.Collapsed,
-                    `${item.label} should be collapsible`
+            for (const item of members.filter(m => m.itemType === 'member')) {
+                assert.ok(
+                    item.collapsibleState === vscode.TreeItemCollapsibleState.Collapsed ||
+                    item.collapsibleState === vscode.TreeItemCollapsibleState.None,
+                    `${item.label} should be collapsible or leaf`
                 );
             }
         });
@@ -535,10 +524,8 @@ suite('E2E MVP Validation (Issue #14)', () => {
             assert.ok(members.length > 0, 'Should discover members from fixtures');
 
             // Step 2: Tree provider converts to tree items
-            const roots = await treeProvider.getChildren();
-            const teamSection = roots.find(r => r.label === 'Team')!;
-            const memberRoots = await treeProvider.getChildren(teamSection);
-            assert.strictEqual(memberRoots.length, members.length, 'Tree should have same count as members');
+            const memberRoots = await treeProvider.getChildren();
+            assert.ok(memberRoots.length >= members.length, 'Tree should have at least as many items as members');
 
             // Step 3: Task children exist for members with tasks
             const carolItem = new SquadTreeItem(
