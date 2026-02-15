@@ -387,6 +387,23 @@ export class OrchestrationLogService {
             return this.extractListItems(whoWorkedSection);
         }
 
+        // Fall back to extracting agent names from "## What Happened" or "## What Was Done" bullets
+        const actionSection = this.extractSection(content, 'What Happened')
+            ?? this.extractSection(content, 'What Was Done');
+        if (actionSection) {
+            const agents: string[] = [];
+            for (const line of actionSection.split('\n')) {
+                const match = line.match(/^\s*[-*]\s+\*\*(.+?):?\*\*:?\s/);
+                if (match) {
+                    const name = match[1].replace(/\s*\(.*?\)\s*$/, '').trim();
+                    if (name && !agents.includes(name)) {
+                        agents.push(name);
+                    }
+                }
+            }
+            if (agents.length > 0) { return agents; }
+        }
+
         return [];
     }
 
@@ -551,9 +568,10 @@ export class OrchestrationLogService {
      * Format: `- **AgentName:** description text`
      */
     private extractWhatWasDone(content: string): { agent: string; description: string }[] | undefined {
-        // Try "What Was Done" first, then fall back to "Summary" for per-agent bullets
+        // Try "What Was Done" first, then fall back to "Summary" or "What Happened" for per-agent bullets
         const section = this.extractSection(content, 'What Was Done')
-            ?? this.extractSection(content, 'Summary');
+            ?? this.extractSection(content, 'Summary')
+            ?? this.extractSection(content, 'What Happened');
         if (!section) {
             return undefined;
         }

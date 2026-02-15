@@ -390,6 +390,9 @@ export class SkillCatalogService {
             }
         }
 
+        // Strip "Skill: " prefix (case-insensitive)
+        name = name.replace(/^skill:\s*/i, '');
+
         // Extract description from body if not set by frontmatter
         if (!description) {
             for (let i = bodyStartIndex; i < lines.length; i++) {

@@ -14,6 +14,8 @@ How to decide who handles what.
 | Code review | Danny | Review PRs, check quality, suggest improvements |
 | Scope & priorities | Danny | What to build next, trade-offs, decisions |
 | Async issue work (bugs, tests, small features) | @copilot 🤖 | Well-defined tasks matching capability profile |
+| VS 2026 extension APIs | Virgil | VSIX, MEF, command tables, extension lifecycle, C#/.NET |
+| VS 2026 extension UI | Turk | Tool windows, WPF/XAML, MVVM, Visual Studio theming |
 | Session logging | Scribe | Automatic — never needs routing |
 
 ## Issue Routing

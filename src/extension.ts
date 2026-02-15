@@ -47,12 +47,10 @@ export function activate(context: vscode.ExtensionContext): void {
         showCollapseAll: true
     });
     const skillsView = vscode.window.createTreeView('squadSkills', {
-        treeDataProvider: skillsProvider,
-        showCollapseAll: true
+        treeDataProvider: skillsProvider
     });
     const decisionsView = vscode.window.createTreeView('squadDecisions', {
-        treeDataProvider: decisionsProvider,
-        showCollapseAll: true
+        treeDataProvider: decisionsProvider
     });
     context.subscriptions.push(teamView, skillsView, decisionsView);
 

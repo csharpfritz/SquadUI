@@ -17,6 +17,8 @@
 | Linus | Backend Dev | `.ai-team/agents/linus/charter.md` | ✅ Active |
 | Basher | Tester | `.ai-team/agents/basher/charter.md` | ✅ Active |
 | Livingston | DevOps / CI | `.ai-team/agents/livingston/charter.md` | ✅ Active |
+| Virgil | VS Extension Dev (VS 2026) | `.ai-team/agents/virgil/charter.md` | ✅ Active |
+| Turk | VS Extension Dev (VS 2026 UI) | `.ai-team/agents/turk/charter.md` | ✅ Active |
 | Scribe | Session Logger | `.ai-team/agents/scribe/charter.md` | 📋 Silent |
 | Ralph | Work Monitor | — | 🔄 Monitor |
 

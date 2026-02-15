@@ -131,11 +131,6 @@
       ],
       "view/item/context": [
         {
-          "command": "squadui.viewCharter",
-          "when": "view == squadTeam && viewItem == member",
-          "group": "inline"
-        },
-        {
           "command": "squadui.removeMember",
           "when": "view == squadTeam && viewItem == member",
           "group": "inline"

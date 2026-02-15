@@ -36,22 +36,66 @@ export class DecisionService {
         const fileContent = fs.readFileSync(filePath, 'utf-8');
         const lines = fileContent.split('\n');
 
+        // Known subsection headings to filter out
+        const subsectionNames = new Set([
+            'context', 'decision', 'decisions', 'rationale', 'impact',
+            'alternatives considered', 'implementation details', 'implementation',
+            'members', 'alumni', '@copilot', 'location', 'action required',
+            'open questions', 'open questions / risks', 'related issues',
+            'success metrics', 'scope decision', 'directive',
+            'problem statement', 'data flow analysis', 'root cause',
+            'the design gap', 'what should happen', 'recommended fix',
+            'test cases to add', 'files to modify', 'for linus',
+            'implementation phases'
+        ]);
+
+        // Detect heading level used for decisions: ### (H3) if most entries
+        // use H3 with date prefixes, otherwise ## (H2).
+        let h3DateCount = 0;
+        let h2DateCount = 0;
+        for (const l of lines) {
+            const trimmed = l.trim();
+            if (/^###\s+\d{4}-\d{2}-\d{2}/.test(trimmed)) { h3DateCount++; }
+            else if (/^##\s+(?!#)\d{4}-\d{2}-\d{2}/.test(trimmed)) { h2DateCount++; }
+        }
+        const decisionLevel = h3DateCount > h2DateCount ? 3 : 2;
+        const headingPrefix = '#'.repeat(decisionLevel);
+        const headingRegex = new RegExp(`^${headingPrefix}\\s+(.+)$`);
+
         let i = 0;
         while (i < lines.length) {
             const line = lines[i].trim();
 
-            // Match ## headings only (not # title or ### sub-headings)
-            const headingMatch = line.match(/^##\s+(.+)$/);
-            if (headingMatch && !line.startsWith('###')) {
-                const title = headingMatch[1].trim();
+            // Match headings at the detected decision level
+            const headingMatch = line.match(headingRegex);
+            // Ensure we match exactly the right level (not deeper)
+            const hashCount = (line.match(/^#+/) || [''])[0].length;
+            if (headingMatch && hashCount === decisionLevel) {
+                let title = headingMatch[1].trim();
+
+                // Fix malformed headings like "## # Some Title" — strip leading "# "
+                title = title.replace(/^#\s+/, '');
+                // Strip leading date prefix (e.g., "2026-02-14: ")
+                title = title.replace(/^\d{4}-\d{2}-\d{2}:\s*/, '');
+                // Strip "User directive — " or "User directive - " prefix
+                title = title.replace(/^User directive\s*[—–-]\s*/i, '');
+                // Strip "Decision: " prefix
+                title = title.replace(/^Decision:\s*/i, '');
+
+                // Skip generic subsection headings
+                if (subsectionNames.has(title.toLowerCase())) {
+                    i++;
+                    continue;
+                }
                 let date: string | undefined;
                 let author: string | undefined;
 
-                // Find the end of this section (next ## heading or EOF)
+                // Find the end of this section (next heading at same level or EOF)
                 let sectionEnd = lines.length;
                 for (let j = i + 1; j < lines.length; j++) {
                     const nextLine = lines[j].trim();
-                    if (nextLine.match(/^##\s+/) && !nextLine.startsWith('###')) {
+                    const nextHash = (nextLine.match(/^#+/) || [''])[0].length;
+                    if (nextHash === decisionLevel && headingRegex.test(nextLine)) {
                         sectionEnd = j;
                         break;
                     }
@@ -107,9 +151,17 @@ export class DecisionService {
             const content = fs.readFileSync(filePath, 'utf-8');
 
             let title = 'Untitled Decision';
-            const titleMatch = content.match(/^###?\s+(.+)$/m);
-            if (titleMatch) {
-                title = titleMatch[1].trim();
+            // Prefer H1 heading for title; fall back to H2/H3
+            const h1Match = content.match(/^#\s+(?!#)(.+)$/m);
+            const hMatch = h1Match || content.match(/^###?\s+(.+)$/m);
+            if (hMatch) {
+                title = hMatch[1].trim();
+                // Strip leading date prefix (e.g., "2026-02-14: ")
+                title = title.replace(/^\d{4}-\d{2}-\d{2}:\s*/, '');
+                // Strip "User directive — " or "User directive - " prefix
+                title = title.replace(/^User directive\s*[—–-]\s*/i, '');
+                // Strip common decision doc prefixes
+                title = title.replace(/^(?:Design Decision|Decision|Feature Summary|Context|Summary):\s*/i, '');
             }
 
             let author: string | undefined;

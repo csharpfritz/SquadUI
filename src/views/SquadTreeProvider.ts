@@ -71,15 +71,24 @@ export class TeamTreeProvider implements vscode.TreeDataProvider<SquadTreeItem> 
         const members = await this.dataProvider.getSquadMembers();
         
         return Promise.all(members.map(async member => {
+            const lowerName = member.name.toLowerCase();
+            const isInfra = lowerName === 'scribe' || lowerName === 'ralph';
+            const isCopilot = lowerName === '@copilot' || lowerName === 'copilot';
+            const noChildren = isInfra || isCopilot;
+
             const item = new SquadTreeItem(
                 member.name,
-                vscode.TreeItemCollapsibleState.Collapsed,
+                noChildren ? vscode.TreeItemCollapsibleState.None : vscode.TreeItemCollapsibleState.Collapsed,
                 'member',
                 member.name
             );
 
+            const specialIcon = lowerName === 'scribe' ? 'edit'
+                : lowerName === 'ralph' ? 'eye'
+                : isCopilot ? 'robot'
+                : undefined;
             item.iconPath = new vscode.ThemeIcon(
-                member.status === 'working' ? 'sync~spin' : 'person'
+                specialIcon ?? (member.status === 'working' ? 'sync~spin' : 'person')
             );
             
             // Build description with status badge and issue count
@@ -90,11 +99,13 @@ export class TeamTreeProvider implements vscode.TreeDataProvider<SquadTreeItem> 
             item.description = `${statusBadge} ${member.role}${issueText}`;
             item.tooltip = this.getMemberTooltip(member);
 
-            item.command = {
-                command: 'squadui.viewCharter',
-                title: 'View Charter',
-                arguments: [member.name]
-            };
+            if (!isCopilot) {
+                item.command = {
+                    command: 'squadui.viewCharter',
+                    title: 'View Charter',
+                    arguments: [member.name]
+                };
+            }
 
             return item;
         }));
@@ -311,17 +322,17 @@ export class SkillsTreeProvider implements vscode.TreeDataProvider<SquadTreeItem
 
             const sourceBadge = skill.source === 'awesome-copilot' ? '📦 awesome-copilot'
                 : skill.source === 'skills.sh' ? '🏆 skills.sh'
-                : '🎯 local';
+                : undefined;
 
             item.iconPath = new vscode.ThemeIcon('book');
-            item.description = sourceBadge;
+            if (sourceBadge) { item.description = sourceBadge; }
             item.tooltip = this.getSkillTooltip(skill);
             item.contextValue = 'skill';
 
             item.command = {
                 command: 'squadui.viewSkill',
                 title: 'View Skill',
-                arguments: [skill.name]
+                arguments: [skill.slug]
             };
 
             return item;

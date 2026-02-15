@@ -697,14 +697,14 @@ suite('Skill Tree Nodes (SkillsTreeProvider)', () => {
         assert.ok(names.includes('Testing Expert'));
     });
 
-    test('skill items show correct source badge', async () => {
+    test('skill items have no source badge for local skills', async () => {
         const skillItems = await provider.getChildren();
 
         for (const item of skillItems) {
-            const desc = String(item.description);
-            assert.ok(
-                desc.includes('local'),
-                `Skill ${item.label} description should include "local", got: ${desc}`
+            assert.strictEqual(
+                item.description,
+                undefined,
+                `Skill ${item.label} should have no description badge, got: ${item.description}`
             );
         }
     });
