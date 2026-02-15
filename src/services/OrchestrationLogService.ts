@@ -404,6 +404,46 @@ export class OrchestrationLogService {
             if (agents.length > 0) { return agents; }
         }
 
+        // Fall back to inline bold labels like "**Work done:**" followed by bullet items
+        // with bold agent names: "- **Name** did something" or "- Name did something"
+        const inlineLabelMatch = content.match(/\*\*(?:Work done|What happened|What was done):\*\*\s*\n([\s\S]*?)(?=\n\*\*|\n##\s|$)/i);
+        if (inlineLabelMatch) {
+            const agents: string[] = [];
+            for (const line of inlineLabelMatch[1].split('\n')) {
+                // Try bold name: "- **Gus** quality-reviewed..."
+                const boldMatch = line.match(/^\s*[-*]\s+\*\*(.+?)\*\*\s/);
+                if (boldMatch) {
+                    const name = boldMatch[1].replace(/\s*\(.*?\)\s*$/, '').trim();
+                    if (name && !agents.includes(name)) {
+                        agents.push(name);
+                    }
+                    continue;
+                }
+                // Try unbolded name at start: "- Gus quality-reviewed..."
+                const plainMatch = line.match(/^\s*[-*]\s+([A-Z][a-z]+)\s+/);
+                if (plainMatch) {
+                    const name = plainMatch[1];
+                    if (name && !agents.includes(name)) {
+                        agents.push(name);
+                    }
+                }
+            }
+            if (agents.length > 0) { return agents; }
+        }
+
+        // Last resort: scan all bullet items in the entire document for bold agent names
+        const allAgents: string[] = [];
+        for (const line of content.split('\n')) {
+            const boldMatch = line.match(/^\s*[-*]\s+\*\*([A-Z][a-z]+)\*\*\s/);
+            if (boldMatch) {
+                const name = boldMatch[1];
+                if (!allAgents.includes(name)) {
+                    allAgents.push(name);
+                }
+            }
+        }
+        if (allAgents.length > 0) { return allAgents; }
+
         return [];
     }
 
@@ -569,9 +609,18 @@ export class OrchestrationLogService {
      */
     private extractWhatWasDone(content: string): { agent: string; description: string }[] | undefined {
         // Try "What Was Done" first, then fall back to "Summary" or "What Happened" for per-agent bullets
-        const section = this.extractSection(content, 'What Was Done')
+        let section = this.extractSection(content, 'What Was Done')
             ?? this.extractSection(content, 'Summary')
             ?? this.extractSection(content, 'What Happened');
+
+        // Fall back to inline bold labels like "**Work done:**" followed by bullet items
+        if (!section) {
+            const inlineMatch = content.match(/\*\*(?:Work done|What happened|What was done):\*\*\s*\n([\s\S]*?)(?=\n\*\*|\n##\s|$)/i);
+            if (inlineMatch) {
+                section = inlineMatch[1];
+            }
+        }
+
         if (!section) {
             return undefined;
         }
@@ -589,6 +638,15 @@ export class OrchestrationLogService {
                 items.push({
                     agent,
                     description: match[2].trim(),
+                });
+                continue;
+            }
+            // Match unbolded: "- AgentName did something" (capitalized first word as agent)
+            const plainMatch = line.match(/^\s*[-*]\s+([A-Z][a-z]+)\s+(.+?)\r?$/);
+            if (plainMatch) {
+                items.push({
+                    agent: plainMatch[1],
+                    description: plainMatch[2].trim(),
                 });
             }
         }

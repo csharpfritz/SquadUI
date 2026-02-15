@@ -74,7 +74,7 @@ export class TeamTreeProvider implements vscode.TreeDataProvider<SquadTreeItem> 
             const lowerName = member.name.toLowerCase();
             const isInfra = lowerName === 'scribe' || lowerName === 'ralph';
             const isCopilot = lowerName === '@copilot' || lowerName === 'copilot';
-            const noChildren = isInfra || isCopilot;
+            const noChildren = isInfra;
 
             const item = new SquadTreeItem(
                 member.name,
