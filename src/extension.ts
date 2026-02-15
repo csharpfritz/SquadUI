@@ -4,7 +4,7 @@ import * as fs from 'fs';
 import { GitHubIssue } from './models';
 import { SquadDataProvider, FileWatcherService, GitHubIssuesService } from './services';
 import { TeamTreeProvider, SkillsTreeProvider, DecisionsTreeProvider, WorkDetailsWebview, IssueDetailWebview, SquadStatusBar, SquadDashboardWebview } from './views';
-import { registerInitSquadCommand, registerAddMemberCommand, registerRemoveMemberCommand, registerAddSkillCommand } from './commands';
+import { registerInitSquadCommand, registerUpgradeSquadCommand, registerAddMemberCommand, registerRemoveMemberCommand, registerAddSkillCommand } from './commands';
 
 let fileWatcher: FileWatcherService | undefined;
 let webview: WorkDetailsWebview | undefined;
@@ -21,6 +21,11 @@ export function activate(context: vscode.ExtensionContext): void {
         vscode.window.showWarningMessage('SquadUI: No workspace folder found');
         return;
     }
+
+    // Set initial hasTeam context based on .ai-team/team.md existence
+    const teamMdPath = path.join(workspaceRoot, '.ai-team', 'team.md');
+    const hasTeam = fs.existsSync(teamMdPath);
+    vscode.commands.executeCommand('setContext', 'squadui.hasTeam', hasTeam);
 
     // Create services
     const dataProvider = new SquadDataProvider(workspaceRoot);
@@ -138,6 +143,19 @@ export function activate(context: vscode.ExtensionContext): void {
             skillsProvider.refresh();
             decisionsProvider.refresh();
             statusBar?.update();
+            vscode.commands.executeCommand('setContext', 'squadui.hasTeam', true);
+        })
+    );
+
+    // Register squad upgrade command
+    context.subscriptions.push(
+        registerUpgradeSquadCommand(context, () => {
+            dataProvider.refresh();
+            teamProvider.refresh();
+            skillsProvider.refresh();
+            decisionsProvider.refresh();
+            statusBar?.update();
+            vscode.commands.executeCommand('setContext', 'squadui.hasTeam', true);
         })
     );
 
@@ -272,12 +290,14 @@ export function activate(context: vscode.ExtensionContext): void {
         })
     );
 
-    // Connect file watcher to tree refresh
+    // Connect file watcher to tree refresh and context key update
     fileWatcher.onFileChange(() => {
         teamProvider.refresh();
         skillsProvider.refresh();
         decisionsProvider.refresh();
         statusBar?.update();
+        const teamExists = fs.existsSync(teamMdPath);
+        vscode.commands.executeCommand('setContext', 'squadui.hasTeam', teamExists);
     });
 }
 

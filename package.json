@@ -114,6 +114,19 @@
         "command": "squadui.openLogEntry",
         "title": "Open Log Entry",
         "category": "Squad"
+      },
+      {
+        "command": "squadui.upgradeSquad",
+        "title": "Upgrade Team",
+        "category": "Squad",
+        "icon": "$(arrow-up)"
+      }
+    ],
+    "viewsWelcome": [
+      {
+        "view": "squadTeam",
+        "contents": "No Squad team found in this workspace.\n[Initialize Squad](command:squadui.initSquad)\n[Upgrade Existing Team](command:squadui.upgradeSquad)\nRun 'Squad: Initialize' to set up your AI team.",
+        "when": "!squadui.hasTeam"
       }
     ],
     "menus": {
@@ -136,6 +149,11 @@
         {
           "command": "squadui.addSkill",
           "when": "view == squadSkills",
+          "group": "navigation"
+        },
+        {
+          "command": "squadui.upgradeSquad",
+          "when": "view == squadTeam && squadui.hasTeam",
           "group": "navigation"
         }
       ],

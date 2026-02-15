@@ -50,3 +50,15 @@
   6. `**Issue:** #78` metadata — silently ignored, no crash or pollution
   7. Content capture — `content` field includes full section with subsections
 - Tests are written test-first for Linus's upcoming parser change; they will FAIL until the H1 handling is added to `parseDecisionsMd()`
+
+### upgradeSquadCommand & hasTeam Context Key Tests (2026-02-16)
+- New test file: `src/test/suite/upgradeSquadCommand.test.ts` — 5 tests total
+- **Registration tests (2):**
+  1. `registerUpgradeSquadCommand` returns a `Disposable` — mock context `{ subscriptions: [] }` pattern from addMemberCommand tests
+  2. `upgradeSquad` command is registered — `this.skip()` guard pattern (extension/isActive/workspace check) from viewCharterCommand tests
+- **hasTeam context key detection (3):**
+  3. `hasTeam` true when `.ai-team/team.md` exists — temp dir with file, verifies `fs.existsSync` logic
+  4. `hasTeam` false when `.ai-team/` absent — empty temp dir
+  5. `hasTeam` false when `.ai-team/` exists but `team.md` missing — edge case, directory without file
+- Uses `setup()`/`teardown()` with `test-fixtures/temp-upgrade-squad` cleanup
+- Rusty's `upgradeSquadCommand.ts` was already in place — tests compile clean

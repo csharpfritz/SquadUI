@@ -42,3 +42,10 @@
 - **FileWatcherService WATCH_PATTERN:** Changed from `**/.ai-team/orchestration-log/**/*.md` to `**/.ai-team/**/*.md` — covers team.md, charters, decisions, skills, and orchestration logs. Debounce already in place prevents thrashing.
 - **addMemberCommand chat API:** `workbench.action.chat.open` accepts `agentId` and `agentMode` fields in addition to `query` and `isPartialQuery`. Using `@squad` prefix in query text provides belt-and-suspenders targeting of the Squad chat participant.
 - **Key paths:** `src/services/FileWatcherService.ts` (line 34 WATCH_PATTERN), `src/commands/addMemberCommand.ts` (lines 49–56 chat open call)
+
+### Init & Upgrade Features (2026-02-16)
+- **Upgrade command:** Created `src/commands/upgradeSquadCommand.ts` following exact same factory pattern as `initSquadCommand.ts` — exports `registerUpgradeSquadCommand(context, onUpgradeComplete)`, opens terminal named "Squad Upgrade", runs `npx github:bradygaster/squad upgrade`
+- **viewsWelcome contribution:** Added `viewsWelcome` section to `package.json` for `squadTeam` view — shows Initialize and Upgrade buttons when `!squadui.hasTeam` context key is false. VS Code renders these as clickable command links in the empty tree view.
+- **Context key `squadui.hasTeam`:** Set on activation by checking `fs.existsSync(.ai-team/team.md)`. Updated to `true` in both init and upgrade `onComplete` callbacks. FileWatcher `onFileChange` handler also re-checks existence so context stays in sync with filesystem.
+- **Package.json updates:** Added `squadui.upgradeSquad` command (title: "Upgrade Team", category: "Squad", icon: `$(arrow-up)`), upgrade button in Team view title bar (gated on `squadui.hasTeam`), no commandPalette restriction so it's always accessible.
+- **Key pattern:** VS Code `viewsWelcome` uses `\n` for line breaks in the contents string, `[Button Text](command:id)` for command links. The `when` clause uses context keys set via `setContext` command.

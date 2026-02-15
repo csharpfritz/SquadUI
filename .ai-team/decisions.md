@@ -1674,3 +1674,54 @@ Issue #26 will be marked as superseded by #41 in a follow-up comment.
 **What:** Changed `FileWatcherService.WATCH_PATTERN` from `**/.ai-team/orchestration-log/**/*.md` to `**/.ai-team/**/*.md`, covering team roster, agent charters, decisions, skills, and orchestration logs.
 **Why:** The old pattern only watched orchestration logs, so adding a member (which creates `charter.md` and updates `team.md`) never triggered a tree refresh. The broader pattern catches all team-relevant file changes. The existing 300ms debounce prevents event thrashing from bulk writes.
 
+
+
+---
+
+
+**Date:** 2026-02-16
+**Author:** Linus
+
+## Context
+
+Some projects (e.g. aspire-minecraft) use a different decisions.md format where each decision is an H1 heading with a `Decision:` prefix, followed by `**Date:**`, `**Author:**`, and optional `**Issue:**` metadata. Subsections like `## Context`, `## Decision`, `## Rationale` appear inside the H1 block.
+
+## Decision
+
+`parseDecisionsMd()` now handles both formats:
+- **H1 format:** `# Decision: {title}` — section boundary is next H1 or EOF. Inner H2/H3 subsections are content, not separate decisions.
+- **H2/H3 format:** unchanged — original logic remains untouched.
+
+The H1 check runs first in the loop. If it matches, it consumes the entire block (advancing `i` to `sectionEnd`) and `continue`s, so the H2/H3 logic never sees the subsections.
+
+## Rationale
+
+- Additive change — zero risk to existing parsing
+- The `continue` + skip pattern is the cleanest way to prevent subsection re-parsing without restructuring the loop
+- Non-decision H1 headings (like `# Decisions`) are explicitly skipped to avoid false positives
+
+
+
+---
+
+# Decision: Init & Upgrade Welcome View Pattern
+
+**Author:** Rusty (Extension Dev)
+**Date:** 2026-02-16
+
+## Context
+
+When no `.ai-team/` directory exists, the sidebar tree views were empty with no guidance for users. We needed onboarding UX.
+
+## Decision
+
+1. **Context key `squadui.hasTeam`** — set on activation by checking `.ai-team/team.md` existence, updated after init/upgrade terminal closes, and re-checked on every file watcher change event.
+2. **`viewsWelcome` contribution** — shows Initialize and Upgrade buttons in the empty Team view when `!squadui.hasTeam`.
+3. **Upgrade command** — `squadui.upgradeSquad` follows the same terminal-based factory pattern as init. Always available in command palette.
+4. **Upgrade in view title** — upgrade button appears in Team view title bar only when `squadui.hasTeam` is true (you can't upgrade what doesn't exist from the toolbar, but welcome view still offers it as an option).
+
+## Impact
+
+- All future commands that modify `.ai-team/` structure should call `setContext('squadui.hasTeam', true)` in their completion callbacks.
+- The file watcher already re-checks, so manual deletion of `.ai-team/team.md` will correctly flip the context back and show the welcome view.
+
