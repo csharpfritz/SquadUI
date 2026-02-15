@@ -598,6 +598,9 @@ export function getDashboardHtml(data: DashboardData): string {
                 return;
             }
             
+            // Sort most-recent first
+            filtered.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+
             container.style.display = 'grid'; // Restore grid
             container.innerHTML = filtered.map(d => {
                 // Simple markdown strip (very basic)
