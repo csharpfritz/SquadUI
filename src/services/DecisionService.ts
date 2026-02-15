@@ -75,8 +75,13 @@ export class DecisionService {
 
                 // Fix malformed headings like "## # Some Title" — strip leading "# "
                 title = title.replace(/^#\s+/, '');
-                // Strip leading date prefix (e.g., "2026-02-14: ")
-                title = title.replace(/^\d{4}-\d{2}-\d{2}:\s*/, '');
+                // Extract date from heading prefix (e.g., "2026-02-14: Title")
+                let date: string | undefined;
+                const headingDateMatch = title.match(/^(\d{4}-\d{2}-\d{2}):\s*/);
+                if (headingDateMatch) {
+                    date = headingDateMatch[1];
+                    title = title.replace(/^\d{4}-\d{2}-\d{2}:\s*/, '');
+                }
                 // Strip "User directive — " or "User directive - " prefix
                 title = title.replace(/^User directive\s*[—–-]\s*/i, '');
                 // Strip "Decision: " prefix
@@ -87,7 +92,6 @@ export class DecisionService {
                     i++;
                     continue;
                 }
-                let date: string | undefined;
                 let author: string | undefined;
 
                 // Find the end of this section (next heading at same level or EOF)
@@ -154,10 +158,15 @@ export class DecisionService {
             // Prefer H1 heading for title; fall back to H2/H3
             const h1Match = content.match(/^#\s+(?!#)(.+)$/m);
             const hMatch = h1Match || content.match(/^###?\s+(.+)$/m);
+            let date: string | undefined;
             if (hMatch) {
                 title = hMatch[1].trim();
-                // Strip leading date prefix (e.g., "2026-02-14: ")
-                title = title.replace(/^\d{4}-\d{2}-\d{2}:\s*/, '');
+                // Extract date from heading prefix (e.g., "2026-02-14: Title")
+                const headingDateMatch = title.match(/^(\d{4}-\d{2}-\d{2}):\s*/);
+                if (headingDateMatch) {
+                    date = headingDateMatch[1];
+                    title = title.replace(/^\d{4}-\d{2}-\d{2}:\s*/, '');
+                }
                 // Strip "User directive — " or "User directive - " prefix
                 title = title.replace(/^User directive\s*[—–-]\s*/i, '');
                 // Strip common decision doc prefixes
@@ -165,7 +174,6 @@ export class DecisionService {
             }
 
             let author: string | undefined;
-            let date: string | undefined;
 
             const authorMatch = content.match(/\*\*(?:Author|By):\*\*\s*(.+)$/m);
             if (authorMatch) { author = authorMatch[1].trim(); }
