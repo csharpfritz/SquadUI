@@ -42,3 +42,4 @@
  Dashboard Chart & Decisions Rendering Fixes (canvas colors, axis labels, empty state)  decided by Rusty
  Dashboard decisions sort order  decisions list on dashboard should be sorted most-recent first  decided by Jeffrey T. Fritz
  Add Skill Error Handling  network failures now throw exceptions for better UX instead of silent empty arrays  decided by Rusty
+ 📌 Team update (2026-02-15): FileWatcherService watch pattern broadened from `**/.ai-team/orchestration-log/**/*.md` to `**/.ai-team/**/*.md` to catch all team metadata changes for automatic UI tree refresh — decided by Rusty
