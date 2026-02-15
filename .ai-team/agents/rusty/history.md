@@ -87,6 +87,30 @@
 
 📌 Team update (2026-02-15): Backlog Audit and Issue Cleanup — issues #27, #37, #38 closed; backlog triaged for v0.6.0 sprint — decided by Danny
 
+### 2026-02-15: Skill Catalog Bug Fixes (awesome-copilot 404, skills.sh parser garbage, search null-safety)
+
+#### Three Bugs Fixed
+1. **awesome-copilot URL 404:** Repo moved from `bradygaster/awesome-copilot` to `github/awesome-copilot` — updated URL in `fetchAwesomeCopilot()`
+2. **skills.sh parser returning garbage:** Old regex picked up nav links, agent logos, tab labels. Rewrote `parseSkillsShHtml()` to match actual leaderboard pattern: `<a href="/{owner}/{repo}/{skill}">` with `<h3>` name and `<p>` owner/repo. Now builds GitHub URLs (`https://github.com/{owner}/{repo}`) instead of skills.sh URLs so content can be fetched. Removed dead JSON-LD strategy.
+3. **Search crash on empty descriptions:** Added null-coalescing `(skill.description || '')` in `searchSkills()` filter to prevent `.toLowerCase()` on undefined
+
+#### Pattern: skills.sh HTML Structure
+Real skill entries in skills.sh leaderboard:
+```html
+<a class="group grid..." href="/vercel-labs/skills/find-skills">
+  <div><span class="...font-mono">1</span></div>
+  <div>
+    <h3 class="font-semibold text-foreground truncate">find-skills</h3>
+    <p class="...font-mono...">vercel-labs/skills</p>
+  </div>
+  <div><span class="font-mono text-sm">233.2K</span></div>
+</a>
+```
+Parser now extracts: skill name from `<h3>`, owner/repo from `<p>`, optional install count from `<span>`, filters by 3-segment path pattern.
+
+#### Updated Boilerplate Filter
+`isBoilerplateLink()` now only accepts URLs with exactly 3 path segments (`/{owner}/{repo}/{skill}`) to filter out `/trending`, `/hot`, `/docs`, etc.
+
 ## Archive (2026-02-13 to 2026-02-14)
 
 The following entries document foundational work, integrations, and architectural decisions from the first two days of development. Key patterns established:

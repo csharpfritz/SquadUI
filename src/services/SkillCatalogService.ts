@@ -74,7 +74,7 @@ export class SkillCatalogService {
         const q = query.toLowerCase();
         return catalog.filter(skill =>
             skill.name.toLowerCase().includes(q) ||
-            skill.description.toLowerCase().includes(q)
+            (skill.description || '').toLowerCase().includes(q)
         );
     }
 
@@ -151,7 +151,7 @@ export class SkillCatalogService {
      * Throws on network failure.
      */
     private async fetchAwesomeCopilot(): Promise<Skill[]> {
-        const url = 'https://raw.githubusercontent.com/bradygaster/awesome-copilot/main/README.md';
+        const url = 'https://raw.githubusercontent.com/github/awesome-copilot/main/README.md';
         const readme = await this.httpsGet(url);
         return this.parseAwesomeReadme(readme);
     }
@@ -208,63 +208,48 @@ export class SkillCatalogService {
 
     /**
      * Parses skills.sh HTML to extract skill listings.
-     * Looks for common patterns: links with skill names and descriptions.
+     * Looks for leaderboard entries with pattern: <a href="/{owner}/{repo}/{skill}">
      */
     parseSkillsShHtml(html: string): Skill[] {
         const skills: Skill[] = [];
 
-        // Strategy 1: Look for structured card/list patterns with href links
-        // Common pattern: <a href="...">Name</a> with nearby description text
-        const linkRegex = /<a[^>]+href="([^"]*)"[^>]*>([^<]+)<\/a>/gi;
-        let linkMatch;
+        // Match leaderboard entry pattern: <a href="/{owner}/{repo}/{skill}"> with <h3> skill name inside
+        // Pattern: <a ... href="/owner/repo/skill-name">...<h3>skill-name</h3>...<p>owner/repo</p>...</a>
+        const entryRegex = /<a[^>]+href="\/([^/]+)\/([^/]+)\/([^"]+)"[^>]*>([\s\S]*?)<\/a>/gi;
+        let entryMatch;
 
-        // Collect all anchors with their surrounding context
-        while ((linkMatch = linkRegex.exec(html)) !== null) {
-            const url = linkMatch[1];
-            const name = linkMatch[2].trim();
+        while ((entryMatch = entryRegex.exec(html)) !== null) {
+            const owner = entryMatch[1];
+            const repo = entryMatch[2];
+            const skillSlug = entryMatch[3];
+            const innerHtml = entryMatch[4];
 
-            // Skip navigation/boilerplate links
-            if (this.isBoilerplateLink(name, url)) {
+            // Skip navigation links (only process 3-segment paths)
+            if (!owner || !repo || !skillSlug) {
                 continue;
             }
 
-            // Look for a description near this link — search forward in the HTML
-            const afterLink = html.substring(linkMatch.index, linkMatch.index + 500);
-            const description = this.extractNearbyDescription(afterLink);
-
-            if (name.length >= 2) {
-                skills.push({
-                    name,
-                    description: description || name,
-                    source: 'skills.sh',
-                    url: url.startsWith('http') ? url : `https://skills.sh${url.startsWith('/') ? '' : '/'}${url}`,
-                    confidence: description ? 'medium' : 'low',
-                });
+            // Extract skill name from <h3>
+            const h3Match = /<h3[^>]*>([^<]+)<\/h3>/i.exec(innerHtml);
+            if (!h3Match) {
+                continue;
             }
-        }
+            const name = h3Match[1].trim();
 
-        // Strategy 2: Look for JSON-LD or structured data
-        const jsonLdRegex = /<script[^>]*type="application\/ld\+json"[^>]*>([\s\S]*?)<\/script>/gi;
-        let jsonMatch;
-        while ((jsonMatch = jsonLdRegex.exec(html)) !== null) {
-            try {
-                const data = JSON.parse(jsonMatch[1]);
-                const items = Array.isArray(data) ? data : (data.itemListElement ?? []);
-                for (const item of items) {
-                    const itemData = item.item ?? item;
-                    if (itemData.name) {
-                        skills.push({
-                            name: itemData.name,
-                            description: itemData.description ?? itemData.name,
-                            source: 'skills.sh',
-                            url: itemData.url ?? 'https://skills.sh',
-                            confidence: 'medium',
-                        });
-                    }
-                }
-            } catch {
-                // Malformed JSON-LD — skip
-            }
+            // Extract description from <p> tag (should be owner/repo)
+            const descMatch = /<p[^>]*class="[^"]*font-mono[^"]*"[^>]*>([^<]+)<\/p>/i.exec(innerHtml);
+            const description = descMatch ? descMatch[1].trim() : `${owner}/${repo}`;
+
+            // Build GitHub URL (not skills.sh URL)
+            const url = `https://github.com/${owner}/${repo}`;
+
+            skills.push({
+                name,
+                description,
+                source: 'skills.sh',
+                url,
+                confidence: 'high',
+            });
         }
 
         return this.deduplicateSkills(skills);
@@ -494,37 +479,4 @@ export class SkillCatalogService {
         return skill;
     }
 
-    /**
-     * Checks if a link is likely navigation/boilerplate rather than a skill entry.
-     */
-    private isBoilerplateLink(name: string, url: string): boolean {
-        const boilerplateNames = ['home', 'about', 'login', 'sign up', 'register', 'contact', 'privacy', 'terms', 'faq', 'help', 'blog', 'docs'];
-        const lowerName = name.toLowerCase();
-        if (boilerplateNames.some(b => lowerName === b)) {
-            return true;
-        }
-        // Skip anchors, javascript:, mailto:, etc.
-        if (url.startsWith('#') || url.startsWith('javascript:') || url.startsWith('mailto:')) {
-            return true;
-        }
-        // Skip very short names (likely icons or nav items)
-        if (name.length < 2 || /^[\s\d]+$/.test(name)) {
-            return true;
-        }
-        return false;
-    }
-
-    /**
-     * Extracts a description from HTML near a link by looking for text content
-     * in nearby tags (p, span, div with description-like content).
-     */
-    private extractNearbyDescription(htmlFragment: string): string {
-        // Look for text in <p>, <span>, <div>, <dd>, <td> tags after the link
-        const descRegex = /<(?:p|span|div|dd|td)[^>]*>([^<]{10,200})<\//i;
-        const match = descRegex.exec(htmlFragment);
-        if (match) {
-            return match[1].trim().replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&#39;/g, "'").replace(/&quot;/g, '"');
-        }
-        return '';
-    }
 }
