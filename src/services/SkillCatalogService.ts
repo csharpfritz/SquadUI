@@ -80,21 +80,34 @@ export class SkillCatalogService {
 
     /**
      * Downloads a skill and writes it to `.ai-team/skills/{name}/SKILL.md`.
-     * Creates directories as needed.
+     * Creates directories as needed. Throws if the skill directory already exists
+     * unless `force` is true.
      *
      * @param skill - The skill to download
      * @param teamRoot - Workspace root containing the .ai-team directory
+     * @param force - If true, overwrite an existing skill directory
      */
-    async downloadSkill(skill: Skill, teamRoot: string): Promise<void> {
+    async downloadSkill(skill: Skill, teamRoot: string, force = false): Promise<void> {
         const slug = this.slugify(skill.name);
         const skillDir = path.join(teamRoot, '.ai-team', 'skills', slug);
         const skillFile = path.join(skillDir, 'SKILL.md');
 
+        // Duplicate protection: refuse to overwrite unless forced
+        if (!force && fs.existsSync(skillDir)) {
+            throw new Error(`Skill "${skill.name}" is already installed. Overwrite?`);
+        }
+
         fs.mkdirSync(skillDir, { recursive: true });
 
-        // If the skill has content, write it directly.
-        // Otherwise, build a stub from metadata.
-        const content = skill.content ?? this.buildSkillStub(skill);
+        // Try to fetch real content if not already set
+        let content = skill.content;
+        if (!content) {
+            content = await this.fetchSkillContent(skill);
+        }
+        if (!content) {
+            content = this.buildSkillStub(skill);
+        }
+
         fs.writeFileSync(skillFile, content, 'utf-8');
     }
 
@@ -278,6 +291,58 @@ export class SkillCatalogService {
         return Array.from(seen.values());
     }
 
+    // ─── Private: Skill Content Fetching ────────────────────────────────────
+
+    /**
+     * Attempts to fetch the actual skill content from the skill's URL.
+     * For GitHub repo URLs, tries common prompt file paths in order.
+     * Returns undefined if content cannot be fetched (caller falls back to stub).
+     */
+    async fetchSkillContent(skill: Skill): Promise<string | undefined> {
+        if (!skill.url) {
+            return undefined;
+        }
+
+        const ghRepo = this.parseGitHubRepoUrl(skill.url);
+        if (ghRepo) {
+            // Try common skill file paths in priority order
+            const candidatePaths = [
+                '.github/copilot-instructions.md',
+                'SKILL.md',
+                'README.md',
+            ];
+            for (const filePath of candidatePaths) {
+                const rawUrl = `https://raw.githubusercontent.com/${ghRepo.owner}/${ghRepo.repo}/main/${filePath}`;
+                try {
+                    return await this.httpsGet(rawUrl);
+                } catch {
+                    // File not found at this path — try next
+                }
+            }
+            return undefined;
+        }
+
+        // Not a GitHub repo URL — try fetching it directly as a raw file
+        try {
+            return await this.httpsGet(skill.url);
+        } catch {
+            return undefined;
+        }
+    }
+
+    /**
+     * Parses a GitHub repo URL into owner/repo components.
+     * Returns undefined if the URL is not a GitHub repo URL.
+     * Handles: https://github.com/{owner}/{repo}[/...]
+     */
+    private parseGitHubRepoUrl(url: string): { owner: string; repo: string } | undefined {
+        const match = /^https?:\/\/github\.com\/([^/]+)\/([^/]+?)(?:\/.*)?(?:\.git)?$/.exec(url);
+        if (!match) {
+            return undefined;
+        }
+        return { owner: match[1], repo: match[2] };
+    }
+
     // ─── Private: HTTP Client ───────────────────────────────────────────────
 
     /**
@@ -355,6 +420,9 @@ export class SkillCatalogService {
             lines.push('');
         }
         lines.push(`> Imported from ${skill.source} catalog`);
+        if (skill.url) {
+            lines.push(`> ⚠️ Full content could not be fetched from the source URL. Visit the link above for details.`);
+        }
         lines.push('');
         return lines.join('\n');
     }

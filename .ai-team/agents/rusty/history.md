@@ -76,3 +76,20 @@ All foundational code and team decisions from this period are implemented in the
 
 📌 **Team investigation completed (2026-02-15):** Add Skill workflow has two critical gaps: (1) No duplicate/overwrite protection — skills silently overwrite existing ones, (2) No preview before install — users only see name + one-line description. Action: Add duplicate detection to addSkillCommand with user warning, add preview webview/markdown preview step. — decided by Rusty
 
+### 2026-02-15: Fix Add Skill Content Fetching + Duplicate Protection
+
+#### Problem
+Two critical issues in the Add Skill workflow:
+1. **Empty stubs:** Neither `fetchAwesomeCopilot()` nor `fetchSkillsSh()` populates the `content` field. Every installed skill was just a metadata stub (name, description, URL) with no actual skill instructions.
+2. **No duplicate protection:** `downloadSkill()` silently overwrote existing skill directories with no warning.
+
+#### Solution
+- **Content fetching:** Added `fetchSkillContent(skill)` method that resolves real skill content from source URLs. For GitHub repo URLs, it tries `copilot-instructions.md` → `SKILL.md` → `README.md` in order. For non-GitHub URLs, fetches directly. Falls back to stub if all attempts fail (with a note that content couldn't be fetched).
+- **GitHub URL parsing:** Added `parseGitHubRepoUrl()` helper to extract owner/repo from GitHub URLs and construct raw.githubusercontent.com URLs.
+- **Duplicate protection:** `downloadSkill()` now checks if the skill directory exists before writing. Throws an error with "already installed" message. Added `force` parameter (default false) for intentional overwrites.
+- **User-facing overwrite prompt:** `addSkillCommand.ts` catches the duplicate error and shows a Yes/No QuickPick asking if the user wants to overwrite. If yes, calls `downloadSkill` with `force: true`.
+
+#### Files Modified
+- `src/services/SkillCatalogService.ts` — `downloadSkill()`, `fetchSkillContent()`, `parseGitHubRepoUrl()`, `buildSkillStub()`
+- `src/commands/addSkillCommand.ts` — duplicate error handling with overwrite prompt
+

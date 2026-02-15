@@ -164,6 +164,73 @@ Wrote comprehensive test suite for DecisionService — the most fragile code in 
 
 Tests compiled successfully with `npx tsc --noEmit`.
 
+### DashboardDataBuilder Tests (2026-02-15)
+
+Wrote comprehensive test suite for DashboardDataBuilder — the pure-logic engine behind all dashboard panels. This class had ZERO test coverage despite driving every dashboard visualization.
+
+**Why DashboardDataBuilder matters:**
+- Transforms raw squad data into velocity charts, activity heatmaps, and swimlanes
+- Pure logic with no VS Code dependencies — ideal for fast unit testing
+- All private methods tested through the public `buildDashboardData()` entry point
+
+**Test suite created:** `src/test/suite/dashboardDataBuilder.test.ts`
+
+**Velocity Timeline tests (11 tests):**
+- Empty tasks → 31 data points all zero
+- Timeline spans exactly 31 days (today + 30 previous)
+- All dates in YYYY-MM-DD format and chronological order
+- Tasks completed today counted correctly
+- Tasks over multiple days → correct per-day counts
+- Tasks >30 days old excluded
+- Non-completed status excluded
+- Tasks with no completedAt excluded
+- Multiple tasks same day aggregated
+- Both Date objects and ISO strings handled
+- Mix of valid/excluded tasks → only valid counted
+
+**Activity Heatmap tests (9 tests):**
+- Empty log entries → all members at 0.0
+- Single member with entries → 1.0
+- Multiple members → proportional levels (normalized to max)
+- Entries >7 days old excluded
+- Member with no participation → 0.0
+- Case-sensitive member name matching
+- No members → empty heatmap
+- Activity levels bounded 0.0–1.0
+- Same participant in multiple entries counted each time
+
+**Activity Swimlanes tests (11 tests):**
+- Empty tasks → swimlanes with empty task arrays
+- Tasks appear in correct member's swimlane
+- Tasks sorted by startDate within swimlane
+- No startedAt → defaults to today
+- completedAt → endDate populated; no completedAt → null
+- Members with no tasks → empty swimlane present
+- Timeline task preserves id, title, status
+- Unassigned tasks not in any swimlane
+- No members → no swimlanes
+- Date formats are YYYY-MM-DD
+- Multiple tasks with mixed statuses
+
+**Full Pipeline tests (5 tests):**
+- Empty everything → valid DashboardData structure
+- Decisions passed through unchanged (same reference)
+- All sub-builders compose correctly
+- Result conforms to DashboardData shape
+- Large dataset (100 tasks, 10 members, 50 entries) doesn't crash
+
+**Total: 36 test cases**
+
+**Key patterns in DashboardDataBuilder worth remembering:**
+1. **Date windowing:** Velocity uses 30-day window, heatmap uses 7-day window
+2. **Normalization:** Heatmap normalizes participation to 0.0–1.0 against max participant
+3. **Member matching:** Exact case-sensitive string match on member names
+4. **Date handling:** Accepts both Date objects and ISO strings for startedAt/completedAt
+5. **Default dates:** Tasks without startedAt default to today's date
+6. **Private methods:** All tested through public buildDashboardData() — no (service as any) needed
+
+Tests compiled successfully with `npx tsc --noEmit`.
+
 ## Archive (2026-02-13 to 2026-02-14)
 
 Basher completed comprehensive test coverage during the initial two days of development:

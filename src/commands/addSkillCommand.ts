@@ -131,7 +131,35 @@ export function registerAddSkillCommand(
             vscode.window.showInformationMessage(`Installed skill: ${skill.name}`);
             onSkillAdded();
         } catch (err) {
-            vscode.window.showErrorMessage(`Failed to install skill: ${err instanceof Error ? err.message : 'Unknown error'}`);
+            const message = err instanceof Error ? err.message : 'Unknown error';
+
+            // Handle duplicate/overwrite scenario
+            if (message.includes('already installed')) {
+                const overwrite = await vscode.window.showQuickPick(
+                    [
+                        { label: '$(check) Yes', description: 'Overwrite the existing skill' },
+                        { label: '$(close) No', description: 'Keep the existing skill' },
+                    ],
+                    {
+                        placeHolder: `"${skill.name}" is already installed. Overwrite?`,
+                        title: 'Add Skill — Overwrite',
+                    }
+                );
+                if (overwrite?.label === '$(check) Yes') {
+                    try {
+                        await vscode.window.withProgress(
+                            { location: vscode.ProgressLocation.Notification, title: `Overwriting ${skill.name}...` },
+                            () => catalogService.downloadSkill(skill, teamRoot, true)
+                        );
+                        vscode.window.showInformationMessage(`Reinstalled skill: ${skill.name}`);
+                        onSkillAdded();
+                    } catch (retryErr) {
+                        vscode.window.showErrorMessage(`Failed to install skill: ${retryErr instanceof Error ? retryErr.message : 'Unknown error'}`);
+                    }
+                }
+            } else {
+                vscode.window.showErrorMessage(`Failed to install skill: ${message}`);
+            }
         }
     });
 }
