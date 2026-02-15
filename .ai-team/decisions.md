@@ -1666,4 +1666,11 @@ Issue #26 will be marked as superseded by #41 in a follow-up comment.
 - Turk confirms WPF/XAML + MVVM expertise
 - Both review `.ai-team/` file format specs before implementation
 - Cross-check project structures match VS Code equivalents for maintainability
-
+
+---
+
+### 2026-02-15: Broaden FileWatcherService to all .ai-team markdown files
+**By:** Rusty
+**What:** Changed `FileWatcherService.WATCH_PATTERN` from `**/.ai-team/orchestration-log/**/*.md` to `**/.ai-team/**/*.md`, covering team roster, agent charters, decisions, skills, and orchestration logs.
+**Why:** The old pattern only watched orchestration logs, so adding a member (which creates `charter.md` and updates `team.md`) never triggered a tree refresh. The broader pattern catches all team-relevant file changes. The existing 300ms debounce prevents event thrashing from bulk writes.
+
