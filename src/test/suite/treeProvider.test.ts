@@ -63,7 +63,8 @@ suite('TeamTreeProvider Test Suite', () => {
                 'Danny'
             );
 
-            const tasks = await provider.getChildren(memberItem);
+            const children = await provider.getChildren(memberItem);
+            const tasks = children.filter((c) => c.itemType === 'task');
 
             assert.strictEqual(tasks.length, 1);
             assert.strictEqual(tasks[0].label, 'Plan the heist');
@@ -78,7 +79,8 @@ suite('TeamTreeProvider Test Suite', () => {
                 'Rusty'
             );
 
-            const tasks = await provider.getChildren(memberItem);
+            const children = await provider.getChildren(memberItem);
+            const tasks = children.filter((c) => c.itemType === 'task');
 
             assert.strictEqual(tasks.length, 2);
             const taskTitles = tasks.map((t) => t.label);
@@ -151,7 +153,8 @@ suite('TeamTreeProvider Test Suite', () => {
                 'member',
                 'Danny'
             );
-            const tasks = await provider.getChildren(memberItem);
+            const children = await provider.getChildren(memberItem);
+            const tasks = children.filter((c) => c.itemType === 'task');
 
             assert.ok(tasks.length > 0);
             tasks.forEach((task) => {
