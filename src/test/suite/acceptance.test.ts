@@ -92,14 +92,16 @@ suite('Acceptance: Orchestration Logs → Tree View', () => {
         });
 
         test('all member items have itemType "member"', async () => {
-            const members = await treeProvider.getChildren();
+            const children = await treeProvider.getChildren();
+            const members = children.filter(c => c.itemType === 'member');
             members.forEach(item => {
                 assert.strictEqual(item.itemType, 'member');
             });
         });
 
         test('member root items are collapsible', async () => {
-            const members = await treeProvider.getChildren();
+            const children = await treeProvider.getChildren();
+            const members = children.filter(c => c.itemType === 'member');
             members.forEach(item => {
                 assert.ok(
                     item.collapsibleState === vscode.TreeItemCollapsibleState.Collapsed ||
@@ -279,7 +281,8 @@ suite('Acceptance: Orchestration Logs → Tree View', () => {
         });
 
         test('member tooltips are MarkdownStrings', async () => {
-            const members = await treeProvider.getChildren();
+            const children = await treeProvider.getChildren();
+            const members = children.filter(c => c.itemType === 'member');
             for (const item of members) {
                 assert.ok(
                     item.tooltip instanceof vscode.MarkdownString,

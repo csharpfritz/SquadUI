@@ -3,10 +3,12 @@
  */
 
 import * as vscode from 'vscode';
+import * as path from 'path';
 import { SquadMember, Task, GitHubIssue, Skill, DecisionEntry, IGitHubIssuesService } from '../models';
 import { SquadDataProvider } from '../services/SquadDataProvider';
 import { SkillCatalogService } from '../services/SkillCatalogService';
 import { DecisionService } from '../services/DecisionService';
+import { OrchestrationLogService } from '../services/OrchestrationLogService';
 
 /**
  * Represents an item in the squad tree view.
@@ -16,9 +18,10 @@ export class SquadTreeItem extends vscode.TreeItem {
     constructor(
         public readonly label: string,
         public readonly collapsibleState: vscode.TreeItemCollapsibleState,
-        public readonly itemType: 'section' | 'member' | 'task' | 'issue' | 'skill' | 'decision',
+        public readonly itemType: 'section' | 'member' | 'task' | 'issue' | 'skill' | 'decision' | 'log-entry',
         public readonly memberId?: string,
-        public readonly taskId?: string
+        public readonly taskId?: string,
+        public readonly logFilePath?: string
     ) {
         super(label, collapsibleState);
         // contextValue is set by caller or defaults to itemType
@@ -36,6 +39,7 @@ export class TeamTreeProvider implements vscode.TreeDataProvider<SquadTreeItem> 
     private _onDidChangeTreeData = new vscode.EventEmitter<SquadTreeItem | undefined | null | void>();
     readonly onDidChangeTreeData = this._onDidChangeTreeData.event;
     private issuesService: IGitHubIssuesService | undefined;
+    private orchestrationLogService = new OrchestrationLogService();
 
     constructor(private dataProvider: SquadDataProvider) {}
 
@@ -54,7 +58,18 @@ export class TeamTreeProvider implements vscode.TreeDataProvider<SquadTreeItem> 
 
     async getChildren(element?: SquadTreeItem): Promise<SquadTreeItem[]> {
         if (!element) {
-            return this.getSquadMemberItems();
+            const members = await this.getSquadMemberItems();
+            const activityHeader = new SquadTreeItem(
+                'Recent Activity',
+                vscode.TreeItemCollapsibleState.Collapsed,
+                'section'
+            );
+            activityHeader.iconPath = new vscode.ThemeIcon('history');
+            return [...members, activityHeader];
+        }
+
+        if (element.itemType === 'section' && element.label === 'Recent Activity') {
+            return this.getRecentActivityItems();
         }
 
         if (element.itemType === 'member' && element.memberId) {
@@ -287,6 +302,47 @@ export class TeamTreeProvider implements vscode.TreeDataProvider<SquadTreeItem> 
             return issues.length;
         } catch (error) {
             return 0;
+        }
+    }
+
+    /**
+     * Gets recent activity log entries as tree items.
+     */
+    private async getRecentActivityItems(): Promise<SquadTreeItem[]> {
+        const workspaceRoot = this.dataProvider.getWorkspaceRoot();
+        try {
+            const logFiles = await this.orchestrationLogService.discoverLogFiles(workspaceRoot);
+            // Sort descending by filename (most recent first) and take last 10
+            const recentFiles = logFiles.sort().reverse().slice(0, 10);
+
+            return recentFiles.map(filePath => {
+                const filename = path.basename(filePath, '.md');
+                // Parse filename: YYYY-MM-DD-topic or YYYY-MM-DDThhmm-topic
+                const match = filename.match(/^(\d{4}-\d{2}-\d{2})(?:T\d{4})?-(.+)$/);
+                const date = match?.[1] ?? '';
+                const topic = match?.[2]?.replace(/-/g, ' ') ?? filename;
+
+                const item = new SquadTreeItem(
+                    topic.length > 60 ? topic.substring(0, 57) + '...' : topic,
+                    vscode.TreeItemCollapsibleState.None,
+                    'log-entry',
+                    undefined,
+                    undefined,
+                    filePath
+                );
+                item.iconPath = new vscode.ThemeIcon('notebook');
+                item.description = date;
+                item.tooltip = `${topic}\n${date}`;
+                item.command = {
+                    command: 'squadui.openLogEntry',
+                    title: 'Open Log Entry',
+                    arguments: [filePath]
+                };
+                return item;
+            });
+        } catch (error) {
+            console.warn('SquadUI: Failed to load recent activity', error);
+            return [];
         }
     }
 }

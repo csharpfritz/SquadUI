@@ -4,6 +4,8 @@
  */
 
 import * as vscode from 'vscode';
+import * as path from 'path';
+import * as fs from 'fs';
 import { DashboardData } from '../models';
 import { DashboardDataBuilder } from './dashboard/DashboardDataBuilder';
 import { getDashboardHtml } from './dashboard/htmlTemplate';
@@ -75,6 +77,9 @@ export class SquadDashboardWebview {
                 case 'openMember':
                     await vscode.commands.executeCommand('squadui.viewCharter', message.memberName);
                     break;
+                case 'openLogEntry':
+                    await this.handleOpenLogEntry(message.date, message.topic);
+                    break;
             }
         }, undefined, []);
 
@@ -109,6 +114,44 @@ export class SquadDashboardWebview {
             const errorMessage = error instanceof Error ? error.message : 'Unknown error';
             this.panel.webview.html = this.getErrorHtml(errorMessage);
         }
+    }
+
+    private async handleOpenLogEntry(date: string, topic: string): Promise<void> {
+        const workspaceRoot = this.dataProvider.getWorkspaceRoot();
+        const aiTeamDir = path.join(workspaceRoot, '.ai-team');
+        
+        // Try both log directory patterns
+        const logDirs = ['orchestration-log', 'log'];
+        const possibleFilenames = [
+            `${date}-${topic}.md`,
+            `${date}T0000-${topic}.md`
+        ];
+
+        for (const dir of logDirs) {
+            for (const filename of possibleFilenames) {
+                const filePath = path.join(aiTeamDir, dir, filename);
+                if (fs.existsSync(filePath)) {
+                    await vscode.commands.executeCommand('squadui.openLogEntry', filePath);
+                    return;
+                }
+            }
+        }
+
+        // If not found, search all files in both directories
+        for (const dir of logDirs) {
+            const logDir = path.join(aiTeamDir, dir);
+            if (fs.existsSync(logDir)) {
+                const files = fs.readdirSync(logDir);
+                const match = files.find(f => f.includes(date) && f.includes(topic));
+                if (match) {
+                    const filePath = path.join(logDir, match);
+                    await vscode.commands.executeCommand('squadui.openLogEntry', filePath);
+                    return;
+                }
+            }
+        }
+
+        vscode.window.showWarningMessage(`Log file not found for ${date} - ${topic}`);
     }
 
     private getErrorHtml(message: string): string {

@@ -333,6 +333,8 @@ export interface DashboardData {
     activity: {
         /** Swimlanes, one per member */
         swimlanes: ActivitySwimlane[];
+        /** Recent orchestration log entries */
+        recentLogs: OrchestrationLogEntry[];
     };
     /** Decision browser tab data */
     decisions: {

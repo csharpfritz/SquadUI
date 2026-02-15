@@ -109,6 +109,11 @@
         "title": "Open Dashboard",
         "category": "Squad",
         "icon": "$(graph)"
+      },
+      {
+        "command": "squadui.openLogEntry",
+        "title": "Open Log Entry",
+        "category": "Squad"
       }
     ],
     "menus": {

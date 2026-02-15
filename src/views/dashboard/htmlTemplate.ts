@@ -332,6 +332,11 @@ export function getDashboardHtml(data: DashboardData): string {
         <h2>Activity Timeline</h2>
         <p>Swimlane view of member tasks and their progress.</p>
         <div id="activity-swimlanes"></div>
+        
+        <div class="chart-container" style="margin-top: 24px;">
+            <div class="chart-title">Recent Sessions</div>
+            <div id="recent-sessions"></div>
+        </div>
     </div>
 
     <!-- Decisions Tab -->
@@ -573,6 +578,58 @@ export function getDashboardHtml(data: DashboardData): string {
         renderVelocityChart();
         renderHeatmap();
         renderActivitySwimlanes();
+        renderRecentSessions();
+
+        // Render recent sessions
+        function renderRecentSessions() {
+            const container = document.getElementById('recent-sessions');
+            const recentLogs = activityData.recentLogs;
+
+            if (!recentLogs || recentLogs.length === 0) {
+                container.innerHTML = '<p style="color: var(--vscode-descriptionForeground);">No session logs available</p>';
+                return;
+            }
+
+            container.innerHTML = '';
+            container.style.display = 'flex';
+            container.style.flexDirection = 'column';
+            container.style.gap = '12px';
+
+            recentLogs.forEach(log => {
+                const logCard = document.createElement('div');
+                logCard.className = 'log-entry-card';
+                logCard.style.cssText = 'padding: 12px; border: 1px solid var(--vscode-panel-border); border-radius: 4px; cursor: pointer; transition: background-color 0.2s;';
+                logCard.onmouseover = () => logCard.style.backgroundColor = 'var(--vscode-list-hoverBackground)';
+                logCard.onmouseout = () => logCard.style.backgroundColor = 'transparent';
+                
+                const decisionCount = (log.decisions || []).length;
+                const outcomeCount = (log.outcomes || []).length;
+                
+                logCard.innerHTML = \`
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px;">
+                        <strong style="font-size: 14px;">\${escapeHtml(log.topic.replace(/-/g, ' '))}</strong>
+                        <span style="color: var(--vscode-descriptionForeground); font-size: 12px;">\${log.date}</span>
+                    </div>
+                    <div style="color: var(--vscode-descriptionForeground); font-size: 12px; margin-bottom: 6px;">
+                        👥 \${escapeHtml(log.participants.join(', '))}
+                    </div>
+                    <div style="font-size: 12px;">
+                        <span style="margin-right: 12px;">📋 \${decisionCount} decision\${decisionCount !== 1 ? 's' : ''}</span>
+                        <span>✅ \${outcomeCount} outcome\${outcomeCount !== 1 ? 's' : ''}</span>
+                    </div>
+                \`;
+                
+                logCard.addEventListener('click', () => {
+                    vscode.postMessage({
+                        command: 'openLogEntry',
+                        date: log.date,
+                        topic: log.topic
+                    });
+                });
+                
+                container.appendChild(logCard);
+            });
+        }
 
         // Render decisions
         function renderDecisions(filter = '') {
@@ -588,8 +645,8 @@ export function getDashboardHtml(data: DashboardData): string {
             const lowerFilter = filter.toLowerCase();
             const filtered = entries.filter(d => 
                 d.title.toLowerCase().includes(lowerFilter) || 
-                d.content.toLowerCase().includes(lowerFilter) ||
-                d.author.toLowerCase().includes(lowerFilter)
+                (d.content || '').toLowerCase().includes(lowerFilter) ||
+                (d.author || '').toLowerCase().includes(lowerFilter)
             );
             
             if (filtered.length === 0) {
@@ -604,7 +661,7 @@ export function getDashboardHtml(data: DashboardData): string {
             container.style.display = 'grid'; // Restore grid
             container.innerHTML = filtered.map(d => {
                 // Simple markdown strip (very basic)
-                const plainContent = d.content
+                const plainContent = (d.content || '')
                     .replace(/#+\\s/g, '')
                     .replace(/[*_\\\`]/g, '')
                     .replace(/\\[([^\\]]+)\\]\\([^)]+\\)/g, '$1');
@@ -613,11 +670,11 @@ export function getDashboardHtml(data: DashboardData): string {
                     <div class="decision-card" title="View \${d.title}" data-action="open-decision" data-file-path="\${escapeHtml(d.filePath || '')}" data-line-number="\${d.lineNumber || 0}">
                         <div class="decision-title">\${escapeHtml(d.title)}</div>
                         <div class="decision-meta">
-                            <span>📅 \${d.date}</span>
-                            <span>👤 \${escapeHtml(d.author)}</span>
+                            <span>📅 \${d.date || '—'}</span>
+                            <span>👤 \${escapeHtml(d.author || '—')}</span>
                         </div>
                         <div class="decision-preview">
-                            \${escapeHtml(plainContent)}
+                            \${escapeHtml(plainContent || 'No preview available')}
                         </div>
                     </div>
                 \`;

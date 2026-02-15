@@ -198,6 +198,17 @@ export function activate(context: vscode.ExtensionContext): void {
         })
     );
 
+    // Register open log entry command — opens orchestration log file
+    context.subscriptions.push(
+        vscode.commands.registerCommand('squadui.openLogEntry', async (filePath: string) => {
+            if (!filePath) {
+                return;
+            }
+            const doc = await vscode.workspace.openTextDocument(filePath);
+            await vscode.window.showTextDocument(doc, { preview: true });
+        })
+    );
+
     // Register remove skill command — deletes skill directory
     context.subscriptions.push(
         vscode.commands.registerCommand('squadui.removeSkill', async (skillSlug: string) => {

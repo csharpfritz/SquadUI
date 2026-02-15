@@ -22,6 +22,7 @@ export class DashboardDataBuilder {
             },
             activity: {
                 swimlanes: this.buildActivitySwimlanes(members, tasks),
+                recentLogs: logEntries.slice(0, 10),
             },
             decisions: {
                 entries: decisions,

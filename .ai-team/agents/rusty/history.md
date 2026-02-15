@@ -9,6 +9,36 @@
 
 <!-- Append new learnings below. Each entry is something lasting about the project. -->
 
+### 2026-02-15: Dashboard Decisions Null-Safety & Activity Enhancements
+
+#### Dashboard Decisions Crash Fix
+- **Problem:** `renderDecisions()` in htmlTemplate.ts crashed when DecisionEntry had optional `content` or `author` fields undefined — calling `.toLowerCase()` on undefined threw TypeError
+- **Fix:** Added null-coalescing for optional fields in filter function: `(d.content || '').toLowerCase()` and `(d.author || '').toLowerCase()`
+- **Also fixed:** Card template now shows "—" for missing date/author instead of undefined
+
+#### Recent Activity Section in Team Sidebar
+- **Feature:** Added collapsible "Recent Activity" section to Team tree view showing 10 most recent orchestration log entries
+- **Implementation:** Extended `TeamTreeProvider.getChildren()` to append section header at root level, loads log files via `OrchestrationLogService.discoverLogFiles()`
+- **Tree items:** Each log entry shows topic (truncated to 60 chars), date as description, notebook icon, click opens log file
+- **Command:** Registered `squadui.openLogEntry` command in extension.ts and package.json (hidden from palette)
+- **Tree item type:** Added 'log-entry' to SquadTreeItem itemType union, added optional `logFilePath` parameter to constructor
+
+#### Recent Sessions in Dashboard Activity Tab
+- **Feature:** Added "Recent Sessions" panel below swimlanes in Activity tab, displays last 10 orchestration log entries as clickable cards
+- **Model changes:** Extended `DashboardData.activity` interface to include `recentLogs: OrchestrationLogEntry[]`
+- **Data builder:** Updated `DashboardDataBuilder.buildDashboardData()` to pass `logEntries.slice(0, 10)` into activity.recentLogs
+- **HTML template:** Added `renderRecentSessions()` function, renders log cards with topic, date, participants, decision/outcome counts
+- **Click handler:** Log cards post `openLogEntry` message with date+topic, `SquadDashboardWebview.handleOpenLogEntry()` searches both `.ai-team/log/` and `.ai-team/orchestration-log/` directories for matching file
+
+#### File Paths and Patterns
+- `src/views/dashboard/htmlTemplate.ts` — Dashboard HTML template and inline JavaScript rendering functions
+- `src/views/SquadTreeProvider.ts` — Sidebar tree providers (Team, Skills, Decisions)
+- `src/views/SquadDashboardWebview.ts` — Dashboard webview panel, message handlers
+- `src/views/dashboard/DashboardDataBuilder.ts` — Data transformation for dashboard tabs
+- `src/models/index.ts` — Data models (DashboardData, OrchestrationLogEntry, DecisionEntry, etc.)
+- `src/extension.ts` — Extension activation, command registration
+- `src/services/OrchestrationLogService.ts` — Log file discovery and parsing (`discoverLogFiles()`, `parseLogFile()`)
+
 ### 2026-02-15: Add Skill Workflow — Deep Investigation
 
 #### Architecture

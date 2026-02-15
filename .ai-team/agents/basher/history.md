@@ -231,6 +231,92 @@ Wrote comprehensive test suite for DashboardDataBuilder — the pure-logic engin
 
 Tests compiled successfully with `npx tsc --noEmit`.
 
+### Dashboard HTML Template Regression Tests (2026-02-15)
+
+Wrote comprehensive regression test suite for htmlTemplate.ts — the dashboard HTML generation code that had a P0 bug where it crashed on optional DecisionEntry fields.
+
+**Context — P0 Bug:**
+- `renderDecisions()` in htmlTemplate.ts crashed when `DecisionEntry.content` or `DecisionEntry.author` were `undefined`
+- The code did `d.content.toLowerCase()` which throws TypeError on undefined
+- Both `content` and `author` are optional fields per DecisionEntry interface
+- Rusty is fixing this bug right now
+
+**Test suite created:** `src/test/suite/htmlTemplate.test.ts`
+
+**Regression tests for optional fields (9 tests):**
+- getDashboardHtml doesn't crash when content is undefined
+- getDashboardHtml doesn't crash when author is undefined
+- getDashboardHtml doesn't crash when both content and author are undefined
+- getDashboardHtml doesn't crash when date is undefined
+- Mixed decisions with varying optional fields all handled gracefully
+
+**HTML output validation tests (10 tests):**
+- HTML contains decision cards with titles, dates, authors
+- HTML contains fallback "—" when date/author missing
+- HTML escapes special characters in titles (<script> tags, etc.)
+- HTML contains multiple decision cards when multiple decisions provided
+- HTML contains empty state message when no decisions
+- HTML includes decision-card class for styling
+- HTML contains data attributes for opening decisions (data-action, data-file-path, data-line-number)
+
+**Client-side JavaScript safety tests (3 tests):**
+- Rendered JS filter uses `(d.content || '').toLowerCase()` to handle undefined content
+- Rendered JS filter uses `(d.author || '').toLowerCase()` to handle undefined author
+- HTML contains escapeHtml helper function with proper XSS protection
+- Decision data is JSON-serialized correctly in script tag
+
+**Activity tab: Swimlanes rendering tests (3 tests):**
+- HTML contains renderActivitySwimlanes function
+- HTML contains empty-swimlane class and "No tasks" message
+- HTML contains task-list and task-item classes for rendering
+
+**Activity tab: Recent Sessions log entries tests (10 tests):**
+- HTML includes recentLogs in activityData JSON
+- HTML handles empty recentLogs array
+- HTML handles fully populated log entries with all optional fields
+- HTML handles log entries with optional fields undefined
+- HTML handles multiple log entries (3+)
+- HTML escapes special characters in log summaries (XSS protection)
+- HTML handles very long summaries (1000+ chars)
+- HTML handles unicode in log data (日本語, 🚀)
+- activityData JSON is valid when recent logs present
+
+**HTML structure validation tests (7 tests):**
+- DOCTYPE declaration present
+- html, head, body tags present
+- CSP meta tag for security
+- All three tab buttons (Velocity, Activity, Decisions)
+- All three tab content sections (velocity-tab, activity-tab, decisions-tab)
+- Search input for decisions filter
+- VS Code API acquisition (acquireVsCodeApi)
+- Event delegation for clickable items
+
+**Edge cases tested (6 tests):**
+- Very long decision titles (500 chars)
+- Unicode in decision titles (日本語, emoji)
+- Empty decision title
+- Whitespace-only content
+- Large dataset (100 decisions)
+- Special characters in author (O'Reilly & Associates)
+
+**Total: 48 test cases**
+
+**Tree provider tests added (10 tests):**
+- Added placeholder tests for upcoming "Recent Activity" section in TeamTreeProvider
+- Tests document expected behavior: section node at root, collapsible, returns log items with date:topic labels
+- All tests use `this.skip()` until Rusty implements the feature
+- Tests ready to be enabled when feature ships
+
+**Key patterns established:**
+1. **Optional field safety:** Always use `|| ''` or `|| '—'` fallbacks when accessing optional fields in templates
+2. **XSS protection:** All user-generated content must be escaped via escapeHtml or JSON.stringify
+3. **Client-side JS safety:** Filter functions must handle undefined values with `|| ''` fallbacks
+4. **JSON serialization:** Dashboard data is JSON-serialized into script tags — ensure valid JSON
+5. **Empty states:** Always test both populated and empty data scenarios
+6. **Edge cases matter:** Test unicode, very long strings, special characters, large datasets
+
+Tests compiled successfully with `npx tsc --noEmit`.
+
 ## Archive (2026-02-13 to 2026-02-14)
 
 Basher completed comprehensive test coverage during the initial two days of development:
