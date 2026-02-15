@@ -1,0 +1,923 @@
+
+> squadui@0.5.1 test
+> npm run compile && node ./out/test/runTest.js
+
+
+> squadui@0.5.1 compile
+> tsc -p ./
+
+- Resolving version...
+Γ£ö Validated version: 1.109.3
+Γ£ö Found existing install in D:\SquadUI\.vscode-test\vscode-win32-x64-archive-1.109.3
+
+[main 2026-02-15T17:59:21.280Z] Error: Error mutex already exists
+    at id.S (file:///D:/SquadUI/.vscode-test/vscode-win32-x64-archive-1.109.3/b6a47e94e3/resources/app/out/main.js:145:18925)
+[main 2026-02-15T17:59:21.297Z] update#setState disabled
+[main 2026-02-15T17:59:21.298Z] update#ctor - updates are disabled by the environment
+Started local extension host with pid 32140.
+Loading development extension at d:\SquadUI
+MCP Registry configured: https://api.mcp.github.com
+Settings Sync: Account status changed from uninitialized to unavailable
+[0m[0m
+[0m  WorkDetailsWebview Test Suite[0m
+[0m    getStatusBadge[0m
+    [32m  Γ£ö[0m[90m returns Pending badge for pending status[0m
+    [32m  Γ£ö[0m[90m returns In Progress badge for in_progress status[0m
+    [32m  Γ£ö[0m[90m returns Completed badge for completed status[0m
+[0m    getMemberStatusBadge[0m
+    [32m  Γ£ö[0m[90m returns Working badge for working status[0m
+    [32m  Γ£ö[0m[90m returns Idle badge for idle status[0m
+[0m    getInitials[0m
+    [32m  Γ£ö[0m[90m returns initials from two-word name[0m
+    [32m  Γ£ö[0m[90m returns single initial from single-word name[0m
+    [32m  Γ£ö[0m[90m returns max two initials from long name[0m
+    [32m  Γ£ö[0m[90m handles empty string[0m
+[0m    escapeHtml[0m
+    [32m  Γ£ö[0m[90m escapes ampersands[0m
+    [32m  Γ£ö[0m[90m escapes less than[0m
+    [32m  Γ£ö[0m[90m escapes quotes[0m
+    [32m  Γ£ö[0m[90m escapes single quotes[0m
+    [32m  Γ£ö[0m[90m handles multiple special characters[0m
+    [32m  Γ£ö[0m[90m returns unchanged string with no special chars[0m
+[0m    generateHtml[0m
+    [32m  Γ£ö[0m[90m includes task title in output[0m
+    [32m  Γ£ö[0m[90m includes task status badge[0m
+    [32m  Γ£ö[0m[90m includes task description when present[0m
+    [32m  Γ£ö[0m[90m shows no description message when description is absent[0m
+    [32m  Γ£ö[0m[90m includes member name[0m
+    [32m  Γ£ö[0m[90m includes member role[0m
+    [32m  Γ£ö[0m[90m includes member initials[0m
+    [32m  Γ£ö[0m[90m includes member status badge[0m
+    [32m  Γ£ö[0m[90m escapes HTML in task title[0m
+    [32m  Γ£ö[0m[90m shows Not started when startedAt is undefined[0m
+    [32m  Γ£ö[0m[90m shows em dash when completedAt is undefined[0m
+    [32m  Γ£ö[0m[90m includes correct HTML structure[0m
+    [32m  Γ£ö[0m[90m renders pending status correctly[0m
+    [32m  Γ£ö[0m[90m renders completed status correctly[0m
+    [32m  Γ£ö[0m[90m renders idle member status correctly[0m
+[0m    renderMarkdown[0m
+    [32m  Γ£ö[0m[90m converts markdown table to HTML table[0m
+    [32m  Γ£ö[0m[90m converts bold text[0m
+    [32m  Γ£ö[0m[90m converts inline code[0m
+    [32m  Γ£ö[0m[90m converts newlines to br for non-table text[0m
+    [32m  Γ£ö[0m[90m escapes HTML in table cells[0m
+    [32m  Γ£ö[0m[90m handles table with no header separator[0m
+    [32m  Γ£ö[0m[90m handles empty cells[0m
+    [32m  Γ£ö[0m[90m handles single-column table[0m
+    [32m  Γ£ö[0m[90m handles mixed table and text[0m
+    [32m  Γ£ö[0m[90m plain text returns escaped with no extra tags[0m
+[0m  ViewCharterCommand[0m
+[0m    Command Registration[0m
+    [36m  - viewCharter command is registered[0m
+    [32m  Γ£ö[0m[90m viewCharter command is declared in package.json[0m
+[0m    Opening Charter[0m
+    [36m  - opens charter.md for a valid member[0m
+[0m    Warnings[0m
+    [36m  - shows warning when charter not found[0m
+    [36m  - shows warning when no member selected (empty string)[0m
+    [36m  - shows warning when member name is undefined[0m
+[0m    Slug Generation[0m
+    [36m  - handles member names with special characters[0m
+    [36m  - handles member names with spaces[0m
+[0m  TeamTreeProvider Test Suite[0m
+[0m    getChildren[0m
+    [32m  Γ£ö[0m[90m returns squad members at root level (no element)[0m
+    [32m  Γ£ö[0m[90m root items include members and Recent Activity section[0m
+    [32m  Γ£ö[0m[90m root member items are collapsible[0m
+    [32m  Γ£ö[0m[90m returns tasks for a member element[0m
+    [32m  Γ£ö[0m[90m returns multiple tasks for member with multiple assignments[0m
+    [32m  Γ£ö[0m[90m returns empty array for task element[0m
+    [32m  Γ£ö[0m[90m returns empty array for member with no memberId[0m
+[0m    getTreeItem[0m
+    [32m  Γ£ö[0m[90m returns the element unchanged[0m
+[0m    tree item icons[0m
+    [32m  Γ£ö[0m[90m working member has sync~spin icon[0m
+    [32m  Γ£ö[0m[90m idle member has person icon[0m
+    [32m  Γ£ö[0m[90m tasks have tasklist icon[0m
+[0m    tree item descriptions[0m
+    [32m  Γ£ö[0m[90m member description includes role and status[0m
+    [32m  Γ£ö[0m[90m task description shows status[0m
+[0m    tree item commands[0m
+    [32m  Γ£ö[0m[90m task items have showWorkDetails command[0m
+[0m    refresh[0m
+    [32m  Γ£ö[0m[90m fires onDidChangeTreeData event[0m
+    [32m  Γ£ö[0m[90m calls dataProvider.refresh()[0m
+[0m    tooltips[0m
+    [32m  Γ£ö[0m[90m member tooltip is a MarkdownString[0m
+    [32m  Γ£ö[0m[90m task tooltip is a MarkdownString[0m
+[0m    Recent Activity Section (for future feature)[0m
+    [32m  Γ£ö[0m[90m getChildren at root returns Recent Activity section (when implemented)[0m
+    [32m  Γ£ö[0m[90m Recent Activity section is collapsible (when implemented)[0m
+    [36m  - expanding Recent Activity returns log entry items (when implemented)[0m
+    [36m  - log entry items have correct labels with date and topic (when implemented)[0m
+    [36m  - log entry items are not collapsible (when implemented)[0m
+    [36m  - log entry items have history icon (when implemented)[0m
+    [36m  - log entry items have tooltip with summary (when implemented)[0m
+    [36m  - log entry items have command to open log file (when implemented)[0m
+    [36m  - Recent Activity shows only recent logs (last 7 days) (when implemented)[0m
+    [36m  - Recent Activity shows empty state when no logs (when implemented)[0m
+[0m  TeamMdService[0m
+[0m    parseTeamMd()[0m
+    [32m  Γ£ö[0m[90m parses the standard fixture team.md[0m
+    [32m  Γ£ö[0m[90m returns null when team.md does not exist[0m
+    [32m  Γ£ö[0m[90m returns null for directory without .ai-team folder[0m
+    [32m  Γ£ö[0m[90m extracts owner from Project Context section[0m
+    [32m  Γ£ö[0m[90m extracts repository from Project Context section[0m
+[0m    parseContent() ΓÇö Members table parsing[0m
+    [32m  Γ£ö[0m[90m parses standard 4-column table format[0m
+    [32m  Γ£ö[0m[90m parses minimal 2-column table (Name + Role)[0m
+    [32m  Γ£ö[0m[90m skips Coordinator entries[0m
+    [32m  Γ£ö[0m[90m returns empty members array when no Members section exists[0m
+    [32m  Γ£ö[0m[90m returns empty members array when Members section has no table[0m
+    [32m  Γ£ö[0m[90m handles empty content[0m
+    [32m  Γ£ö[0m[90m handles whitespace-only content[0m
+    [32m  Γ£ö[0m[90m handles table rows missing Name column[0m
+    [32m  Γ£ö[0m[90m handles table rows missing Role column[0m
+    [32m  Γ£ö[0m[90m handles multiple separator styles in table[0m
+    [32m  Γ£ö[0m[90m stops parsing Members table at next section[0m
+[0m    parseContent() ΓÇö Status badge parsing[0m
+    [32m  Γ£ö[0m[90m maps Γ£à Active to idle[0m
+    [32m  Γ£ö[0m[90m maps ≡ƒôï Silent to idle[0m
+    [32m  Γ£ö[0m[90m maps ≡ƒöä Monitor to idle[0m
+    [32m  Γ£ö[0m[90m maps ≡ƒñû Coding Agent to idle[0m
+    [32m  Γ£ö[0m[90m maps ≡ƒö¿ Working to working[0m
+    [32m  Γ£ö[0m[90m maps "working" text to working status[0m
+    [32m  Γ£ö[0m[90m maps empty status to idle[0m
+    [32m  Γ£ö[0m[90m defaults to idle for unrecognized status text[0m
+[0m    parseContent() ΓÇö Repository and owner extraction[0m
+    [32m  Γ£ö[0m[90m extracts repository from **Repository** format[0m
+    [32m  Γ£ö[0m[90m extracts repository from **Repository:** format[0m
+    [32m  Γ£ö[0m[90m extracts owner from **Owner:** format[0m
+    [32m  Γ£ö[0m[90m returns undefined for missing repository[0m
+    [32m  Γ£ö[0m[90m returns undefined for missing owner[0m
+[0m    parseContent() ΓÇö @copilot capabilities[0m
+    [32m  Γ£ö[0m[90m extracts copilot-auto-assign true[0m
+    [32m  Γ£ö[0m[90m extracts copilot-auto-assign false[0m
+    [32m  Γ£ö[0m[90m returns undefined capabilities when no copilot markers present[0m
+    [32m  Γ£ö[0m[90m extracts inline capability format[0m
+    [32m  Γ£ö[0m[90m extracts detailed (bulleted) capability format[0m
+    [32m  Γ£ö[0m[90m combines auto-assign with capabilities[0m
+[0m    parseContent() ΓÇö edge cases[0m
+    [32m  Γ£ö[0m[90m handles team.md with only a title[0m
+    [32m  Γ£ö[0m[90m handles members with special characters in names[0m
+    [32m  Γ£ö[0m[90m handles table with extra whitespace in cells[0m
+    [32m  Γ£ö[0m[90m handles large team roster[0m
+[0m  SquadStatusBar[0m
+[0m    getHealthIcon() ΓÇö Health Status Logic[0m
+    [32m  Γ£ö[0m[90m 0 active members shows ΓÜ¬ (all idle)[0m
+    [32m  Γ£ö[0m[90m 70%+ active shows ≡ƒƒó (high activity)[0m
+    [32m  Γ£ö[0m[90m 30-69% active shows ≡ƒƒí (moderate activity)[0m
+    [32m  Γ£ö[0m[90m 1-29% active shows ≡ƒƒá (low activity)[0m
+    [32m  Γ£ö[0m[90m exactly 70% active shows ≡ƒƒó[0m
+    [32m  Γ£ö[0m[90m exactly 30% active shows ≡ƒƒí[0m
+    [32m  Γ£ö[0m[90m 29% active shows ≡ƒƒá (below 30% threshold)[0m
+    [32m  Γ£ö[0m[90m 69% active shows ≡ƒƒí (below 70% threshold)[0m
+    [32m  Γ£ö[0m[90m single working member shows ≡ƒƒó (100% active)[0m
+    [32m  Γ£ö[0m[90m single idle member shows ΓÜ¬ (0% active)[0m
+[0m    Empty Squad Handling[0m
+    [32m  Γ£ö[0m[90m shows "Empty" when no members[0m
+    [32m  Γ£ö[0m[90m empty squad has no background color[0m
+[0m    Status Bar Text Format[0m
+    [32m  Γ£ö[0m[90m includes organization icon[0m
+    [32m  Γ£ö[0m[90m shows "Squad:" label[0m
+    [32m  Γ£ö[0m[90m shows active count before total count[0m
+[0m    Tooltip Content[0m
+    [32m  Γ£ö[0m[90m tooltip includes working members[0m
+    [31m  1) tooltip shows idle count[0m
+    [32m  Γ£ö[0m[90m tooltip is MarkdownString[0m
+[0m    Command Binding[0m
+    [32m  Γ£ö[0m[90m status bar item has openDashboard command[0m
+[0m  SquadDataProvider ΓÇö Fallback Behavior[0m
+[0m    Primary path: team.md present[0m
+    [32m  Γ£ö[0m[90m uses team.md as authoritative roster[0m
+    [32m  Γ£ö[0m[90m overlays working status from orchestration logs[0m
+    [32m  Γ£ö[0m[90m preserves roles from team.md even when log has participants[0m
+[0m    Fallback path: team.md missing[0m
+    [32m  Γ£ö[0m[90m derives members from log participants[0m
+    [32m  Γ£ö[0m[90m assigns generic role in fallback mode[0m
+    [32m  Γ£ö[0m[90m deduplicates members across multiple log files[0m
+[0m    Edge case: both missing[0m
+    [32m  Γ£ö[0m[90m returns empty array when no team.md and no logs[0m
+    [32m  Γ£ö[0m[90m returns empty tasks when no data sources exist[0m
+[0m    Integration: tree with team.md-only data[0m
+    [32m  Γ£ö[0m[90m full flow: team.md ΓåÆ SquadDataProvider ΓåÆ members[0m
+    [32m  Γ£ö[0m[90m team.md-only: getTasksForMember returns empty[0m
+    [32m  Γ£ö[0m[90m team.md-only: getWorkDetails returns undefined[0m
+    [32m  Γ£ö[0m[90m team.md-only: no currentTask on any member[0m
+    [32m  Γ£ö[0m[90m refresh allows re-reading updated team.md[0m
+[0m  Skill Import Feature (Issue #39)[0m
+[0m    parseInstalledSkill()[0m
+    [32m  Γ£ö[0m[90m parses skill name from first H1 heading[0m
+    [32m  Γ£ö[0m[90m uses directory name as fallback when no heading present[0m
+    [32m  Γ£ö[0m[90m strips "Skill: " prefix from name (case-insensitive)[0m
+    [32m  Γ£ö[0m[90m parses description from first paragraph[0m
+    [32m  Γ£ö[0m[90m falls back to name as description when no paragraph found[0m
+    [32m  Γ£ö[0m[90m skips blockquotes when extracting description[0m
+    [32m  Γ£ö[0m[90m skips "**Source:**" lines when extracting description[0m
+    [32m  Γ£ö[0m[90m parses YAML frontmatter for name[0m
+    [32m  Γ£ö[0m[90m YAML frontmatter overrides markdown heading[0m
+    [32m  Γ£ö[0m[90m parses confidence from YAML frontmatter[0m
+    [32m  Γ£ö[0m[90m ignores invalid confidence values in frontmatter[0m
+    [32m  Γ£ö[0m[90m sets source to "local" for installed skills[0m
+    [32m  Γ£ö[0m[90m includes raw content in returned Skill object[0m
+    [32m  Γ£ö[0m[90m includes directory slug in returned Skill object[0m
+    [32m  Γ£ö[0m[90m handles empty content gracefully[0m
+    [32m  Γ£ö[0m[90m handles malformed YAML frontmatter gracefully[0m
+    [32m  Γ£ö[0m[90m handles single-line content[0m
+    [32m  Γ£ö[0m[90m handles content with only whitespace[0m
+[0m    getInstalledSkills()[0m
+    [32m  Γ£ö[0m[90m returns empty array when .ai-team/skills/ does not exist[0m
+    [32m  Γ£ö[0m[90m returns empty array when skills directory is empty[0m
+    [32m  Γ£ö[0m[90m reads all skill directories with SKILL.md[0m
+    [32m  Γ£ö[0m[90m skips directories without SKILL.md[0m
+    [32m  Γ£ö[0m[90m skips files in skills directory (only processes directories)[0m
+    [32m  Γ£ö[0m[90m handles skill directories with complex names[0m
+    [32m  Γ£ö[0m[90m all installed skills have source "local"[0m
+    [32m  Γ£ö[0m[90m all installed skills include raw content[0m
+    [32m  Γ£ö[0m[90m handles malformed SKILL.md files gracefully[0m
+    [32m  Γ£ö[0m[90m handles empty SKILL.md files[0m
+    [32m  Γ£ö[0m[90m handles SKILL.md with only frontmatter[0m
+[0m    Deduplication Logic[0m
+    [32m  Γ£ö[0m[90m deduplicateSkills() prefers awesome-copilot over skills.sh[0m
+    [32m  Γ£ö[0m[90m deduplicates based on case-insensitive name matching[0m
+    [32m  Γ£ö[0m[90m keeps first occurrence when sources are the same[0m
+    [32m  Γ£ö[0m[90m does not merge when names differ[0m
+    [32m  Γ£ö[0m[90m handles empty skills array[0m
+    [32m  Γ£ö[0m[90m handles single skill[0m
+[0m    Error Handling[0m
+    [32m  Γ£ö[0m[90m getInstalledSkills() handles nonexistent workspace root gracefully[0m
+    [32m  Γ£ö[0m[90m getInstalledSkills() handles read errors gracefully[0m
+    [32m  Γ£ö[0m[90m parseInstalledSkill() handles null characters in content[0m
+    [32m  Γ£ö[0m[90m parseInstalledSkill() handles very long content[0m
+[0m    Command Registration[0m
+    [36m  - squadui.addSkill command is registered[0m
+    [32m  Γ£ö[0m[90m squadui.addSkill is declared in package.json[0m
+[0m    Skill Tree Nodes[0m
+    [36m  - getChildren() returns skill items at root level[0m
+    [36m  - skill items have correct labels[0m
+    [32m  Γ£ö[0m[90m skill items have description field[0m
+    [32m  Γ£ö[0m[90m skill items are not collapsible[0m
+    [32m  Γ£ö[0m[90m skill items include icon path[0m
+    [32m  Γ£ö[0m[90m getChildren() for skill item returns empty array[0m
+    [32m  Γ£ö[0m[90m skill items have contextValue for command binding[0m
+[0m    Edge Cases[0m
+    [32m  Γ£ö[0m[90m handles skill name with unicode characters[0m
+    [32m  Γ£ö[0m[90m handles SKILL.md with Windows line endings (CRLF)[0m
+    [32m  Γ£ö[0m[90m handles SKILL.md with mixed line endings[0m
+    [32m  Γ£ö[0m[90m handles skill with only heading (no body)[0m
+    [32m  Γ£ö[0m[90m handles multiple H1 headings (uses first)[0m
+    [32m  Γ£ö[0m[90m handles YAML frontmatter with quotes and special chars[0m
+    [32m  Γ£ö[0m[90m handles frontmatter without closing delimiter[0m
+    [32m  Γ£ö[0m[90m handles content with multiple consecutive blank lines[0m
+[0m  SkillCatalogService[0m
+[0m    getInstalledSkills()[0m
+    [32m  Γ£ö[0m[90m reads skills from .ai-team/skills/ directory[0m
+    [32m  Γ£ö[0m[90m returns empty array when directory does not exist[0m
+    [32m  Γ£ö[0m[90m returns empty array when .ai-team/skills/ does not exist[0m
+    [32m  Γ£ö[0m[90m parses SKILL.md heading as skill name[0m
+    [32m  Γ£ö[0m[90m parses SKILL.md first paragraph as description[0m
+    [32m  Γ£ö[0m[90m installed skills have source "local"[0m
+    [32m  Γ£ö[0m[90m installed skills include raw content[0m
+    [32m  Γ£ö[0m[90m skips subdirectories without SKILL.md[0m
+[0m    downloadSkill()[0m
+    [32m  Γ£ö[0m[90m creates skill directory and writes SKILL.md[0m[31m (338ms)[0m
+    [32m  Γ£ö[0m[90m uses content field when available[0m
+    [32m  Γ£ö[0m[90m handles skill names with special characters (slug generation)[0m
+    [32m  Γ£ö[0m[90m handles skill names with leading/trailing special characters[0m
+    [32m  Γ£ö[0m[90m builds stub with source link when no content provided[0m[31m (198ms)[0m
+[0m    searchSkills()[0m
+    [32m  Γ£ö[0m[90m filters by name (case-insensitive)[0m
+    [32m  Γ£ö[0m[90m filters by description (case-insensitive)[0m
+    [32m  Γ£ö[0m[90m returns empty for no matches[0m
+    [32m  Γ£ö[0m[90m matches are case-insensitive[0m
+    [32m  Γ£ö[0m[90m partial matches work[0m
+[0m    deduplicateSkills()[0m
+    [32m  Γ£ö[0m[90m awesome-copilot preferred over skills.sh for same name[0m
+    [32m  Γ£ö[0m[90m dedup is case-insensitive[0m
+    [32m  Γ£ö[0m[90m keeps skills.sh entry when no awesome-copilot duplicate[0m
+    [32m  Γ£ö[0m[90m keeps first entry when both from same source[0m
+[0m    parseAwesomeReadme()[0m
+    [32m  Γ£ö[0m[90m extracts skill entries from markdown list items[0m
+    [32m  Γ£ö[0m[90m handles * bullet style[0m
+    [32m  Γ£ö[0m[90m skips entries without description[0m
+    [32m  Γ£ö[0m[90m skips entries with very short names[0m
+    [32m  Γ£ö[0m[90m handles em dash separator[0m
+    [32m  Γ£ö[0m[90m returns empty array for empty markdown[0m
+    [32m  Γ£ö[0m[90m returns empty array for markdown with no list items[0m
+[0m    parseSkillsShHtml()[0m
+    [31m  2) extracts skill entries from HTML anchor tags[0m
+    [32m  Γ£ö[0m[90m all extracted skills have source "skills.sh"[0m
+    [32m  Γ£ö[0m[90m skips boilerplate links[0m
+    [31m  3) extracts nearby description from p/span tags[0m
+    [31m  4) handles JSON-LD structured data[0m
+    [32m  Γ£ö[0m[90m returns empty for empty HTML[0m
+    [32m  Γ£ö[0m[90m handles malformed JSON-LD gracefully[0m
+    [31m  5) prepends https://skills.sh to relative URLs[0m
+[0m    parseAwesomeReadme() ΓÇö Regression Tests[0m
+    [32m  Γ£ö[0m[90m parses list with em-dash separator correctly[0m
+    [32m  Γ£ö[0m[90m parses list with regular hyphen separator correctly[0m
+    [32m  Γ£ö[0m[90m skips entries without descriptions[0m
+    [32m  Γ£ö[0m[90m skips entries with very short names (< 2 chars)[0m
+    [32m  Γ£ö[0m[90m handles * bullet style in addition to -[0m
+    [32m  Γ£ö[0m[90m returns empty array for empty content[0m
+    [32m  Γ£ö[0m[90m returns empty array for non-list content[0m
+[0m    parseSkillsShHtml() ΓÇö Regression Tests (Fixed Parser)[0m
+    [32m  Γ£ö[0m[90m parses leaderboard entry with h3 skill name and p repo path[0m
+    [32m  Γ£ö[0m[90m extracts owner/repo from href path (3 segments)[0m
+    [32m  Γ£ö[0m[90m builds correct GitHub URL from href[0m
+    [32m  Γ£ö[0m[90m sets description to repo path (owner/repo)[0m
+    [32m  Γ£ö[0m[90m skips navigation links with < 3 path segments[0m
+    [32m  Γ£ö[0m[90m skips agent logo links (external sites)[0m
+    [32m  Γ£ö[0m[90m skips boilerplate links (Home, About, Login)[0m
+    [32m  Γ£ö[0m[90m handles multiple entries in sequence[0m
+    [32m  Γ£ö[0m[90m returns empty array for empty HTML[0m
+    [32m  Γ£ö[0m[90m does NOT pick up nav tabs as skills[0m
+    [32m  Γ£ö[0m[90m deduplicates entries (same skill appearing twice)[0m
+[0m    searchSkills() ΓÇö Regression Tests[0m
+    [32m  Γ£ö[0m[90m filters by name match (case-insensitive)[0m
+    [32m  Γ£ö[0m[90m filters by description match[0m
+    [32m  Γ£ö[0m[90m returns empty for no matches[0m
+    [32m  Γ£ö[0m[90m handles skills with undefined description gracefully[0m
+    [32m  Γ£ö[0m[90m handles skills with empty description gracefully[0m
+[0m  Skill Command Registration[0m
+  [32m  Γ£ö[0m[90m addSkill command is declared in package.json[0m
+  [32m  Γ£ö[0m[90m viewSkill command is declared in package.json[0m
+  [32m  Γ£ö[0m[90m removeSkill command is declared in package.json[0m
+SquadUI extension is now active
+  [36m  - addSkill is registered when extension is active[0m
+  [36m  - viewSkill is registered when extension is active[0m
+  [36m  - removeSkill is registered when extension is active[0m
+  [32m  Γ£ö[0m[90m all three skill commands appear in package.json contributions[0m
+  [32m  Γ£ö[0m[90m skill items open via click command instead of context menu[0m
+  [32m  Γ£ö[0m[90m removeSkill context menu targets skill items[0m
+[0m  Skill Tree Nodes (SkillsTreeProvider)[0m
+  [32m  Γ£ö[0m[90m Skills items appear at root level[0m
+  [32m  Γ£ö[0m[90m skill items have book icon[0m
+  [32m  Γ£ö[0m[90m installed skills are shown[0m
+  [32m  Γ£ö[0m[90m skill items have no source badge for local skills[0m
+  [32m  Γ£ö[0m[90m skill item contextValue is "skill"[0m
+  [32m  Γ£ö[0m[90m skill items are leaf nodes (not collapsible)[0m
+  [32m  Γ£ö[0m[90m skill tooltips are MarkdownStrings[0m
+[0m  OrchestrationLogService[0m
+[0m    discoverLogFiles()[0m
+    [32m  Γ£ö[0m[90m finds .md files in orchestration-logs directory[0m
+    [32m  Γ£ö[0m[90m returns files sorted alphabetically (chronologically by date prefix)[0m
+    [32m  Γ£ö[0m[90m returns empty array for missing directory[0m
+    [32m  Γ£ö[0m[90m returns empty array for directory without .ai-team folder[0m
+[0m    parseLogFile()[0m
+    [32m  Γ£ö[0m[90m extracts date from filename[0m
+    [32m  Γ£ö[0m[90m extracts topic from filename[0m
+    [32m  Γ£ö[0m[90m extracts participants from Who Worked section[0m
+    [32m  Γ£ö[0m[90m extracts timestamp when present[0m
+    [32m  Γ£ö[0m[90m extracts related issues[0m
+    [32m  Γ£ö[0m[90m extracts decisions when present[0m
+    [32m  Γ£ö[0m[90m extracts outcomes/key outcomes when present[0m
+    [32m  Γ£ö[0m[90m handles empty log file gracefully[0m
+    [32m  Γ£ö[0m[90m returns summary with fallback when Summary section missing[0m
+[0m    parseAllLogs()[0m
+    [32m  Γ£ö[0m[90m parses all log files in directory[0m
+    [32m  Γ£ö[0m[90m returns entries sorted by date (newest first)[0m
+    [32m  Γ£ö[0m[90m skips malformed files gracefully[0m
+[0m    getMemberStates()[0m
+    [32m  Γ£ö[0m[90m returns empty map for empty entries[0m
+    [32m  Γ£ö[0m[90m marks participants in most recent entry as working[0m
+    [32m  Γ£ö[0m[90m marks participants not in most recent entry as idle[0m
+    [32m  Γ£ö[0m[90m includes all unique participants across all entries[0m
+[0m    getActiveTasks()[0m
+    [32m  Γ£ö[0m[90m returns empty array for empty entries[0m
+    [32m  Γ£ö[0m[90m extracts tasks from related issues[0m
+    [32m  Γ£ö[0m[90m assigns member to tasks (first participant of entry)[0m
+    [32m  Γ£ö[0m[90m tasks have startedAt date[0m
+    [32m  Γ£ö[0m[90m deduplicates tasks with same ID[0m
+[0m  SquadDataProvider[0m
+[0m    getSquadMembers()[0m
+    [32m  Γ£ö[0m[90m returns squad members from team.md roster[0m
+    [32m  Γ£ö[0m[90m members have name and status[0m
+    [32m  Γ£ö[0m[90m members have roles from team.md when available[0m
+    [32m  Γ£ö[0m[90m working members have currentTask populated[0m
+    [32m  Γ£ö[0m[90m caches results after first call[0m
+[0m    getTasksForMember()[0m
+    [32m  Γ£ö[0m[90m returns tasks for specific member[0m
+    [32m  Γ£ö[0m[90m returns empty array for member with no tasks[0m
+    [32m  Γ£ö[0m[90m all returned tasks belong to specified member[0m
+[0m    getWorkDetails()[0m
+    [32m  Γ£ö[0m[90m returns work details for valid task ID[0m
+    [32m  Γ£ö[0m[90m returns undefined for non-existent task[0m
+    [32m  Γ£ö[0m[90m includes related log entries when available[0m
+    [32m  Γ£ö[0m[90m task and member data are consistent[0m
+[0m    refresh()[0m
+    [32m  Γ£ö[0m[90m invalidates cached members[0m
+    [32m  Γ£ö[0m[90m invalidates all caches[0m
+[0m  FileWatcherService[0m
+  [32m  Γ£ö[0m[90m service module can be imported[0m
+  [32m  Γ£ö[0m[90m service constructor accepts debounce parameter[0m
+[0m  Edge Cases[0m
+  [32m  Γ£ö[0m[90m handles directory with no .md files[0m
+  [32m  Γ£ö[0m[90m handles file with only whitespace[0m
+  [32m  Γ£ö[0m[90m handles file without date prefix in filename[0m
+  [32m  Γ£ö[0m[90m handles special characters in participant names[0m
+  [32m  Γ£ö[0m[90m SquadDataProvider handles empty log directory[0m
+  [32m  Γ£ö[0m[90m SquadDataProvider handles missing .ai-team folder[0m
+  [32m  Γ£ö[0m[90m SquadDataProvider populates members from team.md when no logs exist[0m
+  [32m  Γ£ö[0m[90m SquadDataProvider shows members as idle when no logs exist[0m
+  [32m  Γ£ö[0m[90m SquadDataProvider preserves roles from team.md[0m
+  [32m  Γ£ö[0m[90m SquadDataProvider falls back to log participants when team.md missing[0m
+[0m  removeMemberCommand[0m
+[0m    parseMemberRows() ΓÇö Table Parsing Logic[0m
+    [32m  Γ£ö[0m[90m parses well-formed table row correctly[0m
+    [32m  Γ£ö[0m[90m excludes scribe from removable members[0m
+    [32m  Γ£ö[0m[90m excludes ralph from removable members[0m
+    [32m  Γ£ö[0m[90m excludes @copilot from removable members[0m
+    [32m  Γ£ö[0m[90m parses multiple removable members[0m
+    [32m  Γ£ö[0m[90m skips header row (| Name |)[0m
+    [32m  Γ£ö[0m[90m skips separator row (|-----|)[0m
+    [32m  Γ£ö[0m[90m stops parsing at next section (##)[0m
+    [32m  Γ£ö[0m[90m returns empty array when no Members section exists[0m
+    [32m  Γ£ö[0m[90m returns empty array when Members section is empty[0m
+[0m  OrchestrationLogService ΓÇö Table Format Extraction[0m
+[0m    extractOutcomeFromTable()[0m
+    [32m  Γ£ö[0m[90m extracts value from | **Outcome** | value | row[0m
+    [32m  Γ£ö[0m[90m strips markdown bold from outcome value[0m
+    [32m  Γ£ö[0m[90m strips code spans from outcome value[0m
+    [32m  Γ£ö[0m[90m returns null when no Outcome row exists[0m
+    [32m  Γ£ö[0m[90m returns null for empty content[0m
+[0m    extractHeadingTitle()[0m
+    [32m  Γ£ö[0m[90m extracts text after em dash from heading[0m
+    [32m  Γ£ö[0m[90m falls back to full heading text when no em dash[0m
+    [32m  Γ£ö[0m[90m handles h1 headings[0m
+    [32m  Γ£ö[0m[90m returns null for content with no headings[0m
+[0m    extractSummaryFallback() ΓÇö table row skipping[0m
+    [32m  Γ£ö[0m[90m skips table rows (lines starting with |)[0m
+    [32m  Γ£ö[0m[90m returns "No summary available" when only table rows exist after heading[0m
+    [32m  Γ£ö[0m[90m still extracts prose paragraphs that appear after tables[0m
+[0m    parseLogFile() ΓÇö table-format integration[0m
+    [32m  Γ£ö[0m[90m table-only entry gets summary from Outcome, not raw table text[0m
+    [32m  Γ£ö[0m[90m entry with ## Summary section still uses that section (priority 1)[0m
+    [32m  Γ£ö[0m[90m existing prose-based logs still parse correctly[0m
+[0m  IssueDetailWebview[0m
+[0m    getContrastColor()[0m
+    [32m  Γ£ö[0m[90m returns black text for light backgrounds[0m
+    [32m  Γ£ö[0m[90m returns white text for dark backgrounds[0m
+    [32m  Γ£ö[0m[90m threshold at 0.5 luminance[0m
+    [32m  Γ£ö[0m[90m returns white text for dark gray[0m
+    [32m  Γ£ö[0m[90m returns black text for light gray[0m
+    [32m  Γ£ö[0m[90m handles colors without # prefix[0m
+[0m    escapeHtml()[0m
+    [32m  Γ£ö[0m[90m escapes ampersand (&)[0m
+    [32m  Γ£ö[0m[90m escapes less-than (<)[0m
+    [32m  Γ£ö[0m[90m escapes greater-than (>)[0m
+    [32m  Γ£ö[0m[90m escapes double quote (")[0m
+    [32m  Γ£ö[0m[90m escapes single quote (')[0m
+    [32m  Γ£ö[0m[90m escapes multiple special characters[0m
+    [32m  Γ£ö[0m[90m leaves safe text unchanged[0m
+[0m    formatDateString()[0m
+    [32m  Γ£ö[0m[90m formats valid ISO dates[0m
+    [31m  6) returns raw string for invalid dates[0m
+    [31m  7) returns raw string for empty date[0m
+    [32m  Γ£ö[0m[90m formats ISO date with timezone[0m
+[0m    getHtmlContent()[0m
+    [32m  Γ£ö[0m[90m produces valid HTML with issue number[0m
+    [32m  Γ£ö[0m[90m produces valid HTML with issue title[0m
+    [32m  Γ£ö[0m[90m shows Open badge for open issues[0m
+    [32m  Γ£ö[0m[90m shows Closed badge for closed issues[0m
+    [32m  Γ£ö[0m[90m renders labels with colors[0m
+    [32m  Γ£ö[0m[90m shows assignee when present[0m
+    [32m  Γ£ö[0m[90m shows Unassigned when assignee is null[0m
+    [32m  Γ£ö[0m[90m renders body text[0m
+    [32m  Γ£ö[0m[90m shows "No description provided" when body is empty[0m
+    [32m  Γ£ö[0m[90m includes CSP meta tag[0m
+    [32m  Γ£ö[0m[90m escapes special characters in title[0m
+    [32m  Γ£ö[0m[90m escapes special characters in body[0m
+    [32m  Γ£ö[0m[90m includes Open in GitHub button[0m
+    [32m  Γ£ö[0m[90m includes correct GitHub URL in button[0m
+[0m  htmlTemplate.ts ΓÇö Dashboard HTML Generation[0m
+[0m    Regression: Optional Fields in DecisionEntry[0m
+    [32m  Γ£ö[0m[90m getDashboardHtml does not crash when content is undefined[0m
+    [32m  Γ£ö[0m[90m getDashboardHtml does not crash when author is undefined[0m
+    [32m  Γ£ö[0m[90m getDashboardHtml does not crash when both content and author are undefined[0m
+    [32m  Γ£ö[0m[90m getDashboardHtml does not crash when date is undefined[0m
+    [32m  Γ£ö[0m[90m getDashboardHtml handles multiple decisions with mixed optional fields[0m
+[0m    HTML Output Contains Expected Elements[0m
+    [32m  Γ£ö[0m[90m HTML contains decision card with title[0m
+    [32m  Γ£ö[0m[90m HTML contains decision date when provided[0m
+    [32m  Γ£ö[0m[90m HTML contains decision author when provided[0m
+    [32m  Γ£ö[0m[90m HTML contains fallback "ΓÇö" when date is missing[0m
+    [32m  Γ£ö[0m[90m HTML contains fallback "ΓÇö" when author is missing[0m
+    [32m  Γ£ö[0m[90m HTML escapes decision title with special characters[0m
+    [32m  Γ£ö[0m[90m HTML contains multiple decision cards when multiple decisions provided[0m
+    [32m  Γ£ö[0m[90m HTML contains empty state message when no decisions[0m
+    [32m  Γ£ö[0m[90m HTML contains decision-card class for styling[0m
+    [32m  Γ£ö[0m[90m HTML contains data attributes for opening decisions[0m
+[0m    Client-Side JS Filter Function Safety[0m
+    [32m  Γ£ö[0m[90m rendered JS filter safely handles undefined content[0m
+    [32m  Γ£ö[0m[90m rendered JS filter safely handles undefined author[0m
+    [32m  Γ£ö[0m[90m rendered JS contains escapeHtml helper function[0m
+    [32m  Γ£ö[0m[90m decision data is JSON-serialized in script tag[0m
+[0m    Activity Tab: Swimlanes Rendering[0m
+    [32m  Γ£ö[0m[90m HTML contains swimlane for each member[0m
+    [32m  Γ£ö[0m[90m HTML contains empty swimlane message when no tasks[0m
+    [32m  Γ£ö[0m[90m HTML contains task rendering logic[0m
+[0m    Activity Tab: Recent Sessions Log Entries[0m
+    [32m  Γ£ö[0m[90m HTML contains recent log entries in Activity tab data[0m
+    [32m  Γ£ö[0m[90m HTML handles empty recent logs array[0m
+    [32m  Γ£ö[0m[90m HTML handles recent logs with all fields populated[0m
+    [32m  Γ£ö[0m[90m HTML handles recent logs with optional fields undefined[0m
+    [32m  Γ£ö[0m[90m HTML handles multiple recent log entries[0m
+    [32m  Γ£ö[0m[90m HTML escapes special characters in log summaries[0m
+    [32m  Γ£ö[0m[90m HTML handles very long log summaries[0m
+    [32m  Γ£ö[0m[90m HTML handles unicode in log data[0m
+    [32m  Γ£ö[0m[90m activity data JSON is valid when recent logs present[0m
+[0m    HTML Structure Validation[0m
+    [32m  Γ£ö[0m[90m HTML has DOCTYPE declaration[0m
+    [32m  Γ£ö[0m[90m HTML has html, head, and body tags[0m
+    [32m  Γ£ö[0m[90m HTML has CSP meta tag for security[0m
+    [32m  Γ£ö[0m[90m HTML has all three tab buttons (Velocity, Activity, Decisions)[0m
+    [32m  Γ£ö[0m[90m HTML has all three tab content sections[0m
+    [32m  Γ£ö[0m[90m HTML contains search input for decisions filter[0m
+    [32m  Γ£ö[0m[90m HTML contains VS Code API acquisition[0m
+    [32m  Γ£ö[0m[90m HTML contains event delegation for clickable items[0m
+[0m    Edge Cases[0m
+    [32m  Γ£ö[0m[90m HTML handles very long decision titles[0m
+    [32m  Γ£ö[0m[90m HTML handles unicode in decision titles[0m
+    [32m  Γ£ö[0m[90m HTML handles empty decision title[0m
+    [32m  Γ£ö[0m[90m HTML handles decision with only whitespace content[0m
+    [32m  Γ£ö[0m[90m HTML handles large dataset (100 decisions)[0m
+    [32m  Γ£ö[0m[90m HTML handles decision with special characters in author[0m
+[0m  GitHubIssuesService[0m
+[0m    getIssueSource()[0m
+    [32m  Γ£ö[0m[90m reads repository config from team.md[0m
+    [32m  Γ£ö[0m[90m returns null when team.md is missing[0m
+    [32m  Γ£ö[0m[90m returns null when team.md has no repository field[0m
+    [32m  Γ£ö[0m[90m parses owner/repo format correctly[0m
+    [32m  Γ£ö[0m[90m parses github.com/owner/repo format correctly[0m
+    [32m  Γ£ö[0m[90m caches issue source config[0m
+[0m    getIssues() ΓÇö without API calls[0m
+    [32m  Γ£ö[0m[90m returns empty array when no issue source configured[0m
+    [32m  Γ£ö[0m[90m returns empty array when team.md has no repository[0m
+[0m    getIssuesForMember()[0m
+    [32m  Γ£ö[0m[90m filters issues by squad label (case-insensitive)[0m
+    [32m  Γ£ö[0m[90m returns empty array when member has no squad label issues[0m
+[0m    getIssuesByMember()[0m
+    [32m  Γ£ö[0m[90m groups issues by squad member label[0m
+    [32m  Γ£ö[0m[90m skips issues without squad labels[0m
+[0m    Cache management[0m
+    [32m  Γ£ö[0m[90m invalidateCache clears issue cache[0m
+    [32m  Γ£ö[0m[90m invalidateAll clears both issue and source caches[0m
+    [32m  Γ£ö[0m[90m setToken invalidates issue cache[0m
+    [32m  Γ£ö[0m[90m setToken with undefined clears token[0m
+    [32m  Γ£ö[0m[90m expired cache triggers refetch[0m
+    [32m  Γ£ö[0m[90m fresh cache is not expired[0m
+[0m    Constructor options[0m
+    [32m  Γ£ö[0m[90m uses default cache TTL when not specified[0m
+    [32m  Γ£ö[0m[90m accepts custom cache TTL[0m
+    [32m  Γ£ö[0m[90m uses default API base URL when not specified[0m
+    [32m  Γ£ö[0m[90m accepts custom API base URL[0m
+    [32m  Γ£ö[0m[90m stores provided token[0m
+[0m  Extension Test Suite[0m
+[0m    Extension Activation[0m
+    [32m  Γ£ö[0m[90m extension is present[0m
+    [32m  Γ£ö[0m[90m extension can be activated[0m
+[0m    Command Registration[0m
+    [36m  - commands are registered when extension is active with workspace[0m
+[0m    View Contribution[0m
+    [32m  Γ£ö[0m[90m squadTeam view is declared in package.json[0m
+[0m  E2E MVP Validation (Issue #14)[0m
+[0m    AC-1: Extension loads without errors[0m
+    [32m  Γ£ö[0m[90m extension is discoverable by ID[0m
+    [32m  Γ£ö[0m[90m activate() does not throw[0m
+    [32m  Γ£ö[0m[90m package.json declares all required commands[0m
+    [32m  Γ£ö[0m[90m package.json declares squadTeam tree view[0m
+    [32m  Γ£ö[0m[90m squadui activity bar container is declared[0m
+[0m    AC-2: Tree view shows squad members with correct status[0m
+    [32m  Γ£ö[0m[90m tree returns all 3 team.md members at root[0m
+    [32m  Γ£ö[0m[90m member labels match team.md roster names exactly[0m
+    [32m  Γ£ö[0m[90m working member (Carol) gets sync~spin icon[0m
+    [32m  Γ£ö[0m[90m idle members get person icon (not spinning)[0m
+    [32m  Γ£ö[0m[90m member descriptions show role and status[0m
+    [32m  Γ£ö[0m[90m member status correctly reflects working vs idle from log data[0m
+    [32m  Γ£ö[0m[90m all member roles come from team.md, not default[0m
+[0m    AC-3: Clicking member expands to show tasks[0m
+    [32m  Γ£ö[0m[90m member items are collapsible (Collapsed state)[0m
+    [32m  Γ£ö[0m[90m getChildren(memberItem) returns task items for Alice[0m
+    [32m  Γ£ö[0m[90m getChildren(memberItem) returns task items for Carol[0m
+    [32m  Γ£ö[0m[90m task items have meaningful titles (not raw markdown)[0m
+    [32m  Γ£ö[0m[90m task items have correct status badges[0m
+    [32m  Γ£ö[0m[90m task items are leaf nodes (not collapsible)[0m
+    [32m  Γ£ö[0m[90m task items have tasklist icon[0m
+[0m    AC-4: Clicking task shows details in webview[0m
+    [32m  Γ£ö[0m[90m getWorkDetails() returns correct task and member data[0m
+    [32m  Γ£ö[0m[90m getWorkDetails() includes related log entries[0m
+    [32m  Γ£ö[0m[90m webview HTML contains task title[0m
+    [32m  Γ£ö[0m[90m webview HTML contains task description[0m
+    [32m  Γ£ö[0m[90m webview HTML contains member name and role[0m
+    [32m  Γ£ö[0m[90m webview HTML contains member status badge[0m
+    [32m  Γ£ö[0m[90m markdown tables render as HTML tables, not raw pipes[0m
+    [32m  Γ£ö[0m[90m bold text renders as <strong> tags[0m
+    [32m  Γ£ö[0m[90m task items have showWorkDetails command wired up[0m
+    [32m  Γ£ö[0m[90m getWorkDetails returns undefined for non-existent task[0m
+[0m    AC-5: File changes trigger tree refresh[0m
+    [32m  Γ£ö[0m[90m tree provider has a refresh method[0m
+    [32m  Γ£ö[0m[90m calling refresh fires onDidChangeTreeData event[0m
+    [32m  Γ£ö[0m[90m refresh invalidates data cache (returns fresh data)[0m
+    [32m  Γ£ö[0m[90m tree provider refresh calls data provider refresh[0m
+[0m    AC-6: Full pipeline integration[0m
+    [32m  Γ£ö[0m[90m fixture data flows through all services to tree items[0m
+    [32m  Γ£ö[0m[90m orchestration log entries produce meaningful task titles[0m
+    [32m  Γ£ö[0m[90m both session log and orchestration log task extraction paths work[0m
+    [32m  Γ£ö[0m[90m work details webview HTML is well-formed for pipeline data[0m
+    [32m  Γ£ö[0m[90m member tooltips contain role and status information[0m
+    [32m  Γ£ö[0m[90m task tooltips contain task title[0m
+[0m    Edge cases[0m
+    [32m  Γ£ö[0m[90m member with no tasks returns empty children (Bob)[0m
+    [32m  Γ£ö[0m[90m getChildren on a task item returns empty array[0m
+    [32m  Γ£ö[0m[90m getTreeItem returns the element unchanged[0m
+    [32m  Γ£ö[0m[90m webview handles task with no description[0m
+    [32m  Γ£ö[0m[90m webview handles task with no dates[0m
+    [32m  Γ£ö[0m[90m webview escapes HTML in task titles (XSS prevention)[0m
+    [32m  Γ£ö[0m[90m multiple refreshes do not corrupt state[0m
+[0m  DecisionService[0m
+[0m    parseDecisionsMd() ΓÇö Main Parser[0m
+    [32m  Γ£ö[0m[90m returns empty array when decisions.md does not exist[0m
+    [32m  Γ£ö[0m[90m parses ## headings as decisions[0m
+    [32m  Γ£ö[0m[90m parses ### headings with date prefix as decisions[0m
+    [32m  Γ£ö[0m[90m filters out ### headings without date prefix (subsections)[0m
+    [32m  Γ£ö[0m[90m filters out known subsection names at ## level[0m
+    [32m  Γ£ö[0m[90m extracts date from **Date:** metadata[0m
+    [32m  Γ£ö[0m[90m extracts first date from **Date:** with multiple dates[0m
+    [32m  Γ£ö[0m[90m extracts date from heading prefix (### YYYY-MM-DD: Title)[0m
+    [32m  Γ£ö[0m[90m extracts first date from date range (### YYYY-MM-DD/DD: Title)[0m
+    [32m  Γ£ö[0m[90m **Date:** metadata overrides heading date prefix[0m
+    [32m  Γ£ö[0m[90m strips "Decision: " prefix from title[0m
+    [32m  Γ£ö[0m[90m strips "User directive ΓÇö " prefix from title[0m
+    [32m  Γ£ö[0m[90m extracts author from **Author:** metadata[0m
+    [32m  Γ£ö[0m[90m extracts author from **By:** metadata[0m
+    [32m  Γ£ö[0m[90m includes full content in DecisionEntry[0m
+    [32m  Γ£ö[0m[90m includes filePath in DecisionEntry[0m
+    [32m  Γ£ö[0m[90m includes lineNumber in DecisionEntry[0m
+    [32m  Γ£ö[0m[90m parses multiple decisions correctly[0m
+    [32m  Γ£ö[0m[90m handles decisions without dates[0m
+    [32m  Γ£ö[0m[90m filters out "Items deferred" section[0m
+    [32m  Γ£ö[0m[90m handles malformed heading "## # Title" gracefully[0m
+    [32m  Γ£ö[0m[90m handles empty decisions.md[0m
+    [32m  Γ£ö[0m[90m handles decisions.md with only comments[0m
+    [32m  Γ£ö[0m[90m realistic decisions.md with mixed patterns[0m
+[0m    parseDecisionFile() ΓÇö Individual File Parser[0m
+    [32m  Γ£ö[0m[90m extracts title from first # heading[0m
+    [32m  Γ£ö[0m[90m falls back to ## or ### heading if no # heading[0m
+    [32m  Γ£ö[0m[90m extracts date from **Date:** metadata[0m
+    [32m  Γ£ö[0m[90m extracts first date from **Date:** with multiple dates[0m
+    [32m  Γ£ö[0m[90m extracts date from heading prefix (# YYYY-MM-DD: Title)[0m
+    [32m  Γ£ö[0m[90m extracts first date from date range in heading (# YYYY-MM-DD/DD: Title)[0m
+    [32m  Γ£ö[0m[90m strips "User directive ΓÇö " prefix from title[0m
+    [32m  Γ£ö[0m[90m strips common decision doc prefixes[0m
+    [32m  Γ£ö[0m[90m extracts author from **Author:** metadata[0m
+    [32m  Γ£ö[0m[90m extracts author from **By:** metadata[0m
+    [32m  Γ£ö[0m[90m falls back to file creation date when no date metadata[0m
+    [32m  Γ£ö[0m[90m includes full content in DecisionEntry[0m
+    [32m  Γ£ö[0m[90m includes filePath in DecisionEntry[0m
+Error parsing decision file /nonexistent/file.md: Error: ENOENT: no such file or directory, open 'D:\nonexistent\file.md'
+	at Object.readFileSync (node:fs:442:20)
+	at t.readFileSync (node:electron/js2c/node_init:2:11013)
+	at DecisionService.parseDecisionFile (d:\SquadUI\out\services\DecisionService.js:183:32)
+	at Context.<anonymous> (d:\SquadUI\out\test\suite\decisionService.test.js:649:38)
+	at callFn (d:\SquadUI\node_modules\mocha\lib\runnable.js:366:21)
+	at Runnable.run (d:\SquadUI\node_modules\mocha\lib\runnable.js:354:5)
+	at Runner.runTest (d:\SquadUI\node_modules\mocha\lib\runner.js:719:10)
+	at d:\SquadUI\node_modules\mocha\lib\runner.js:842:12
+	at next (d:\SquadUI\node_modules\mocha\lib\runner.js:634:14)
+	at d:\SquadUI\node_modules\mocha\lib\runner.js:644:7
+	at next (d:\SquadUI\node_modules\mocha\lib\runner.js:527:14)
+	at cbHookRun (d:\SquadUI\node_modules\mocha\lib\runner.js:592:7)
+	at done (d:\SquadUI\node_modules\mocha\lib\runnable.js:310:5)
+	at callFn (d:\SquadUI\node_modules\mocha\lib\runnable.js:389:7)
+	at Runnable.run (d:\SquadUI\node_modules\mocha\lib\runnable.js:354:5)
+	at next (d:\SquadUI\node_modules\mocha\lib\runner.js:551:10)
+	at Immediate._onImmediate (d:\SquadUI\node_modules\mocha\lib\runner.js:612:5)
+	at process.processImmediate (node:internal/timers:485:21)
+    [32m  Γ£ö[0m[90m returns null for nonexistent file[0m
+    [32m  Γ£ö[0m[90m handles empty file gracefully[0m
+    [32m  Γ£ö[0m[90m handles file with no heading[0m
+[0m    getDecisions() ΓÇö Full Pipeline[0m
+    [32m  Γ£ö[0m[90m returns empty array when no decisions exist[0m
+    [32m  Γ£ö[0m[90m parses decisions.md when it exists[0m
+    [32m  Γ£ö[0m[90m parses individual decision files in decisions/ directory[0m
+    [32m  Γ£ö[0m[90m combines decisions from decisions.md and individual files[0m
+    [32m  Γ£ö[0m[90m sorts decisions by date descending (newest first)[0m
+    [32m  Γ£ö[0m[90m decisions without dates sort to the end[0m
+    [32m  Γ£ö[0m[90m scans subdirectories in decisions/[0m
+    [32m  Γ£ö[0m[90m ignores non-.md files in decisions/[0m
+[0m    Edge Cases and Regressions[0m
+    [32m  Γ£ö[0m[90m handles decisions.md with Windows line endings (CRLF)[0m
+    [32m  Γ£ö[0m[90m handles mixed ## and ### headings in same file[0m
+    [32m  Γ£ö[0m[90m handles decision with no body content[0m
+    [32m  Γ£ö[0m[90m handles very long decision title[0m
+    [32m  Γ£ö[0m[90m handles unicode in decision titles and dates[0m
+    [32m  Γ£ö[0m[90m handles multiple decisions with same title[0m
+    [32m  Γ£ö[0m[90m handles date prefix with colon vs no colon[0m
+    [32m  Γ£ö[0m[90m handles **Date:** with extra whitespace[0m
+    [32m  Γ£ö[0m[90m handles **Date:** case variations (Date, DATE, date)[0m
+[0m  DashboardDataBuilder[0m
+[0m    Velocity Timeline (via buildDashboardData)[0m
+    [32m  Γ£ö[0m[90m empty tasks ΓåÆ 31 data points all zero[0m
+    [32m  Γ£ö[0m[90m timeline always spans exactly 31 days[0m
+    [32m  Γ£ö[0m[90m all dates in timeline are YYYY-MM-DD format[0m
+    [32m  Γ£ö[0m[90m task completed today ΓåÆ correct count[0m
+    [32m  Γ£ö[0m[90m tasks completed over multiple days ΓåÆ correct per-day counts[0m
+    [32m  Γ£ö[0m[90m tasks completed more than 30 days ago ΓåÆ excluded[0m
+    [32m  Γ£ö[0m[90m tasks with status != completed ΓåÆ excluded[0m
+    [32m  Γ£ö[0m[90m tasks with no completedAt ΓåÆ excluded[0m
+    [32m  Γ£ö[0m[90m multiple tasks on same day ΓåÆ aggregated[0m
+    [32m  Γ£ö[0m[90m tasks with ISO string completedAt work correctly[0m
+    [32m  Γ£ö[0m[90m tasks with Date objects completedAt work correctly[0m
+    [32m  Γ£ö[0m[90m timeline dates are in chronological order[0m
+    [32m  Γ£ö[0m[90m mix of valid and excluded tasks ΓåÆ only valid counted[0m
+[0m    Activity Heatmap (via buildDashboardData)[0m
+    [32m  Γ£ö[0m[90m empty log entries ΓåÆ all members at 0.0[0m
+    [32m  Γ£ö[0m[90m single member with log entries ΓåÆ activity level 1.0[0m
+    [32m  Γ£ö[0m[90m multiple members with varying participation ΓåÆ proportional levels[0m
+    [32m  Γ£ö[0m[90m log entries older than 7 days ΓåÆ excluded[0m
+    [32m  Γ£ö[0m[90m member with no log participation ΓåÆ 0.0[0m
+    [32m  Γ£ö[0m[90m member name matching is exact (case-sensitive)[0m
+    [32m  Γ£ö[0m[90m no members ΓåÆ empty heatmap[0m
+    [32m  Γ£ö[0m[90m activity levels are between 0.0 and 1.0[0m
+    [32m  Γ£ö[0m[90m entries on the boundary (exactly 7 days ago) are excluded[0m
+    [32m  Γ£ö[0m[90m same participant in multiple entries ΓåÆ counts each participation[0m
+[0m    Activity Swimlanes (via buildDashboardData)[0m
+    [32m  Γ£ö[0m[90m empty tasks ΓåÆ swimlanes with empty task arrays[0m
+    [32m  Γ£ö[0m[90m tasks assigned to specific members ΓåÆ appear in correct swimlane[0m
+    [32m  Γ£ö[0m[90m tasks sorted by startDate within each swimlane[0m
+    [32m  Γ£ö[0m[90m tasks with no startedAt ΓåÆ startDate defaults to today[0m
+    [32m  Γ£ö[0m[90m tasks with completedAt ΓåÆ endDate populated[0m
+    [32m  Γ£ö[0m[90m tasks without completedAt ΓåÆ endDate is null[0m
+    [32m  Γ£ö[0m[90m members with no tasks ΓåÆ empty swimlane still present[0m
+    [32m  Γ£ö[0m[90m timeline task includes correct id, title, status[0m
+    [32m  Γ£ö[0m[90m tasks not assigned to any member ΓåÆ not in any swimlane[0m
+    [32m  Γ£ö[0m[90m no members ΓåÆ no swimlanes[0m
+    [32m  Γ£ö[0m[90m startDate and endDate are YYYY-MM-DD format[0m
+    [32m  Γ£ö[0m[90m multiple tasks per member with mixed statuses[0m
+[0m    buildDashboardData ΓÇö Full Pipeline[0m
+    [32m  Γ£ö[0m[90m empty everything ΓåÆ valid DashboardData structure[0m
+    [32m  Γ£ö[0m[90m decisions passed through unchanged[0m
+    [32m  Γ£ö[0m[90m all sub-builders compose correctly[0m
+    [32m  Γ£ö[0m[90m result conforms to DashboardData shape[0m
+    [32m  Γ£ö[0m[90m large dataset does not crash[0m
+[0m  AddMemberCommand[0m
+[0m    Command Registration[0m
+    [36m  - addMember command is registered when extension is active[0m
+    [32m  Γ£ö[0m[90m addMember command is declared in package.json[0m
+[0m    Role Quick Pick[0m
+    [36m  - quick pick items include all standard roles[0m
+    [36m  - selecting "Other..." triggers freeform input box for custom role[0m
+    [36m  - canceling role quick pick aborts without errors[0m
+[0m    Name Input[0m
+    [36m  - name input box appears after role selection[0m
+    [36m  - canceling name input aborts without errors[0m
+    [36m  - empty name is rejected or handled[0m
+[0m    File Creation[0m
+    [36m  - charter.md is created in .ai-team/agents/{lowercase-name}/[0m
+    [36m  - history.md is created alongside charter.md[0m
+    [36m  - team.md roster is updated with new member row[0m
+[0m    Content Verification[0m
+    [36m  - generated charter.md contains structured heading with name and role[0m
+    [36m  - generated history.md contains join date and role[0m
+    [36m  - team.md roster row includes charter path reference[0m
+[0m    No Workspace[0m
+    [36m  - shows error message when no workspace folder is open[0m
+[0m    Edge Cases[0m
+    [36m  - agent name with spaces is normalized to lowercase directory name[0m
+    [36m  - adding agent that already exists warns or handles gracefully[0m
+    [36m  - custom role via "Other..." produces correct charter content[0m
+[0m  Acceptance: Orchestration Logs ΓåÆ Tree View[0m
+[0m    data pipeline produces correct members and tasks[0m
+    [32m  Γ£ö[0m[90m all team.md members appear as squad members[0m
+    [32m  Γ£ö[0m[90m member roles come from team.md[0m
+    [32m  Γ£ö[0m[90m member in most recent log is working, others idle[0m
+    [32m  Γ£ö[0m[90m tasks are extracted from related issues in logs[0m
+[0m    tree view renders members directly at root[0m
+    [32m  Γ£ö[0m[90m root contains all team.md members[0m
+    [32m  Γ£ö[0m[90m all member items have itemType "member"[0m
+    [32m  Γ£ö[0m[90m member root items are collapsible[0m
+[0m    member nodes expose correct task children[0m
+    [32m  Γ£ö[0m[90m Alice has task children from log entry[0m
+    [32m  Γ£ö[0m[90m Carol has task children from her log entry[0m
+    [32m  Γ£ö[0m[90m Bob has no task children (not first participant)[0m
+[0m    task items have correct labels, icons, and commands[0m
+    [32m  Γ£ö[0m[90m task labels include issue number[0m
+    [32m  Γ£ö[0m[90m task items use tasklist icon[0m
+    [32m  Γ£ö[0m[90m task items have showWorkDetails command[0m
+    [32m  Γ£ö[0m[90m task command arguments contain task ID[0m
+    [32m  Γ£ö[0m[90m task items are not collapsible (leaf nodes)[0m
+    [32m  Γ£ö[0m[90m task description shows status[0m
+    [32m  Γ£ö[0m[90m task tooltips are MarkdownStrings[0m
+[0m    member item rendering[0m
+    [32m  Γ£ö[0m[90m working member (Carol) has sync~spin icon[0m
+    [32m  Γ£ö[0m[90m idle members (Alice, Bob) have person icon[0m
+    [32m  Γ£ö[0m[90m member descriptions include role and status[0m
+    [32m  Γ£ö[0m[90m member tooltips are MarkdownStrings[0m
+[0m    work details for pipeline-discovered tasks[0m
+    [32m  Γ£ö[0m[90m getWorkDetails returns task and member for log-derived task[0m
+    [32m  Γ£ö[0m[90m work details include related log entries[0m
+    [32m  Γ£ö[0m[90m getWorkDetails returns undefined for non-existent task[0m
+[0m    refresh propagates through pipeline[0m
+    [32m  Γ£ö[0m[90m refresh re-reads data from fixtures[0m
+    [32m  Γ£ö[0m[90m tree provider refresh fires change event[0m
+[92m [0m[32m 599 passing[0m[90m (1s)[0m
+[36m [0m[36m 39 pending[0m
+[31m  7 failing[0m
+[0m  1) SquadStatusBar
+       Tooltip Content
+         tooltip shows idle count:
+
+      [31mAssertionError [ERR_ASSERTION]: Tooltip should show idle count[0m
+      [32m+ expected[0m [31m- actual[0m
+
+      [31m-false[0m
+      [32m+true[0m
+      [0m[90m
+  	at Context.<anonymous> (d:\SquadUI\out\test\suite\squadStatusBar.test.js:276:20)
+[0m
+[0m  2) SkillCatalogService
+       parseSkillsShHtml()
+         extracts skill entries from HTML anchor tags:
+
+      [31mAssertionError [ERR_ASSERTION]: Should find at least 2 skills, found 0[0m
+      [32m+ expected[0m [31m- actual[0m
+
+      [31m-false[0m
+      [32m+true[0m
+      [0m[90m
+  	at Context.<anonymous> (d:\SquadUI\out\test\suite\skillCatalogService.test.js:367:20)
+  	at process.processImmediate (node:internal/timers:485:21)
+[0m
+[0m  3) SkillCatalogService
+       parseSkillsShHtml()
+         extracts nearby description from p/span tags:
+[0m[31m     AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+
+  assert.ok(skill)
+[0m[90m
+  	at Context.<anonymous> (d:\SquadUI\out\test\suite\skillCatalogService.test.js:400:20)
+  	at process.processImmediate (node:internal/timers:485:21)
+[0m
+[0m  4) SkillCatalogService
+       parseSkillsShHtml()
+         handles JSON-LD structured data:
+[0m[31m     AssertionError [ERR_ASSERTION]: Should extract from JSON-LD[0m[90m
+  	at Context.<anonymous> (d:\SquadUI\out\test\suite\skillCatalogService.test.js:415:20)
+  	at process.processImmediate (node:internal/timers:485:21)
+[0m
+[0m  5) SkillCatalogService
+       parseSkillsShHtml()
+         prepends https://skills.sh to relative URLs:
+[0m[31m     AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+
+  assert.ok(skill)
+[0m[90m
+  	at Context.<anonymous> (d:\SquadUI\out\test\suite\skillCatalogService.test.js:432:20)
+  	at process.processImmediate (node:internal/timers:485:21)
+[0m
+[0m  6) IssueDetailWebview
+       formatDateString()
+         returns raw string for invalid dates:
+
+      [31mAssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
++ actual - expected
+
++ 'Invalid Date'
+- 'not-a-date'
+[0m
+      [32m+ expected[0m [31m- actual[0m
+
+      [31m-Invalid Date[0m
+      [32m+not-a-date[0m
+      [0m[90m
+  	at Context.<anonymous> (d:\SquadUI\out\test\suite\issueDetailWebview.test.js:139:20)
+  	at process.processImmediate (node:internal/timers:485:21)
+[0m
+[0m  7) IssueDetailWebview
+       formatDateString()
+         returns raw string for empty date:
+
+      [31mAssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+
+'Invalid Date' !== ''
+[0m
+      [32m+ expected[0m [31m- actual[0m
+
+      [31m-Invalid Date[0m
+      [0m[90m
+  	at Context.<anonymous> (d:\SquadUI\out\test\suite\issueDetailWebview.test.js:144:20)
+  	at process.processImmediate (node:internal/timers:485:21)
+[0m
+Error: 7 tests failed.
+	at d:\SquadUI\out\test\suite\index.js:59:32
+	at done (d:\SquadUI\node_modules\mocha\lib\mocha.js:1000:7)
+[main 2026-02-15T17:59:24.476Z] Extension host with pid 32140 exited with code: 0, signal: unknown.
+Exit code:   1
+Failed to run tests: TestRunFailedError: Test run failed with code 1
+    at ChildProcess.onProcessClosed (D:\SquadUI\node_modules\@vscode\test-electron\out\runTest.js:110:24)
+    at ChildProcess.emit (node:events:519:28)
+    at ChildProcess._handle.onexit (node:internal/child_process:293:12) {
+  code: 1,
+  signal: undefined
+}

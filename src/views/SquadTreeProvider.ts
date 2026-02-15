@@ -3,7 +3,6 @@
  */
 
 import * as vscode from 'vscode';
-import * as path from 'path';
 import { SquadMember, Task, GitHubIssue, Skill, DecisionEntry, IGitHubIssuesService } from '../models';
 import { SquadDataProvider } from '../services/SquadDataProvider';
 import { SkillCatalogService } from '../services/SkillCatalogService';
@@ -58,25 +57,15 @@ export class TeamTreeProvider implements vscode.TreeDataProvider<SquadTreeItem> 
 
     async getChildren(element?: SquadTreeItem): Promise<SquadTreeItem[]> {
         if (!element) {
-            const members = await this.getSquadMemberItems();
-            const activityHeader = new SquadTreeItem(
-                'Recent Activity',
-                vscode.TreeItemCollapsibleState.Collapsed,
-                'section'
-            );
-            activityHeader.iconPath = new vscode.ThemeIcon('history');
-            return [...members, activityHeader];
-        }
-
-        if (element.itemType === 'section' && element.label === 'Recent Activity') {
-            return this.getRecentActivityItems();
+            return this.getSquadMemberItems();
         }
 
         if (element.itemType === 'member' && element.memberId) {
             const tasks = await this.getTaskItems(element.memberId);
             const issues = await this.getIssueItems(element.memberId);
             const closedIssues = await this.getClosedIssueItems(element.memberId);
-            return [...tasks, ...issues, ...closedIssues];
+            const logEntries = await this.getMemberLogEntries(element.memberId);
+            return [...tasks, ...issues, ...closedIssues, ...logEntries];
         }
 
         return [];
@@ -306,42 +295,40 @@ export class TeamTreeProvider implements vscode.TreeDataProvider<SquadTreeItem> 
     }
 
     /**
-     * Gets recent activity log entries as tree items.
+     * Gets recent log entries where the given member was a participant.
      */
-    private async getRecentActivityItems(): Promise<SquadTreeItem[]> {
+    private async getMemberLogEntries(memberId: string): Promise<SquadTreeItem[]> {
         const workspaceRoot = this.dataProvider.getWorkspaceRoot();
         try {
-            const logFiles = await this.orchestrationLogService.discoverLogFiles(workspaceRoot);
-            // Sort descending by filename (most recent first) and take last 10
-            const recentFiles = logFiles.sort().reverse().slice(0, 10);
+            const entries = await this.orchestrationLogService.parseAllLogs(workspaceRoot);
+            // Filter to entries where this member participated, take most recent 5
+            const memberLower = memberId.toLowerCase();
+            const memberEntries = entries
+                .filter(e => e.participants.some(p => p.toLowerCase() === memberLower))
+                .slice(0, 5);
 
-            return recentFiles.map(filePath => {
-                const filename = path.basename(filePath, '.md');
-                // Parse filename: YYYY-MM-DD-topic or YYYY-MM-DDThhmm-topic
-                const match = filename.match(/^(\d{4}-\d{2}-\d{2})(?:T\d{4})?-(.+)$/);
-                const date = match?.[1] ?? '';
-                const topic = match?.[2]?.replace(/-/g, ' ') ?? filename;
-
+            return memberEntries.map(entry => {
+                const topic = entry.topic.replace(/-/g, ' ');
                 const item = new SquadTreeItem(
                     topic.length > 60 ? topic.substring(0, 57) + '...' : topic,
                     vscode.TreeItemCollapsibleState.None,
                     'log-entry',
+                    memberId,
                     undefined,
-                    undefined,
-                    filePath
+                    undefined
                 );
                 item.iconPath = new vscode.ThemeIcon('notebook');
-                item.description = date;
-                item.tooltip = `${topic}\n${date}`;
+                item.description = entry.date;
+                item.tooltip = `${topic}\n${entry.date}`;
                 item.command = {
                     command: 'squadui.openLogEntry',
                     title: 'Open Log Entry',
-                    arguments: [filePath]
+                    arguments: [entry.date, entry.topic]
                 };
                 return item;
             });
         } catch (error) {
-            console.warn('SquadUI: Failed to load recent activity', error);
+            console.warn('SquadUI: Failed to load log entries for member', memberId, error);
             return [];
         }
     }

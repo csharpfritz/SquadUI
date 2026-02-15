@@ -34,14 +34,13 @@ suite('TeamTreeProvider Test Suite', () => {
             assert.strictEqual(members[2].label, 'Linus');
         });
 
-        test('root items include members and Recent Activity section', async () => {
+        test('root items are all members (no section nodes)', async () => {
             const children = await provider.getChildren();
             const members = children.filter(c => c.itemType === 'member');
             const sections = children.filter(c => c.itemType === 'section');
 
             assert.strictEqual(members.length, 3);
-            assert.strictEqual(sections.length, 1);
-            assert.strictEqual(sections[0].label, 'Recent Activity');
+            assert.strictEqual(sections.length, 0);
         });
 
         test('root member items are collapsible', async () => {
@@ -253,170 +252,63 @@ suite('TeamTreeProvider Test Suite', () => {
         });
     });
 
-    // ─── Recent Activity Section Tests ──────────────────────────────────────
-    // NOTE: These tests are for the upcoming "Recent Activity" feature
-    // that Rusty is adding to show log entries in the sidebar.
+    // ─── Per-Member Activity Tests ──────────────────────────────────────
+    // Activity log entries appear as children under each team member,
+    // filtered by participant matching from orchestration logs.
 
-    suite('Recent Activity Section (for future feature)', () => {
+    suite('Per-Member Activity (log entries under members)', () => {
 
-        test('getChildren at root returns Recent Activity section (when implemented)', async function() {
+        test('member children include log-entry items when logs exist', async function() {
             const children = await provider.getChildren();
-            const recentActivity = children.find(c => c.label === 'Recent Activity');
-            
-            if (recentActivity) {
-                assert.strictEqual(recentActivity.itemType, 'section');
-            }
+            const members = children.filter(c => c.itemType === 'member');
+            if (members.length === 0) { this.skip(); }
+
+            const memberChildren = await provider.getChildren(members[0]);
+            const logEntries = memberChildren.filter(c => c.itemType === 'log-entry');
+            // Log entries may or may not exist depending on test fixture
+            assert.ok(Array.isArray(logEntries), 'Should return array');
         });
 
-        test('Recent Activity section is collapsible (when implemented)', async function() {
+        test('log-entry items are not collapsible', async function() {
             const children = await provider.getChildren();
-            const recentActivity = children.find(c => c.label === 'Recent Activity');
-            
-            if (recentActivity) {
+            const members = children.filter(c => c.itemType === 'member');
+            if (members.length === 0) { this.skip(); }
+
+            const memberChildren = await provider.getChildren(members[0]);
+            const logEntries = memberChildren.filter(c => c.itemType === 'log-entry');
+            for (const entry of logEntries) {
                 assert.strictEqual(
-                    recentActivity.collapsibleState,
-                    vscode.TreeItemCollapsibleState.Collapsed
+                    entry.collapsibleState,
+                    vscode.TreeItemCollapsibleState.None,
+                    'Log entries should not be collapsible'
                 );
             }
         });
 
-        test('expanding Recent Activity returns log entry items (when implemented)', async function() {
-            this.skip(); // Skip until feature is implemented
-            
-            const sectionItem = new SquadTreeItem(
-                'Recent Activity',
-                vscode.TreeItemCollapsibleState.Collapsed,
-                'section'
-            );
-            
-            const logItems = await provider.getChildren(sectionItem);
-            
-            assert.ok(Array.isArray(logItems), 'Should return array of log items');
-        });
+        test('log-entry items have notebook icon', async function() {
+            const children = await provider.getChildren();
+            const members = children.filter(c => c.itemType === 'member');
+            if (members.length === 0) { this.skip(); }
 
-        test('log entry items have correct labels with date and topic (when implemented)', async function() {
-            this.skip(); // Skip until feature is implemented
-            
-            const sectionItem = new SquadTreeItem(
-                'Recent Activity',
-                vscode.TreeItemCollapsibleState.Collapsed,
-                'section'
-            );
-            
-            const logItems = await provider.getChildren(sectionItem);
-            
-            if (logItems.length > 0) {
-                const firstLog = logItems[0];
-                // Expected format: "2026-02-15: topic-name"
-                assert.ok(firstLog.label.includes(':'), 'Log label should include date:topic format');
+            const memberChildren = await provider.getChildren(members[0]);
+            const logEntries = memberChildren.filter(c => c.itemType === 'log-entry');
+            for (const entry of logEntries) {
+                assert.ok(entry.iconPath instanceof vscode.ThemeIcon);
+                assert.strictEqual((entry.iconPath as vscode.ThemeIcon).id, 'notebook');
             }
         });
 
-        test('log entry items are not collapsible (when implemented)', async function() {
-            this.skip(); // Skip until feature is implemented
-            
-            const sectionItem = new SquadTreeItem(
-                'Recent Activity',
-                vscode.TreeItemCollapsibleState.Collapsed,
-                'section'
-            );
-            
-            const logItems = await provider.getChildren(sectionItem);
-            
-            if (logItems.length > 0) {
-                logItems.forEach(item => {
-                    assert.strictEqual(
-                        item.collapsibleState,
-                        vscode.TreeItemCollapsibleState.None,
-                        'Log items should not be collapsible'
-                    );
-                });
+        test('no Recent Activity section node at root', async () => {
+            const children = await provider.getChildren();
+            const recentActivity = children.find(c => c.label === 'Recent Activity');
+            assert.strictEqual(recentActivity, undefined, 'Should not have Recent Activity section at root');
+        });
+
+        test('root returns only member items', async () => {
+            const children = await provider.getChildren();
+            for (const child of children) {
+                assert.strictEqual(child.itemType, 'member', `Expected member but got ${child.itemType}`);
             }
-        });
-
-        test('log entry items have history icon (when implemented)', async function() {
-            this.skip(); // Skip until feature is implemented
-            
-            const sectionItem = new SquadTreeItem(
-                'Recent Activity',
-                vscode.TreeItemCollapsibleState.Collapsed,
-                'section'
-            );
-            
-            const logItems = await provider.getChildren(sectionItem);
-            
-            if (logItems.length > 0) {
-                const firstLog = logItems[0];
-                assert.ok(firstLog.iconPath instanceof vscode.ThemeIcon);
-                assert.strictEqual((firstLog.iconPath as vscode.ThemeIcon).id, 'history');
-            }
-        });
-
-        test('log entry items have tooltip with summary (when implemented)', async function() {
-            this.skip(); // Skip until feature is implemented
-            
-            const sectionItem = new SquadTreeItem(
-                'Recent Activity',
-                vscode.TreeItemCollapsibleState.Collapsed,
-                'section'
-            );
-            
-            const logItems = await provider.getChildren(sectionItem);
-            
-            if (logItems.length > 0) {
-                const firstLog = logItems[0];
-                assert.ok(firstLog.tooltip instanceof vscode.MarkdownString);
-            }
-        });
-
-        test('log entry items have command to open log file (when implemented)', async function() {
-            this.skip(); // Skip until feature is implemented
-            
-            const sectionItem = new SquadTreeItem(
-                'Recent Activity',
-                vscode.TreeItemCollapsibleState.Collapsed,
-                'section'
-            );
-            
-            const logItems = await provider.getChildren(sectionItem);
-            
-            if (logItems.length > 0) {
-                const firstLog = logItems[0];
-                assert.ok(firstLog.command);
-                assert.strictEqual(firstLog.command!.command, 'squadui.openLogFile');
-            }
-        });
-
-        test('Recent Activity shows only recent logs (last 7 days) (when implemented)', async function() {
-            this.skip(); // Skip until feature is implemented
-            
-            const sectionItem = new SquadTreeItem(
-                'Recent Activity',
-                vscode.TreeItemCollapsibleState.Collapsed,
-                'section'
-            );
-            
-            await provider.getChildren(sectionItem);
-            
-            // All log items should be from within last 7 days
-            // This would need actual date validation when implemented
-            assert.ok(true, 'Placeholder for date filtering validation');
-        });
-
-        test('Recent Activity shows empty state when no logs (when implemented)', async function() {
-            this.skip(); // Skip until feature is implemented
-            
-            const sectionItem = new SquadTreeItem(
-                'Recent Activity',
-                vscode.TreeItemCollapsibleState.Collapsed,
-                'section'
-            );
-            
-            await provider.getChildren(sectionItem);
-            
-            // Empty state might return empty array or a single "No recent activity" item
-            // Placeholder assertion for when feature is implemented
-            assert.ok(true, 'Placeholder for empty state validation');
         });
     });
 });

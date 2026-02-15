@@ -2,7 +2,7 @@
  * Service for browsing and downloading skills from external catalogs.
  *
  * Two sources:
- * 1. awesome-copilot — bradygaster/awesome-copilot GitHub repo README
+ * 1. awesome-copilot — github/awesome-copilot GitHub repo docs/README.skills.md
  * 2. skills.sh — https://skills.sh leaderboard page
  *
  * Decoupled from VS Code — uses Node's built-in https module and fs.
@@ -147,49 +147,79 @@ export class SkillCatalogService {
     // ─── Private: Awesome-Copilot Fetching ──────────────────────────────────
 
     /**
-     * Fetches and parses the awesome-copilot README from GitHub raw content.
+     * Fetches and parses the awesome-copilot skills page from GitHub raw content.
      * Throws on network failure.
      */
     private async fetchAwesomeCopilot(): Promise<Skill[]> {
-        const url = 'https://raw.githubusercontent.com/github/awesome-copilot/main/README.md';
+        const url = 'https://raw.githubusercontent.com/github/awesome-copilot/main/docs/README.skills.md';
         const readme = await this.httpsGet(url);
         return this.parseAwesomeReadme(readme);
     }
 
     /**
-     * Parses the awesome-copilot README markdown to extract skill entries.
-     * Looks for markdown list items with links: `- [Name](url) - Description`
+     * Parses the awesome-copilot skills markdown to extract skill entries.
+     * Handles both table rows: `| [Name](url) | Description | Assets |`
+     * and list items: `- [Name](url) - Description`
      */
     parseAwesomeReadme(markdown: string): Skill[] {
         const skills: Skill[] = [];
         const lines = markdown.split('\n');
 
-        // Match markdown list items with links: - [Name](URL) - Description
-        // Also handles * bullet style
+        // Table row: | [Name](../skills/name/SKILL.md) | Description | Assets |
+        const tableRowRegex = /^\|\s*\[([^\]]+)\]\(([^)]+)\)\s*\|\s*(.*?)\s*\|/;
+        // List item: - [Name](url) - Description
         const linkItemRegex = /^[\s]*[-*]\s+\[([^\]]+)\]\(([^)]+)\)\s*[-–—]?\s*(.*)/;
 
         for (const line of lines) {
-            const match = linkItemRegex.exec(line);
-            if (!match) {
+            // Skip table header separator rows
+            if (/^\|\s*-+\s*\|/.test(line)) {
                 continue;
             }
 
-            const name = match[1].trim();
-            const url = match[2].trim();
-            const description = match[3].trim();
+            const tableMatch = tableRowRegex.exec(line);
+            if (tableMatch) {
+                const name = tableMatch[1].trim();
+                let relativeUrl = tableMatch[2].trim();
+                // Strip HTML tags from description (e.g., <br />)
+                const description = tableMatch[3].replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
 
-            // Skip non-skill entries (e.g., "Contributing", header links)
-            if (!description || name.length < 2) {
+                if (!description || name.length < 2) {
+                    continue;
+                }
+
+                // Convert relative paths to GitHub URLs
+                const url = relativeUrl.startsWith('../skills/')
+                    ? `https://github.com/github/awesome-copilot/tree/main/skills/${relativeUrl.replace('../skills/', '').replace('/SKILL.md', '')}`
+                    : relativeUrl;
+
+                skills.push({
+                    name,
+                    description,
+                    source: 'awesome-copilot',
+                    url,
+                    confidence: 'high',
+                });
                 continue;
             }
 
-            skills.push({
-                name,
-                description,
-                source: 'awesome-copilot',
-                url,
-                confidence: 'high',
-            });
+            const listMatch = linkItemRegex.exec(line);
+            if (listMatch) {
+                const name = listMatch[1].trim();
+                const url = listMatch[2].trim();
+                const description = listMatch[3].trim();
+
+                if (!description || name.length < 2) {
+                    continue;
+                }
+
+                skills.push({
+                    name,
+                    description,
+                    source: 'awesome-copilot',
+                    url,
+                    confidence: 'high',
+                });
+            }
         }
 
         return skills;
@@ -290,12 +320,14 @@ export class SkillCatalogService {
 
         const ghRepo = this.parseGitHubRepoUrl(skill.url);
         if (ghRepo) {
-            // Try common skill file paths in priority order
-            const candidatePaths = [
-                '.github/copilot-instructions.md',
-                'SKILL.md',
-                'README.md',
-            ];
+            // If URL has a subpath (e.g., /tree/main/skills/agentic-eval), try SKILL.md there first
+            const subpath = this.extractGitHubSubpath(skill.url);
+            const candidatePaths: string[] = [];
+            if (subpath) {
+                candidatePaths.push(`${subpath}/SKILL.md`, `${subpath}/README.md`);
+            }
+            candidatePaths.push('.github/copilot-instructions.md', 'SKILL.md', 'README.md');
+
             for (const filePath of candidatePaths) {
                 const rawUrl = `https://raw.githubusercontent.com/${ghRepo.owner}/${ghRepo.repo}/main/${filePath}`;
                 try {
@@ -313,6 +345,15 @@ export class SkillCatalogService {
         } catch {
             return undefined;
         }
+    }
+
+    /**
+     * Extracts the subpath from a GitHub tree/blob URL.
+     * E.g., https://github.com/owner/repo/tree/main/skills/foo → 'skills/foo'
+     */
+    private extractGitHubSubpath(url: string): string | undefined {
+        const match = /^https?:\/\/github\.com\/[^/]+\/[^/]+\/(?:tree|blob)\/[^/]+\/(.+)$/.exec(url);
+        return match?.[1];
     }
 
     /**

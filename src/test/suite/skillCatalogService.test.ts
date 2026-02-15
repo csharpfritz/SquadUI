@@ -582,6 +582,86 @@ suite('SkillCatalogService', () => {
         });
     });
 
+    suite('parseAwesomeReadme() — Table Format Tests', () => {
+        test('extracts skill entries from markdown table rows', () => {
+            const markdown = [
+                '| Name | Description | Bundled Assets |',
+                '| ---- | ----------- | -------------- |',
+                '| [agentic-eval](../skills/agentic-eval/SKILL.md) | Patterns for evaluating AI agent outputs | None |',
+                '| [aspire](../skills/aspire/SKILL.md) | Aspire skill covering the Aspire CLI | `references/arch.md` |',
+            ].join('\n');
+
+            const skills = service.parseAwesomeReadme(markdown);
+
+            assert.strictEqual(skills.length, 2);
+            assert.strictEqual(skills[0].name, 'agentic-eval');
+            assert.strictEqual(skills[0].description, 'Patterns for evaluating AI agent outputs');
+            assert.strictEqual(skills[0].source, 'awesome-copilot');
+            assert.strictEqual(skills[0].url, 'https://github.com/github/awesome-copilot/tree/main/skills/agentic-eval');
+        });
+
+        test('converts relative skill URLs to GitHub URLs', () => {
+            const markdown = '| [gh-cli](../skills/gh-cli/SKILL.md) | GitHub CLI reference | None |\n';
+
+            const skills = service.parseAwesomeReadme(markdown);
+
+            assert.strictEqual(skills.length, 1);
+            assert.strictEqual(skills[0].url, 'https://github.com/github/awesome-copilot/tree/main/skills/gh-cli');
+        });
+
+        test('strips HTML tags from table descriptions', () => {
+            const markdown = '| [create-form](../skills/create-form/SKILL.md) | Create forms<br />with validation | None |\n';
+
+            const skills = service.parseAwesomeReadme(markdown);
+
+            assert.strictEqual(skills.length, 1);
+            assert.ok(!skills[0].description.includes('<br'), 'should not contain HTML tags');
+            assert.ok(skills[0].description.includes('Create forms'), 'should have description text');
+        });
+
+        test('skips table header separator rows', () => {
+            const markdown = [
+                '| Name | Description | Assets |',
+                '| ---- | ----------- | ------ |',
+            ].join('\n');
+
+            const skills = service.parseAwesomeReadme(markdown);
+
+            assert.strictEqual(skills.length, 0);
+        });
+
+        test('skips table entries without description', () => {
+            const markdown = '| [no-desc](../skills/no-desc/SKILL.md) |  | None |\n';
+
+            const skills = service.parseAwesomeReadme(markdown);
+
+            assert.strictEqual(skills.length, 0);
+        });
+
+        test('handles mixed table and list formats', () => {
+            const markdown = [
+                '| [table-skill](../skills/table-skill/SKILL.md) | From table | None |',
+                '- [list-skill](https://github.com/example/list) - From list',
+            ].join('\n');
+
+            const skills = service.parseAwesomeReadme(markdown);
+
+            assert.strictEqual(skills.length, 2);
+            assert.strictEqual(skills[0].name, 'table-skill');
+            assert.strictEqual(skills[1].name, 'list-skill');
+        });
+
+        test('preserves absolute URLs in table rows', () => {
+            const markdown = '| [ext-skill](https://github.com/other/repo) | External skill | None |\n';
+
+            const skills = service.parseAwesomeReadme(markdown);
+
+            assert.strictEqual(skills.length, 1);
+            assert.strictEqual(skills[0].url, 'https://github.com/other/repo');
+        });
+    });
+
+
     suite('parseSkillsShHtml() — Regression Tests (Fixed Parser)', () => {
         test('parses leaderboard entry with h3 skill name and p repo path', () => {
             const html = `
