@@ -46,9 +46,14 @@ export function registerAddMemberCommand(
             role = custom.trim();
         }
 
-        // Delegate to Copilot Chat
+        // Delegate to Copilot Chat in agent mode with Squad participant
         const query = `@squad add a new team member with the role: ${role}`;
-        await vscode.commands.executeCommand('workbench.action.chat.open', { query });
+        await vscode.commands.executeCommand('workbench.action.chat.open', {
+            query,
+            isPartialQuery: false,
+            agentId: 'github.copilot.chat',
+            agentMode: 'agent',
+        });
         
         // We don't call onMemberAdded() here because the action is async in the chat.
         // The file watcher will pick up changes when the agent completes the task.

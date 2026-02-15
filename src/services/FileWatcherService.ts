@@ -1,6 +1,7 @@
 /**
- * Service for watching orchestration log file changes.
- * Uses VS Code's FileSystemWatcher API internally but exposes a testable interface.
+ * Service for watching .ai-team file changes (team roster, charters, decisions,
+ * orchestration logs, skills). Uses VS Code's FileSystemWatcher API internally
+ * but exposes a testable interface.
  */
 
 import * as vscode from 'vscode';
@@ -24,12 +25,13 @@ export interface CacheInvalidator {
 }
 
 /**
- * Watches the orchestration log directory for file changes.
- * Debounces rapid changes to prevent thrashing.
+ * Watches the .ai-team directory for file changes (team.md, charters,
+ * decisions, orchestration logs, skills). Debounces rapid changes to
+ * prevent thrashing.
  */
 export class FileWatcherService implements vscode.Disposable {
     private static readonly DEFAULT_DEBOUNCE_MS = 300;
-    private static readonly WATCH_PATTERN = '**/.ai-team/orchestration-log/**/*.md';
+    private static readonly WATCH_PATTERN = '**/.ai-team/**/*.md';
 
     private watcher: vscode.FileSystemWatcher | undefined;
     private debounceTimer: NodeJS.Timeout | undefined;
@@ -48,7 +50,7 @@ export class FileWatcherService implements vscode.Disposable {
     }
 
     /**
-     * Starts watching for orchestration log changes.
+     * Starts watching for .ai-team file changes.
      * Safe to call multiple times; subsequent calls are no-ops.
      */
     start(): void {
