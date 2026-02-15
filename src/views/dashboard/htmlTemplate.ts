@@ -526,9 +526,9 @@ export function getDashboardHtml(data: DashboardData): string {
             container.innerHTML = filtered.map(d => {
                 // Simple markdown strip (very basic)
                 const plainContent = d.content
-                    .replace(/#+\s/g, '')
-                    .replace(/[*_\`]/g, '')
-                    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1');
+                    .replace(/#+\\s/g, '')
+                    .replace(/[*_\\\`]/g, '')
+                    .replace(/\\[([^\\]]+)\\]\\([^)]+\\)/g, '$1');
 
                 return \`
                     <div class="decision-card" title="View \${d.title}">
