@@ -141,3 +141,8 @@ Created `src/services/SkillCatalogService.ts` (issue #38) — a unified service 
 ### 2026-02-14 — Visibility Features Proposals Finalized
 
 📌 Team update (2026-02-14): 10 PM visibility and UI feature proposals generated (Velocity Dashboard, Team Health Heatmap, Decision Browser, Ceremony Timeline, Blocker Visualizer, Activity Timeline, Status Bar Integration, Badge Decorations, Performance Dashboard, Skill Matrix). Proposals prioritized into Quick Wins (Status Bar, Badges) and High Impact (Timeline, Performance Dashboard). Ready for prioritization and implementation assignment. — decided by Danny, Rusty
+
+### 2026-02-15: Team Update — Add Skill Workflow Critical Issues
+
+📌 **Team decision merged (2026-02-15):** Skills install as metadata stubs, not actual content. SkillCatalogService never fetches skill.content from source repos. Action: Implement content fetching from skill.url to download SKILL.md/README.md before install. — decided by Rusty/Danny
+

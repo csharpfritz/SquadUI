@@ -1260,3 +1260,131 @@ DecisionService has bitten us twice already. These tests:
 - All known date extraction and subsection filtering patterns covered
 - DecisionService now has comprehensive test coverage
 
+
+---
+
+## 2026-02-15: User directive — testing policy
+
+**By:** Jeff (Jeffrey T. Fritz) (via Copilot)
+
+**What:** Always write tests alongside new features. When bugs are reported, write a regression test for every bug so we know it's fixed when the test passes.
+
+**Why:** User request — captured for team memory
+
+---
+
+## Test Coverage & Dashboard Assessment
+
+**Date:** 2026-02-15  
+**Author:** Danny (Lead)  
+**Requested by:** Jeffrey T. Fritz  
+**Status:** Assessment Complete
+
+### Context
+
+Jeff asked: "What tests are we missing? What are we missing from the dashboard?" This is a full audit of test coverage gaps and dashboard completeness.
+
+### Test Coverage Findings
+
+#### Priority 1 — Pure Logic, Zero VS Code Dependencies (Easy Wins)
+
+| File | Key Functions Needing Tests | Test Difficulty |
+|------|---------------------------|----------------|
+| DashboardDataBuilder.ts | uildVelocityTimeline(), uildActivityHeatmap(), uildActivitySwimlanes(), 	askToTimelineTask() | Easy — pure functions |
+| emoveMemberCommand.ts | parseMemberRows() (exported for testing) | Easy — file parsing |
+| SquadStatusBar.ts | getHealthIcon() logic (ratio-based emoji selection) | Easy — pure logic |
+| IssueDetailWebview.ts | getContrastColor(), ormatDateString(), scapeHtml() | Easy — pure logic |
+
+#### Priority 2 — Requires Mocking but High Value
+
+| File | Key Functions Needing Tests | Notes |
+|------|---------------------------|-------|
+| FileWatcherService.ts | start(), stop(), onFileChange(), debounce behavior, egisterCacheInvalidator() | Mock scode.workspace.createFileSystemWatcher |
+| SquadDashboardWebview.ts | show(), dispose(), message handling (openDecision, openTask, openMember) | Mock scode.window.createWebviewPanel |
+| initSquadCommand.ts | Terminal creation, close listener callback | Mock scode.window.createTerminal |
+
+#### Priority 3 — Recently Changed Without Tests (Jeff's Regression Rule)
+
+| Commit | File Changed | Missing Test |
+|--------|-------------|-------------|
+| 1a8279 | htmlTemplate.ts | Click handler message passing |
+| 7da4364 | htmlTemplate.ts | Decision sort order in rendered output |
+| 39e3f8 | OrchestrationLogService.ts | Cross-project task extraction |
+
+### Dashboard Findings
+
+#### What's Working ✅
+- Three tabs: Velocity, Activity, Decisions
+- Decisions sorted most-recent first (Jeff's request)
+- Clickable entries: decision cards → file, tasks → work details, members → charter
+- Empty states for all panels
+- Canvas colors resolved from VS Code theme variables
+- Axis labels on velocity chart (Y: 0/mid/max, X: MM/DD dates)
+- Search/filter on Decisions tab
+
+#### What's Missing or Incomplete
+1. **No summary/overview panel** — No at-a-glance stats (total members, active count, tasks completed this week)
+2. **No loading state** — Dashboard shows nothing while data loads; should show skeleton or spinner
+3. **Heatmap lacks numeric context** — Activity bars show relative fill but no absolute numbers (e.g., "participated in 5 sessions")
+4. **No tab state persistence** — Switching away and back always resets to Velocity tab
+5. **No refresh button** — Dashboard only updates on open; no way to manually refresh without closing/reopening
+
+### Recommendation
+
+**Next sprint test work (v0.7.0):**
+1. DashboardDataBuilder tests first — highest ROI, zero mocking needed
+2. StatusBar + IssueDetailWebview pure logic tests — quick wins
+3. FileWatcherService debounce tests — important for reliability
+4. Regression tests for recent dashboard changes
+
+**Dashboard improvements for Jeff to prioritize:**
+- Loading state (small effort, big UX impact)
+- Summary stats panel (medium effort, high value for at-a-glance monitoring)
+- Heatmap numeric labels (small effort)
+
+### Impact
+
+This assessment should drive v0.7.0 test hardening sprint and dashboard polish backlog. All findings are documented for the team.
+
+---
+
+## Add Skill Workflow — Investigation Report
+
+**Date:** 2026-02-15
+**Author:** Rusty
+**Status:** Investigation complete — findings for team review
+
+### Summary
+
+End-to-end investigation of the squadui.addSkill command. The core 3-step QuickPick flow is solid and well-structured. Error handling is good. However, there are significant gaps in what actually gets installed and how duplicates are handled.
+
+### Critical Findings
+
+#### 1. Skills install as metadata stubs, not actual content
+downloadSkill() in SkillCatalogService.ts:88-98 checks skill.content but catalog entries from etchAwesomeCopilot() and etchSkillsSh() never populate the content field. The result: every installed skill is just a stub with a name, description, and source link. The user thinks they're installing a skill but they're getting a bookmark.
+
+**Recommendation:** Follow skill.url to fetch actual skill content (README.md or SKILL.md) from the source repo before writing to disk.
+
+#### 2. No duplicate/overwrite protection
+downloadSkill() calls s.mkdirSync + s.writeFileSync unconditionally. If a skill with the same slug already exists, it's silently overwritten with no warning. The user could lose local customizations.
+
+**Recommendation:** Check if slug directory exists, warn user, offer to skip or overwrite.
+
+#### 3. No skill preview before install
+Users see only 
+ame + one-line description in QuickPick. No way to read what the skill actually does before committing.
+
+**Recommendation:** Add a "Preview" option alongside "Install" in the confirmation step, or use a QuickPick with detail panels.
+
+### Action Items for Team
+
+1. **Linus (Backend):** Implement content fetching from skill.url — follow GitHub repo links to download actual SKILL.md/README.md content
+2. **Rusty (Extension):** Add duplicate detection in addSkillCommand, add preview webview/markdown preview step
+3. **Danny (Lead):** Prioritize these as v0.6.0 or v0.7.0 items
+
+### Files Referenced
+- src/commands/addSkillCommand.ts — command flow
+- src/services/SkillCatalogService.ts — service layer
+- src/views/SquadTreeProvider.ts — SkillsTreeProvider
+- src/extension.ts:162-166 — registration
+- package.json:90-94, 132-135 — manifest entries

@@ -9,6 +9,34 @@
 
 <!-- Append new learnings below. Each entry is something lasting about the project. -->
 
+### 2026-02-15: Add Skill Workflow — Deep Investigation
+
+#### Architecture
+- **Command:** `squadui.addSkill` registered in `src/commands/addSkillCommand.ts:38`, wired in `src/extension.ts:162-166`
+- **Trigger points:** Command Palette (no `when: false` gate) + `$(add)` button in Skills panel toolbar (`package.json:132-135`)
+- **No keybinding** assigned for addSkill
+- **Flow:** 3-step QuickPick → Source selection → Search/Browse → Confirm & Install
+- **Service layer:** `SkillCatalogService` handles fetch, search, download, dedup, parsing
+- **Sources:** awesome-copilot (GitHub README parsing) and skills.sh (HTML scraping)
+- **Install target:** `.ai-team/skills/{slug}/SKILL.md`
+- **Tree refresh:** `onSkillAdded` callback fires `skillsProvider.refresh()` after install
+
+#### UX Findings
+1. **No duplicate check:** `downloadSkill()` (`SkillCatalogService.ts:88-98`) silently overwrites existing skills — no warning to user
+2. **No content download:** Skills from catalogs have no `content` field populated — only metadata stubs get written (name, description, source link). The skill's actual instructions are never fetched from the source URL.
+3. **skills.sh parsing fragile:** HTML scraping (`parseSkillsShHtml`) relies on generic anchor+description regex patterns that may produce low-confidence junk entries
+4. **Search is client-side only:** `searchSkills()` fetches entire catalog then filters locally — no server-side search
+5. **Confirmation step uses QuickPick** instead of a modal — easy to accidentally dismiss
+6. **No skill detail preview** before install — user only sees name + one-line description in QuickPick
+
+#### Missing Features
+- **No duplicate/overwrite guard** — should warn if skill slug already exists on disk
+- **No actual content fetching** — should follow `skill.url` to download real skill instructions
+- **No "preview" step** — no way to read skill details before committing to install
+- **No catalog browsing with pagination** — all results dumped into one QuickPick
+- **No remove-from-QuickPick** for already-installed skills
+- **No offline/cache mode** — every browse re-fetches from network
+
 ### 2026-02-15: Add Skill Feature QA & Re-enabled
 - **QA completed:** Reviewed Add Skill command (#40) and SkillCatalogService end-to-end
 - **Error handling improved:** Changed service layer to throw exceptions on network failures instead of returning empty arrays, allowing command layer to show appropriate error messages to users
@@ -42,3 +70,9 @@ The following entries document foundational work, integrations, and architectura
 - Sidebar reorganization into three views (Team, Skills, Decisions)
 
 All foundational code and team decisions from this period are implemented in the codebase and referenced in .ai-team/decisions.md. See commit history for technical details.
+### 2026-02-15: Team Update — Add Skill Workflow Findings & User Directive
+
+📌 **Team decision merged (2026-02-15):** User testing directive: always write tests alongside new features. Write regression tests for every bug so we know it's fixed when test passes. — decided by Jeff
+
+📌 **Team investigation completed (2026-02-15):** Add Skill workflow has two critical gaps: (1) No duplicate/overwrite protection — skills silently overwrite existing ones, (2) No preview before install — users only see name + one-line description. Action: Add duplicate detection to addSkillCommand with user warning, add preview webview/markdown preview step. — decided by Rusty
+

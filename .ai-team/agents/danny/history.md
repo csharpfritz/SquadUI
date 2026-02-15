@@ -98,3 +98,44 @@
 📌 Team update (2026-02-15): Dashboard decisions sort order — decisions list on dashboard should be sorted most-recent first — decided by Jeffrey T. Fritz
 
 📌 Team update (2026-02-15): Add Skill Error Handling — network failures now throw exceptions for better UX instead of silent empty arrays — decided by Rusty
+
+### 2026-02-15: Test Coverage & Dashboard Assessment
+
+**Requested by:** Jeff — "What tests are we missing? What are we missing from the dashboard?"
+
+**Test Coverage Gaps Identified:**
+
+Files with NO test coverage:
+- `src/views/dashboard/DashboardDataBuilder.ts` — Zero tests. Contains `buildVelocityTimeline()`, `buildActivityHeatmap()`, `buildActivitySwimlanes()`, `taskToTimelineTask()`. All are pure logic, very testable.
+- `src/views/dashboard/htmlTemplate.ts` — Zero tests for `getDashboardHtml()`. Template rendering, decision sorting, click handler wiring.
+- `src/views/SquadDashboardWebview.ts` — Zero tests. `show()`, `dispose()`, `createPanel()`, `updateContent()`, message handling.
+- `src/views/IssueDetailWebview.ts` — Zero tests. HTML generation, `getContrastColor()`, `formatDateString()`, `escapeHtml()`.
+- `src/views/SquadStatusBar.ts` — Zero tests. `update()`, `getHealthIcon()`, `startPolling()`, `stopPolling()`, `dispose()`.
+- `src/commands/initSquadCommand.ts` — Zero tests. Terminal creation, `onDidCloseTerminal` listener.
+- `src/commands/removeMemberCommand.ts` — Zero tests. `parseMemberRows()`, file operations, alumni move logic.
+- `src/services/FileWatcherService.ts` — Only 2 smoke tests (import + constructor). No coverage of `start()`, `stop()`, `onFileChange()`, `queueEvent()`, debounce logic, `registerCacheInvalidator()`.
+
+Recently changed files WITHOUT corresponding test updates:
+- `f1a8279 feat(dashboard): add sidebar button and clickable entries` — No tests for click handlers (`openDecision`, `openTask`, `openMember`)
+- `7da4364 fix(dashboard): sort decisions most-recent first` — No test verifying sort order in template
+- `b39e3f8 feat: broader task extraction for cross-project session logs` — OrchestrationLogService changed, no new tests
+
+**Dashboard Assessment:**
+- Three tabs: Velocity, Activity, Decisions — all rendering correctly
+- Decision sort (most-recent first) is implemented in both DecisionService and htmlTemplate.ts ✅
+- Clickable entries implemented: decision cards, task items, member names ✅
+- Empty states exist for all three tabs ✅
+- Canvas color fix shipped (resolveColor helper) ✅
+- Axis labels on velocity chart shipped ✅
+- Missing: No "Team Overview" or summary stats panel. No member count, sprint burndown, or at-a-glance health summary on the dashboard itself.
+- Missing: No loading state — if data takes time, user sees nothing until render completes.
+- Visual gap: Heatmap cells show activity bars but no numeric labels (e.g., "5 sessions").
+
+**Key finding:** DashboardDataBuilder is the #1 testing priority — it's pure logic with zero VS Code dependencies, highly testable, and drives all three dashboard tabs.
+
+### 2026-02-15: Team Update — User Testing Directive & Assessment Findings
+
+📌 **Team decision merged (2026-02-15):** User testing directive from Jeff: always write tests alongside new features. Write regression tests for every bug so we know it's fixed when test passes. — decided by Jeff
+
+📌 **Team assessment completed (2026-02-15):** Test coverage audit identified 8 files with zero/near-zero coverage. DashboardDataBuilder, removeMemberCommand, SquadStatusBar, IssueDetailWebview flagged as Priority 1 (pure logic, easy wins). FileWatcherService, SquadDashboardWebview, initSquadCommand flagged as Priority 2 (require mocking). Dashboard completeness: 3 tabs working, missing summary panel, loading state, heatmap numeric labels, tab persistence, refresh button. — decided by Danny
+
