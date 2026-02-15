@@ -46,41 +46,47 @@ export class DecisionService {
             'problem statement', 'data flow analysis', 'root cause',
             'the design gap', 'what should happen', 'recommended fix',
             'test cases to add', 'files to modify', 'for linus',
-            'implementation phases'
+            'implementation phases', 'sprint goal', 'context & opportunity',
+            'work items', 'risks & open questions', 'next steps', 'outcome',
+            'success criteria'
         ]);
 
-        // Detect heading level used for decisions: ### (H3) if most entries
-        // use H3 with date prefixes, otherwise ## (H2).
-        let h3DateCount = 0;
-        let h2DateCount = 0;
-        for (const l of lines) {
-            const trimmed = l.trim();
-            if (/^###\s+\d{4}-\d{2}-\d{2}/.test(trimmed)) { h3DateCount++; }
-            else if (/^##\s+(?!#)\d{4}-\d{2}-\d{2}/.test(trimmed)) { h2DateCount++; }
-        }
-        const decisionLevel = h3DateCount > h2DateCount ? 3 : 2;
-        const headingPrefix = '#'.repeat(decisionLevel);
-        const headingRegex = new RegExp(`^${headingPrefix}\\s+(.+)$`);
+        // Match decisions at both ## and ### levels:
+        // - ## headings are always potential decisions (original structured format)
+        // - ### headings are decisions only if they have a date prefix (Scribe-merged inbox format)
+        // Plain ### headings (Context, Decision, Rationale) are subsections, not decisions.
 
         let i = 0;
         while (i < lines.length) {
             const line = lines[i].trim();
 
-            // Match headings at the detected decision level
-            const headingMatch = line.match(headingRegex);
-            // Ensure we match exactly the right level (not deeper)
             const hashCount = (line.match(/^#+/) || [''])[0].length;
-            if (headingMatch && hashCount === decisionLevel) {
+
+            // Match ## or ### headings
+            let headingMatch: RegExpMatchArray | null = null;
+            let isDecisionHeading = false;
+            if (hashCount === 2) {
+                headingMatch = line.match(/^##\s+(.+)$/);
+                isDecisionHeading = true; // ## is always a potential decision
+            } else if (hashCount === 3) {
+                headingMatch = line.match(/^###\s+(.+)$/);
+                // ### is only a decision if it starts with a date prefix
+                if (headingMatch && /^\d{4}-\d{2}-\d{2}/.test(headingMatch[1].trim())) {
+                    isDecisionHeading = true;
+                }
+            }
+
+            if (headingMatch && isDecisionHeading) {
                 let title = headingMatch[1].trim();
 
                 // Fix malformed headings like "## # Some Title" — strip leading "# "
                 title = title.replace(/^#\s+/, '');
-                // Extract date from heading prefix (e.g., "2026-02-14: Title")
+                // Extract date from heading prefix (e.g., "2026-02-14: Title" or "2026-02-14/15: Title")
                 let date: string | undefined;
-                const headingDateMatch = title.match(/^(\d{4}-\d{2}-\d{2}):\s*/);
+                const headingDateMatch = title.match(/^(\d{4}-\d{2}-\d{2})(?:\/\d+)?[:/]?\s*/);
                 if (headingDateMatch) {
                     date = headingDateMatch[1];
-                    title = title.replace(/^\d{4}-\d{2}-\d{2}:\s*/, '');
+                    title = title.replace(/^\d{4}-\d{2}-\d{2}(?:\/\d+)?[:/]?\s*/, '');
                 }
                 // Strip "User directive — " or "User directive - " prefix
                 title = title.replace(/^User directive\s*[—–-]\s*/i, '');
@@ -88,18 +94,20 @@ export class DecisionService {
                 title = title.replace(/^Decision:\s*/i, '');
 
                 // Skip generic subsection headings
-                if (subsectionNames.has(title.toLowerCase())) {
+                const titleLower = title.toLowerCase();
+                if (subsectionNames.has(titleLower) ||
+                    titleLower.startsWith('items deferred')) {
                     i++;
                     continue;
                 }
                 let author: string | undefined;
 
-                // Find the end of this section (next heading at same level or EOF)
+                // Find the end of this section (next heading at same or higher level)
                 let sectionEnd = lines.length;
                 for (let j = i + 1; j < lines.length; j++) {
                     const nextLine = lines[j].trim();
                     const nextHash = (nextLine.match(/^#+/) || [''])[0].length;
-                    if (nextHash === decisionLevel && headingRegex.test(nextLine)) {
+                    if (nextHash > 0 && nextHash <= hashCount) {
                         sectionEnd = j;
                         break;
                     }
@@ -109,11 +117,13 @@ export class DecisionService {
                 const sectionLines = lines.slice(i, sectionEnd);
                 const content = sectionLines.join('\n');
 
-                for (let j = i + 1; j < Math.min(i + 10, sectionEnd); j++) {
+                for (let j = i + 1; j < Math.min(i + 20, sectionEnd); j++) {
                     const metaLine = lines[j].trim();
                     const dateMatch = metaLine.match(/\*\*Date:\*\*\s*(.+)/);
                     if (dateMatch) {
-                        date = dateMatch[1].trim();
+                        // Extract first ISO date from value (handles "2026-02-14, refined 2026-02-15")
+                        const isoMatch = dateMatch[1].trim().match(/(\d{4}-\d{2}-\d{2})/);
+                        if (isoMatch) { date = isoMatch[1]; }
                     }
                     const authorMatch = metaLine.match(/\*\*Author:\*\*\s*(.+)/);
                     if (authorMatch) {
@@ -162,10 +172,10 @@ export class DecisionService {
             if (hMatch) {
                 title = hMatch[1].trim();
                 // Extract date from heading prefix (e.g., "2026-02-14: Title")
-                const headingDateMatch = title.match(/^(\d{4}-\d{2}-\d{2}):\s*/);
+                const headingDateMatch = title.match(/^(\d{4}-\d{2}-\d{2})(?:\/\d+)?[:/]?\s*/);
                 if (headingDateMatch) {
                     date = headingDateMatch[1];
-                    title = title.replace(/^\d{4}-\d{2}-\d{2}:\s*/, '');
+                    title = title.replace(/^\d{4}-\d{2}-\d{2}(?:\/\d+)?[:/]?\s*/, '');
                 }
                 // Strip "User directive — " or "User directive - " prefix
                 title = title.replace(/^User directive\s*[—–-]\s*/i, '');
@@ -179,7 +189,10 @@ export class DecisionService {
             if (authorMatch) { author = authorMatch[1].trim(); }
 
             const dateMatch = content.match(/\*\*Date:\*\*\s*(.+)$/m);
-            if (dateMatch) { date = dateMatch[1].trim(); }
+            if (dateMatch) {
+                const isoMatch = dateMatch[1].trim().match(/(\d{4}-\d{2}-\d{2})/);
+                if (isoMatch) { date = isoMatch[1]; }
+            }
 
             if (!date) {
                 const stats = fs.statSync(filePath);
