@@ -1010,6 +1010,16 @@ ame: field from YAML frontmatter instead of raw directory name
 - Only actual decision titles appear in Decisions panel
 - Handles malformed ## # Title headings by stripping extra # 
 
+---
+
+### 2026-02-15: User directive — release checklist must include README and release notes
+
+**By:** Jeff (Jeffrey T. Fritz) (via Copilot)
+
+**What:** Whenever we issue a release, the release tasks must include updating the README to showcase current features and writing a good release notes document. These are not optional — they are part of the standard release process.
+
+**Why:** User request — captured for team memory. Ensures every release ships with up-to-date documentation and clear communication of what changed. 
+
 ## Rationale
 
 - Display names extracted from frontmatter can differ from directory names; slugifying back to paths is lossy and error-prone
