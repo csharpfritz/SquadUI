@@ -50,3 +50,12 @@
  Table-Format Log Summary Extraction  priority chain to prevent markdown leakage  decided by Linus
  Default Issue Matching & Member Aliases  defaults to labels+assignees, aliases in team.md  decided by Linus
  E2E Validation Test Strategy  TestableWebviewRenderer pattern, acceptance criteria traceability  decided by Basher
+
+### H1 Decision Format Support
+- Added support for `# Decision: {title}` (H1) format in `parseDecisionsMd()` — some projects (e.g. aspire-minecraft) use this instead of H2/H3
+- H1 decisions use `**Date:**`, `**Author:**`, `**Issue:**` metadata lines below the heading
+- Section boundary: an H1 decision runs until the next H1 heading (or EOF)
+- Inner `## Context`, `## Decision`, `## Rationale` subsections are NOT treated as separate decisions — they're consumed as content of the parent H1 block
+- The parser skips `i` forward to `sectionEnd` after consuming an H1 decision to prevent subsection re-parsing
+- Non-decision H1 headings (e.g. `# Decisions`, `# Team Log`) are skipped — only `# Decision: ` with the prefix triggers parsing
+- Existing H2/H3 parsing is completely untouched — the H1 block uses `continue` before reaching H2/H3 logic

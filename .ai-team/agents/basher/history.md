@@ -39,3 +39,14 @@
  Dashboard decisions sort order  decisions list on dashboard should be sorted most-recent first  decided by Jeffrey T. Fritz
  Add Skill Error Handling  network failures now throw exceptions for better UX instead of silent empty arrays  decided by Rusty
  Backlog Audit and Issue Cleanup  issues #27, #37, #38 closed; backlog triaged for v0.6.0 sprint  decided by Danny
+
+### H1 Decision Format Tests (2026-02-16)
+- Added 7 tests for new `# Decision: Title` (H1) format in `parseDecisionsMd()`:
+  1. Basic H1 decision parsing — title, date, author extraction
+  2. Multiple H1 decisions in one file
+  3. H1 with `## Context`/`## Decision`/`## Rationale` subsections — only parent H1 counts
+  4. Mixed H1 + H2 decisions — both formats parsed correctly
+  5. Plain H1 without "Decision:" prefix — must NOT be treated as a decision (avoids false positives)
+  6. `**Issue:** #78` metadata — silently ignored, no crash or pollution
+  7. Content capture — `content` field includes full section with subsections
+- Tests are written test-first for Linus's upcoming parser change; they will FAIL until the H1 handling is added to `parseDecisionsMd()`

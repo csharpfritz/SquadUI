@@ -501,6 +501,196 @@ suite('DecisionService', () => {
             assert.ok(!titles.includes('Decision'));
             assert.ok(!titles.includes('Core Features'));
         });
+
+        // ─── H1 Decision Format (# Decision: Title) ─────────────────────
+
+        suite('H1 decision format (# Decision: Title)', () => {
+            test('parses a single H1 decision with metadata', () => {
+                const content = [
+                    '# Decision: Grand Watchtower Size-Based Branching',
+                    '',
+                    '**Date:** 2026-02-12',
+                    '**Author:** Rocket',
+                    '**Issue:** #78',
+                    '',
+                    '## Context',
+                    'Some context about the decision.',
+                    '',
+                    '## Decision',
+                    'The actual decision text.',
+                    '',
+                    '## Rationale',
+                    'Why this was decided.',
+                ].join('\n');
+                fs.writeFileSync(path.join(tempDir, '.ai-team', 'decisions.md'), content);
+
+                const decisions: DecisionEntry[] = [];
+                (service as any).parseDecisionsMd(tempDir, decisions);
+
+                assert.strictEqual(decisions.length, 1);
+                assert.strictEqual(decisions[0].title, 'Grand Watchtower Size-Based Branching');
+                assert.strictEqual(decisions[0].date, '2026-02-12');
+                assert.strictEqual(decisions[0].author, 'Rocket');
+            });
+
+            test('parses multiple H1 decisions', () => {
+                const content = [
+                    '# Decision: First H1 Decision',
+                    '',
+                    '**Date:** 2026-02-10',
+                    '**Author:** Danny',
+                    '',
+                    'First decision body.',
+                    '',
+                    '# Decision: Second H1 Decision',
+                    '',
+                    '**Date:** 2026-02-11',
+                    '**Author:** Linus',
+                    '',
+                    'Second decision body.',
+                ].join('\n');
+                fs.writeFileSync(path.join(tempDir, '.ai-team', 'decisions.md'), content);
+
+                const decisions: DecisionEntry[] = [];
+                (service as any).parseDecisionsMd(tempDir, decisions);
+
+                assert.strictEqual(decisions.length, 2);
+                assert.strictEqual(decisions[0].title, 'First H1 Decision');
+                assert.strictEqual(decisions[0].date, '2026-02-10');
+                assert.strictEqual(decisions[0].author, 'Danny');
+                assert.strictEqual(decisions[1].title, 'Second H1 Decision');
+                assert.strictEqual(decisions[1].date, '2026-02-11');
+                assert.strictEqual(decisions[1].author, 'Linus');
+            });
+
+            test('H1 with subsections does not produce extra decisions', () => {
+                const content = [
+                    '# Decision: Single Decision With Subsections',
+                    '',
+                    '**Date:** 2026-02-12',
+                    '**Author:** Rocket',
+                    '',
+                    '## Context',
+                    'We needed to decide something important.',
+                    '',
+                    '## Decision',
+                    'We decided to do the thing.',
+                    '',
+                    '## Rationale',
+                    'Because it was the right call.',
+                ].join('\n');
+                fs.writeFileSync(path.join(tempDir, '.ai-team', 'decisions.md'), content);
+
+                const decisions: DecisionEntry[] = [];
+                (service as any).parseDecisionsMd(tempDir, decisions);
+
+                // Only the parent H1 should be a decision; subsections (Context, Decision, Rationale) must not appear
+                assert.strictEqual(decisions.length, 1);
+                assert.strictEqual(decisions[0].title, 'Single Decision With Subsections');
+                const titles = decisions.map(d => d.title);
+                assert.ok(!titles.includes('Context'));
+                assert.ok(!titles.includes('Rationale'));
+            });
+
+            test('mixed H1 and H2 decisions are all parsed', () => {
+                // H2 decisions must appear OUTSIDE H1 blocks — H2 headings inside
+                // an H1 Decision block are treated as subsections, not separate decisions.
+                const content = [
+                    '## Adopt TypeScript',
+                    '**Date:** 2026-02-05',
+                    '**Author:** Linus',
+                    'TypeScript chosen.',
+                    '',
+                    '# Decision: H1 Format Decision',
+                    '',
+                    '**Date:** 2026-02-12',
+                    '**Author:** Rocket',
+                    '',
+                    '## Context',
+                    'Some context.',
+                ].join('\n');
+                fs.writeFileSync(path.join(tempDir, '.ai-team', 'decisions.md'), content);
+
+                const decisions: DecisionEntry[] = [];
+                (service as any).parseDecisionsMd(tempDir, decisions);
+
+                assert.strictEqual(decisions.length, 2);
+                const titles = decisions.map(d => d.title);
+                assert.ok(titles.includes('H1 Format Decision'));
+                assert.ok(titles.includes('Adopt TypeScript'));
+            });
+
+            test('plain H1 without "Decision:" prefix is NOT treated as a decision', () => {
+                const content = [
+                    '# Team Decisions',
+                    '',
+                    'This is just a document title, not a decision.',
+                    '',
+                    '## Actual Decision Here',
+                    '**Date:** 2026-02-01',
+                    'This is a real decision.',
+                ].join('\n');
+                fs.writeFileSync(path.join(tempDir, '.ai-team', 'decisions.md'), content);
+
+                const decisions: DecisionEntry[] = [];
+                (service as any).parseDecisionsMd(tempDir, decisions);
+
+                assert.strictEqual(decisions.length, 1);
+                assert.strictEqual(decisions[0].title, 'Actual Decision Here');
+                const titles = decisions.map(d => d.title);
+                assert.ok(!titles.includes('Team Decisions'));
+            });
+
+            test('H1 decision with **Issue:** field is parsed without error', () => {
+                const content = [
+                    '# Decision: Issue Field Test',
+                    '',
+                    '**Date:** 2026-02-12',
+                    '**Author:** Rocket',
+                    '**Issue:** #78',
+                    '',
+                    'The decision body.',
+                ].join('\n');
+                fs.writeFileSync(path.join(tempDir, '.ai-team', 'decisions.md'), content);
+
+                const decisions: DecisionEntry[] = [];
+                (service as any).parseDecisionsMd(tempDir, decisions);
+
+                // Issue field should be silently ignored — not crash, not pollute other fields
+                assert.strictEqual(decisions.length, 1);
+                assert.strictEqual(decisions[0].title, 'Issue Field Test');
+                assert.strictEqual(decisions[0].date, '2026-02-12');
+                assert.strictEqual(decisions[0].author, 'Rocket');
+            });
+
+            test('content field includes full section with subsections', () => {
+                const content = [
+                    '# Decision: Content Capture Test',
+                    '',
+                    '**Date:** 2026-02-12',
+                    '**Author:** Rocket',
+                    '',
+                    '## Context',
+                    'Context paragraph here.',
+                    '',
+                    '## Decision',
+                    'Decision paragraph here.',
+                    '',
+                    '## Rationale',
+                    'Rationale paragraph here.',
+                ].join('\n');
+                fs.writeFileSync(path.join(tempDir, '.ai-team', 'decisions.md'), content);
+
+                const decisions: DecisionEntry[] = [];
+                (service as any).parseDecisionsMd(tempDir, decisions);
+
+                assert.strictEqual(decisions.length, 1);
+                assert.ok(decisions[0].content);
+                assert.ok(decisions[0].content!.includes('Context paragraph here.'));
+                assert.ok(decisions[0].content!.includes('Decision paragraph here.'));
+                assert.ok(decisions[0].content!.includes('Rationale paragraph here.'));
+            });
+        });
     });
 
     // ─── parseDecisionFile() Tests ───────────────────────────────────────
@@ -1136,6 +1326,186 @@ suite('DecisionService', () => {
             assert.strictEqual(decisions.length, 2);
             // Only the first one with **Date:** will have the date extracted
             // The second one with **date:** won't match
+        });
+    });
+
+    // ─── H1 "# Decision: {title}" Format Tests ─────────────────────────
+
+    suite('parseDecisionsMd() — H1 Decision Format', () => {
+        let tempDir: string;
+
+        setup(() => {
+            tempDir = path.join(TEST_FIXTURES_ROOT, `temp-h1-decisions-${Date.now()}`);
+            fs.mkdirSync(path.join(tempDir, '.ai-team'), { recursive: true });
+        });
+
+        teardown(() => {
+            try {
+                fs.rmSync(tempDir, { recursive: true, force: true });
+            } catch {
+                // Ignore cleanup errors
+            }
+        });
+
+        test('parses H1 "# Decision: Title" heading', () => {
+            const content = [
+                '# Decision: Grand Watchtower Size-Based Branching',
+                '',
+                '**Date:** 2026-02-12',
+                '**Author:** Rocket',
+                '**Issue:** #78',
+                '',
+                '## Context',
+                'Some context here.',
+                '',
+                '## Decision',
+                'We decided to do X.',
+            ].join('\n');
+            fs.writeFileSync(path.join(tempDir, '.ai-team', 'decisions.md'), content);
+
+            const decisions: DecisionEntry[] = [];
+            (service as any).parseDecisionsMd(tempDir, decisions);
+
+            assert.strictEqual(decisions.length, 1);
+            assert.strictEqual(decisions[0].title, 'Grand Watchtower Size-Based Branching');
+            assert.strictEqual(decisions[0].date, '2026-02-12');
+            assert.strictEqual(decisions[0].author, 'Rocket');
+        });
+
+        test('H1 decision subsections are not parsed as separate decisions', () => {
+            const content = [
+                '# Decision: Branching Strategy',
+                '',
+                '**Date:** 2026-02-12',
+                '**Author:** Rocket',
+                '',
+                '## Context',
+                'Background.',
+                '',
+                '## Decision',
+                'We decided.',
+                '',
+                '## Rationale',
+                'Because reasons.',
+            ].join('\n');
+            fs.writeFileSync(path.join(tempDir, '.ai-team', 'decisions.md'), content);
+
+            const decisions: DecisionEntry[] = [];
+            (service as any).parseDecisionsMd(tempDir, decisions);
+
+            assert.strictEqual(decisions.length, 1);
+            assert.strictEqual(decisions[0].title, 'Branching Strategy');
+        });
+
+        test('parses multiple H1 decisions', () => {
+            const content = [
+                '# Decision: First Decision',
+                '',
+                '**Date:** 2026-02-10',
+                '**Author:** Alice',
+                '',
+                '## Context',
+                'First context.',
+                '',
+                '# Decision: Second Decision',
+                '',
+                '**Date:** 2026-02-12',
+                '**Author:** Bob',
+                '',
+                '## Context',
+                'Second context.',
+            ].join('\n');
+            fs.writeFileSync(path.join(tempDir, '.ai-team', 'decisions.md'), content);
+
+            const decisions: DecisionEntry[] = [];
+            (service as any).parseDecisionsMd(tempDir, decisions);
+
+            assert.strictEqual(decisions.length, 2);
+            assert.strictEqual(decisions[0].title, 'First Decision');
+            assert.strictEqual(decisions[0].date, '2026-02-10');
+            assert.strictEqual(decisions[1].title, 'Second Decision');
+            assert.strictEqual(decisions[1].date, '2026-02-12');
+        });
+
+        test('H1 decision content includes subsections', () => {
+            const content = [
+                '# Decision: Content Test',
+                '',
+                '**Date:** 2026-02-12',
+                '',
+                '## Context',
+                'Some context.',
+            ].join('\n');
+            fs.writeFileSync(path.join(tempDir, '.ai-team', 'decisions.md'), content);
+
+            const decisions: DecisionEntry[] = [];
+            (service as any).parseDecisionsMd(tempDir, decisions);
+
+            assert.strictEqual(decisions.length, 1);
+            assert.ok(decisions[0].content!.includes('## Context'));
+            assert.ok(decisions[0].content!.includes('Some context.'));
+        });
+
+        test('mixed H1 decisions and H2 decisions in same file', () => {
+            const content = [
+                '# Decision: H1 Format Decision',
+                '',
+                '**Date:** 2026-02-12',
+                '**Author:** Rocket',
+                '',
+                '## Context',
+                'Background.',
+                '',
+                '# Decisions',
+                '',
+                '## Traditional H2 Decision',
+                '**Date:** 2026-02-01',
+                'Body.',
+            ].join('\n');
+            fs.writeFileSync(path.join(tempDir, '.ai-team', 'decisions.md'), content);
+
+            const decisions: DecisionEntry[] = [];
+            (service as any).parseDecisionsMd(tempDir, decisions);
+
+            assert.strictEqual(decisions.length, 2);
+            const titles = decisions.map(d => d.title);
+            assert.ok(titles.includes('H1 Format Decision'));
+            assert.ok(titles.includes('Traditional H2 Decision'));
+        });
+
+        test('H1 decision without metadata still parses', () => {
+            const content = [
+                '# Decision: No Metadata Decision',
+                '',
+                '## Context',
+                'Just context, no date or author.',
+            ].join('\n');
+            fs.writeFileSync(path.join(tempDir, '.ai-team', 'decisions.md'), content);
+
+            const decisions: DecisionEntry[] = [];
+            (service as any).parseDecisionsMd(tempDir, decisions);
+
+            assert.strictEqual(decisions.length, 1);
+            assert.strictEqual(decisions[0].title, 'No Metadata Decision');
+            assert.strictEqual(decisions[0].date, undefined);
+            assert.strictEqual(decisions[0].author, undefined);
+        });
+
+        test('non-decision H1 headings are ignored', () => {
+            const content = [
+                '# Team Decisions Log',
+                '',
+                '## Actual Decision',
+                '**Date:** 2026-02-01',
+                'Body.',
+            ].join('\n');
+            fs.writeFileSync(path.join(tempDir, '.ai-team', 'decisions.md'), content);
+
+            const decisions: DecisionEntry[] = [];
+            (service as any).parseDecisionsMd(tempDir, decisions);
+
+            assert.strictEqual(decisions.length, 1);
+            assert.strictEqual(decisions[0].title, 'Actual Decision');
         });
     });
 });

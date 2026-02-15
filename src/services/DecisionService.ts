@@ -65,6 +65,56 @@ export class DecisionService {
 
             const hashCount = (line.match(/^#+/) || [''])[0].length;
 
+            // H1 "# Decision: {title}" format — used by some projects (e.g. aspire-minecraft).
+            // Subsections (## Context, ## Rationale) are part of the parent, not separate decisions.
+            if (hashCount === 1) {
+                const h1Match = line.match(/^#\s+Decision:\s+(.+)$/i);
+                if (h1Match) {
+                    let title = h1Match[1].trim();
+                    let date: string | undefined;
+                    let author: string | undefined;
+
+                    // Section runs until the next H1 or EOF
+                    let sectionEnd = lines.length;
+                    for (let j = i + 1; j < lines.length; j++) {
+                        const nextLine = lines[j].trim();
+                        if (/^#\s+/.test(nextLine) && !/^##/.test(nextLine)) {
+                            sectionEnd = j;
+                            break;
+                        }
+                    }
+
+                    const sectionLines = lines.slice(i, sectionEnd);
+                    const content = sectionLines.join('\n');
+
+                    // Extract metadata from lines immediately after heading
+                    for (let j = i + 1; j < Math.min(i + 20, sectionEnd); j++) {
+                        const metaLine = lines[j].trim();
+                        const dateMatch = metaLine.match(/\*\*Date:\*\*\s*(.+)/);
+                        if (dateMatch) {
+                            const isoMatch = dateMatch[1].trim().match(/(\d{4}-\d{2}-\d{2})/);
+                            if (isoMatch) { date = isoMatch[1]; }
+                        }
+                        const authorMatch = metaLine.match(/\*\*Author:\*\*\s*(.+)/);
+                        if (authorMatch) {
+                            author = authorMatch[1].trim();
+                        }
+                        const byMatch = metaLine.match(/\*\*By:\*\*\s*(.+)/);
+                        if (byMatch && !author) {
+                            author = byMatch[1].trim();
+                        }
+                    }
+
+                    decisions.push({ title, date, author, content, filePath, lineNumber: i });
+                    // Skip past this entire H1 block so inner ## headings aren't parsed as decisions
+                    i = sectionEnd;
+                    continue;
+                }
+                // Non-decision H1 headings (e.g. "# Decisions") — skip, fall through
+                i++;
+                continue;
+            }
+
             // Match ## or ### headings
             let headingMatch: RegExpMatchArray | null = null;
             let isDecisionHeading = false;
