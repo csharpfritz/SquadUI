@@ -11,6 +11,7 @@ import {
     createMockMembers,
     createMockTasks,
 } from '../mocks/squadDataProvider';
+import { Task, IGitHubIssuesService, MemberIssueMap, GitHubIssue } from '../../models';
 
 suite('TeamTreeProvider Test Suite', () => {
     let provider: TeamTreeProvider;
@@ -113,6 +114,79 @@ suite('TeamTreeProvider Test Suite', () => {
             const children = await provider.getChildren(memberItem);
 
             assert.strictEqual(children.length, 0);
+        });
+
+        test('deduplicates GitHub issues that already appear as tasks', async () => {
+            // Set up a task with id '87' (which maps to Issue #87)
+            const membersWithTask = createMockMembers();
+            const tasksWithIssue: Task[] = [
+                {
+                    id: '87',
+                    title: 'Issue #87',
+                    status: 'in_progress',
+                    assignee: 'Danny',
+                    startedAt: new Date(),
+                },
+            ];
+            const dp = new MockSquadDataProvider({ members: membersWithTask, tasks: tasksWithIssue });
+            const prov = new TeamTreeProvider(dp as never);
+
+            // Mock issues service that returns issue #87 and #88 for Danny
+            const mockIssuesService: IGitHubIssuesService = {
+                async getIssuesByMember(): Promise<MemberIssueMap> {
+                    const map = new Map<string, GitHubIssue[]>();
+                    map.set('danny', [
+                        {
+                            number: 87,
+                            title: 'API review',
+                            state: 'open',
+                            labels: [{ name: 'squad:danny', color: '000000' }],
+                            htmlUrl: 'https://github.com/test/repo/issues/87',
+                            createdAt: '2024-01-01T00:00:00Z',
+                            updatedAt: '2024-01-01T00:00:00Z',
+                        },
+                        {
+                            number: 88,
+                            title: 'Documentation updates',
+                            state: 'open',
+                            labels: [{ name: 'squad:danny', color: '000000' }],
+                            htmlUrl: 'https://github.com/test/repo/issues/88',
+                            createdAt: '2024-01-01T00:00:00Z',
+                            updatedAt: '2024-01-01T00:00:00Z',
+                        },
+                    ]);
+                    return map;
+                },
+                async getClosedIssuesByMember(): Promise<MemberIssueMap> {
+                    return new Map();
+                },
+                async getMilestoneIssues(): Promise<GitHubIssue[]> {
+                    return [];
+                },
+                async getMilestones() {
+                    return [];
+                },
+            };
+            prov.setIssuesService(mockIssuesService);
+
+            const memberItem = new SquadTreeItem(
+                'Danny',
+                vscode.TreeItemCollapsibleState.Collapsed,
+                'member',
+                'Danny'
+            );
+
+            const children = await prov.getChildren(memberItem);
+            const tasks = children.filter(c => c.itemType === 'task');
+            const issues = children.filter(c => c.itemType === 'issue');
+
+            // Task for #87 should appear as a task
+            assert.strictEqual(tasks.length, 1);
+            assert.strictEqual(tasks[0].taskId, '87');
+
+            // Issue #87 should be deduplicated; only #88 should appear as an issue
+            assert.strictEqual(issues.length, 1);
+            assert.ok(issues[0].label?.toString().includes('#88'));
         });
     });
 

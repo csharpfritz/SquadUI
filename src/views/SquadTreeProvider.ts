@@ -63,8 +63,12 @@ export class TeamTreeProvider implements vscode.TreeDataProvider<SquadTreeItem> 
 
         if (element.itemType === 'member' && element.memberId) {
             const tasks = await this.getTaskItems(element.memberId);
-            const issues = await this.getIssueItems(element.memberId);
-            const closedIssues = await this.getClosedIssueItems(element.memberId);
+            // Collect issue numbers already shown as tasks to avoid duplicates
+            const taskIssueIds = new Set(
+                tasks.map(t => t.taskId).filter((id): id is string => Boolean(id))
+            );
+            const issues = await this.getIssueItems(element.memberId, taskIssueIds);
+            const closedIssues = await this.getClosedIssueItems(element.memberId, taskIssueIds);
             const logEntries = await this.getMemberLogEntries(element.memberId);
             return [...tasks, ...issues, ...closedIssues, ...logEntries];
         }
@@ -159,7 +163,7 @@ export class TeamTreeProvider implements vscode.TreeDataProvider<SquadTreeItem> 
         });
     }
 
-    private async getIssueItems(memberId: string): Promise<SquadTreeItem[]> {
+    private async getIssueItems(memberId: string, excludeIssueIds?: Set<string>): Promise<SquadTreeItem[]> {
         if (!this.issuesService) {
             return [];
         }
@@ -167,7 +171,10 @@ export class TeamTreeProvider implements vscode.TreeDataProvider<SquadTreeItem> 
         try {
             const workspaceRoot = this.dataProvider.getWorkspaceRoot();
             const issueMap = await this.issuesService.getIssuesByMember(workspaceRoot);
-            const issues = issueMap.get(memberId.toLowerCase()) ?? [];
+            const allIssues = issueMap.get(memberId.toLowerCase()) ?? [];
+            const issues = excludeIssueIds?.size
+                ? allIssues.filter(issue => !excludeIssueIds.has(String(issue.number)))
+                : allIssues;
 
             return issues.map(issue => {
                 const labelText = issue.labels
@@ -204,7 +211,7 @@ export class TeamTreeProvider implements vscode.TreeDataProvider<SquadTreeItem> 
         }
     }
 
-    private async getClosedIssueItems(memberId: string): Promise<SquadTreeItem[]> {
+    private async getClosedIssueItems(memberId: string, excludeIssueIds?: Set<string>): Promise<SquadTreeItem[]> {
         if (!this.issuesService) {
             return [];
         }
@@ -212,7 +219,10 @@ export class TeamTreeProvider implements vscode.TreeDataProvider<SquadTreeItem> 
         try {
             const workspaceRoot = this.dataProvider.getWorkspaceRoot();
             const issueMap = await this.issuesService.getClosedIssuesByMember(workspaceRoot);
-            const issues = issueMap.get(memberId.toLowerCase()) ?? [];
+            const allIssues = issueMap.get(memberId.toLowerCase()) ?? [];
+            const issues = excludeIssueIds?.size
+                ? allIssues.filter(issue => !excludeIssueIds.has(String(issue.number)))
+                : allIssues;
 
             return issues.map(issue => {
                 const labelText = issue.labels

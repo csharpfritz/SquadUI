@@ -539,6 +539,14 @@ export function getDashboardHtml(data: DashboardData): string {
                 // Update tab content
                 document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
                 document.getElementById(targetTab + '-tab').classList.add('active');
+
+                // Re-render canvas charts when their tab becomes visible
+                // (canvas needs non-zero offsetWidth to render correctly)
+                if (targetTab === 'burndown') {
+                    requestAnimationFrame(() => renderBurndownChart());
+                } else if (targetTab === 'velocity') {
+                    requestAnimationFrame(() => renderVelocityChart());
+                }
             });
         });
 
