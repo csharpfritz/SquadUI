@@ -183,13 +183,24 @@ export function activate(context: vscode.ExtensionContext): void {
         })
     );
 
-    // Register open decision command — opens decisions.md in markdown preview
+    // Register open decision command — opens decisions.md in markdown preview, scrolled to heading
     context.subscriptions.push(
-        vscode.commands.registerCommand('squadui.openDecision', async (filePath: string, _lineNumber: number) => {
+        vscode.commands.registerCommand('squadui.openDecision', async (filePath: string, lineNumber: number) => {
             if (!filePath) {
                 return;
             }
             const uri = vscode.Uri.file(filePath);
+            const line = lineNumber ?? 0;
+
+            // Open in text editor first, positioned at the decision heading
+            const doc = await vscode.workspace.openTextDocument(uri);
+            const range = new vscode.Range(line, 0, line, 0);
+            await vscode.window.showTextDocument(doc, {
+                selection: range,
+                preview: true
+            });
+
+            // Now open markdown preview — it will sync to the editor's scroll position
             await vscode.commands.executeCommand('markdown.showPreview', uri);
         })
     );
