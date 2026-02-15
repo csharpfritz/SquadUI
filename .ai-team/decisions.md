@@ -1322,14 +1322,7 @@ Both Danny's and Rusty's proposals focus on transforming SquadUI from a simple v
 
 ---
 
-### 2026-02-14: Skill identity uses directory slug, not display name
-
-**By:** Rusty
-**What:** Added `slug` property to the `Skill` model (set to the directory name by `parseInstalledSkill`). Tree items, `viewSkill`, and `removeSkill` commands now pass/use the slug for filesystem operations instead of slugifying the display name. Also added YAML frontmatter parsing to `parseInstalledSkill()` so skills with frontmatter (like all `.ai-team/skills/` entries) show their human-readable `name:` field instead of the raw directory name.
-**Why:** The display name extracted from frontmatter (e.g., `"github-actions-vscode-ci"` → could be `"GitHub Actions CI"`) can differ from the directory name. Slugifying the display name back to a path is lossy and error-prone. The directory name is the canonical identifier; the display name is for humans. Separating these concerns prevents file-not-found errors when skill names don't round-trip through slugification.
-
-
----
+#---
 
 ---
 
@@ -1397,5 +1390,78 @@ The Squad Dashboard swimlane view needed visual refinement to distinguish task s
 - **title attribute only**: Too basic, no control over styling or multi-line content
 - **JavaScript-based tooltips**: Over-engineered for this use case, CSS is sufficient
 - **Icons instead of colors**: Less clear at-a-glance, colors provide better visual hierarchy
+
+
+
+---
+## 2026-02-14/15: Skill Identity & Sidebar Label Fixes
+
+**Date:** 2026-02-14, refined 2026-02-15
+**By:** Rusty (Extension Dev)
+
+## Decision
+
+Comprehensive fixes to skill identity handling and sidebar tree view presentation:
+
+### 1. Skill Identity Architecture
+- Added slug property to the Skill model (set to directory name by parseInstalledSkill())
+- Tree items, iewSkill(), and emoveSkill() commands now pass/use slug for filesystem operations
+- Display name (from YAML frontmatter or heading) is separated from directory name (canonical identifier)
+
+### 2. Skill Display Enhancements  
+- Strip "Skill: " prefix from SKILL.md headings when displaying tree labels (case-insensitive)
+- Show human-readable 
+ame: field from YAML frontmatter instead of raw directory name
+- Ensures skill trees show clean, user-friendly labels without redundant prefixes
+
+### 3. Sidebar Subsection Filtering
+- parseDecisionsMd() filters out generic subsection headings (Context, Decision, Rationale, Impact, Members, Alumni, etc.)
+- Only actual decision titles appear in Decisions panel
+- Handles malformed ## # Title headings by stripping extra # 
+
+## Rationale
+
+- Display names extracted from frontmatter can differ from directory names; slugifying back to paths is lossy and error-prone
+- The directory name is the canonical identifier; display name is for humans. Separating these concerns prevents file-not-found errors
+- "Skill: " prefix was redundant since items are already in the Skills panel
+- Subsection headings cluttered the Decisions panel with non-decision entries
+
+## Impact
+
+- Users see clean skill labels without redundant prefixes
+- Skill commands reliably locate files using canonical slug identifier
+- Decisions panel shows only actual decisions, not boilerplate subsections
+- Pattern established for consistent skill identity handling across the extension
+
+------
+# Recovered Test Files from squad/24 Branch
+
+**Date:** 2026-02-14
+**Author:** Rusty (Extension Dev)
+**Status:** Implemented
+
+## Context
+
+The `squad/24-init-command` branch contained 3 test files, a branded icon, and a terminal command skill doc that never made it to `main`. The branch itself has stale `package.json` and `extension.ts` changes that would regress current `main` (v0.4.0), so a full merge was not safe.
+
+## Decision
+
+Selectively extracted 5 files using `git checkout origin/squad/24-init-command -- <file>` without merging:
+
+1. `src/test/suite/gitHubIssuesService.test.ts` — 427 lines testing GitHub issues service
+2. `src/test/suite/squadDataProviderFallback.test.ts` — 374 lines testing team.md → log fallback
+3. `src/test/suite/teamMdService.test.ts` — 508 lines testing team.md parsing
+4. `images/icon.png` — branded extension icon
+5. `.ai-team/skills/vscode-terminal-command/SKILL.md` — terminal command pattern skill
+
+## Outcome
+
+All 3 test files compile cleanly against current `main` with `tsc --noEmit` — zero errors. Service imports (`GitHubIssuesService`, `SquadDataProvider`, `TeamMdService`) all resolve correctly.
+
+## Impact
+
+- **Basher:** 1,309 new lines of test code to validate. May want to run the full test suite and verify coverage.
+- **Livingston:** CI should pick these up automatically on next push.
+- **Team:** The `squad/24-init-command` branch can likely be deleted after confirming nothing else is needed from it.
 
 

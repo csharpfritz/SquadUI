@@ -244,3 +244,14 @@ Dashboard webview scaffolded with single unified tab interface (Velocity + Activ
 - `SquadTreeProvider.getSkillItems()` passes `slug` (not display name) as the command argument
 - `viewSkill` and `removeSkill` commands in `extension.ts` now use slug directly — no more slugifying the display name
 - Pattern: display name can differ from directory name; always use directory slug for file I/O
+
+### 2026-02-15: Sidebar Tree View Label Fixes (3 issues)
+- **Skill prefix stripping:** `SkillCatalogService.parseInstalledSkill()` now strips leading "Skill: " prefix (case-insensitive) from extracted heading names, so "Skill: VS Code Terminal Command Pattern" becomes "VS Code Terminal Command Pattern" in the tree
+- **Skill click error:** `SkillsTreeProvider.getSkillItems()` in `SquadTreeProvider.ts` changed `arguments: [skill.name]` → `arguments: [skill.slug]` to pass directory name (not display name) to `viewSkill` command, preventing file-not-found errors
+- **Decision subsection filtering:** `DecisionService.parseDecisionsMd()` now skips `## ` headings that are generic subsection names (Context, Decision, Rationale, Impact, etc.) — only real decision titles appear in the panel. Also strips malformed `## # ` heading prefixes.
+- Key files: `src/services/SkillCatalogService.ts`, `src/views/SquadTreeProvider.ts`, `src/services/DecisionService.ts`
+- 3 pre-existing test failures remain (unrelated — they reference old unified "Team section" node from before sidebar split)
+
+### 2026-02-15: Team Update — Skill Identity & Sidebar Label Fixes (Decisions Merged)
+
+📌 **Team decision captured:** Consolidated decisions on skill identity and sidebar labels. Skills use directory slug (canonical identifier) for all filesystem operations, separated from display name (from frontmatter/heading). Sidebar labels strip "Skill: " prefix. Decisions panel filters out generic subsection headings (Context, Decision, Rationale, Impact, etc.) to show only actual decision titles. — decided by Rusty
