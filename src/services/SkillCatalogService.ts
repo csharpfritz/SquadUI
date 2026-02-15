@@ -392,9 +392,12 @@ export class SkillCatalogService {
 
         // Fall back to heading detection if no name from frontmatter
         if (name === dirName) {
-            const headingMatch = /^#\s+(.+)/.exec(lines[bodyStartIndex] ?? '');
-            if (headingMatch) {
-                name = headingMatch[1].trim();
+            for (let i = bodyStartIndex; i < lines.length; i++) {
+                const headingMatch = /^#\s+(.+)/.exec(lines[i]);
+                if (headingMatch) {
+                    name = headingMatch[1].trim();
+                    break;
+                }
             }
         }
 

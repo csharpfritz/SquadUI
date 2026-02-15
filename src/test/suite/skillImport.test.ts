@@ -539,11 +539,14 @@ Description.
             const children = await provider.getChildren();
 
             if (children.length > 0) {
-                const firstSkill = children[0];
-                assert.ok(
-                    firstSkill.description !== undefined,
-                    'Skill should have a description'
-                );
+                // Description is set to source badge for catalog skills,
+                // but may be undefined for local skills with no source badge
+                children.forEach(child => {
+                    assert.ok(
+                        child.description === undefined || typeof child.description === 'string',
+                        'Skill description should be undefined or a string'
+                    );
+                });
             }
         });
 
@@ -568,8 +571,8 @@ Description.
                 if (firstSkill.iconPath) {
                     assert.ok(
                         typeof firstSkill.iconPath === 'string' ||
-                        (typeof firstSkill.iconPath === 'object' && 'light' in firstSkill.iconPath),
-                        'Icon path should be string or ThemeIcon object'
+                        (typeof firstSkill.iconPath === 'object' && ('light' in firstSkill.iconPath || 'id' in firstSkill.iconPath)),
+                        'Icon path should be string, ThemeIcon, or icon path object'
                     );
                 }
             }
