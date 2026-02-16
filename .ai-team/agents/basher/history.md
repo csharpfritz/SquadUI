@@ -82,3 +82,18 @@
   - DecisionsTreeProvider.getChildren() is async — must be awaited (unlike the sync getDecisionItems() it calls internally)
   - Private method tests use `(service as any).methodName.bind(service)` pattern
   - Temp directories use `test-fixtures/temp-{name}-${Date.now()}` with teardown cleanup
+
+### Init Wizard Tests (2026-02-16)
+- New test file: `src/test/suite/initSquadWizard.test.ts` — 7 test cases
+- Written test-first for Rusty's upcoming native wizard rewrite of initSquadCommand
+- **Test cases:**
+  1. Welcome view configuration — verifies viewsWelcome entries for all three panels (squadTeam, squadSkills, squadDecisions) with "Form your Squad" button and `!squadui.hasTeam` condition
+  2. Command registration (package.json) — verifies `squadui.initSquad` declared with category "Squad"
+  3. Command registration (live) — `this.skip()` guard pattern
+  4. Universe list completeness — checks for exported `UNIVERSE_OPTIONS`/`universeOptions`/`UNIVERSES` array; graceful no-op if not yet exported
+  5. Cancellation at universe step — stubs `showQuickPick` → undefined, asserts no terminal and no InputBox
+  6. Cancellation at mission step — stubs `showQuickPick` → selection, `showInputBox` → undefined, asserts no terminal
+  7. Empty mission validation — captures `validateInput` function from `showInputBox` options, asserts empty string returns error message
+- Tests 3, 5, 6, 7 use `this.skip()` guard (extension/isActive/workspace) — pending until live workspace available
+- Tests 1, 2 pass now (package.json already configured); test 4 passes with graceful fallback
+- Compilation clean (`npx tsc --noEmit`), full suite 788 passing
