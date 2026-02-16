@@ -62,3 +62,23 @@
   5. `hasTeam` false when `.ai-team/` exists but `team.md` missing — edge case, directory without file
 - Uses `setup()`/`teardown()` with `test-fixtures/temp-upgrade-squad` cleanup
 - Rusty's `upgradeSquadCommand.ts` was already in place — tests compile clean
+
+### Test Hardening Sprint (2026-02-16, Issue #54)
+- Added **125 new tests** across 11 new test files (658 → 783 passing)
+- **New test files created:**
+  - `fileWatcherService.test.ts` — 17 tests: constructor, isWatching, onFileChange callbacks, registerCacheInvalidator, start/stop, dispose idempotency, internal queueEvent/flush guards
+  - `decisionServiceFiles.test.ts` — 21 tests: parseDecisionFile() with H1/H2/H3 headings, date extraction, title prefix stripping, author metadata, fallback dates; scanDirectory() recursive traversal, non-.md filtering; getDecisions() integration combining decisions.md + decisions/ directory
+  - `squadDataProviderExtended.test.ts` — 10 tests: getWorkspaceRoot(), getDecisions() with caching, refresh invalidation, getLogEntries/getTasks caching, placeholder member in getWorkDetails(), working-to-idle override logic
+  - `initSquadCommand.test.ts` — 2 tests: Disposable return, command registration with this.skip() guard
+  - `addSkillCommand.test.ts` — 2 tests: Disposable return, command registration with this.skip() guard
+  - `skillsTreeProvider.test.ts` — 9 tests: getChildren() root/leaf/empty states, skill item rendering (book icon, viewSkill command, contextValue, tooltip), refresh event
+  - `decisionsTreeProvider.test.ts` — 10 tests: getChildren() root/leaf/empty, decision item rendering (notebook icon, openDecision command, description with date+author, tooltip), getTreeItem, refresh event
+  - `removeMemberEdgeCases.test.ts` — 13 tests: slug generation for simple names, mixed case, spaces, special chars, @prefix, hyphens, underscores, leading/trailing spaces, empty string, numbers
+  - `markdownUtilsEdgeCases.test.ts` — 12 tests: adjacent links, empty display text, parentheses in text/URL, multiline, image syntax preservation, query parameters, hash fragments
+  - `workDetailsEdgeCases.test.ts` — 17 tests: getInitials() with hyphenated/single-char/uppercase/lowercase names, renderInline() with multiple bold/code/unclosed, renderTable() empty/single-row/sparse/alignment, renderMarkdown() empty/newlines/entities, status badges, dispose idempotency
+  - `treeProviderSpecialMembers.test.ts` — 12 tests: sort order (regular→@copilot→scribe/ralph), special icons (edit/eye/robot), collapsibility (infra=None, @copilot=Collapsed), viewCharter command exclusion for @copilot, status badges (⚡/💤), markdown link stripping in names
+- **Patterns established:**
+  - Command registration tests use `this.skip()` guard with `extension/isActive/workspace` triple-check (from viewCharterCommand pattern)
+  - DecisionsTreeProvider.getChildren() is async — must be awaited (unlike the sync getDecisionItems() it calls internally)
+  - Private method tests use `(service as any).methodName.bind(service)` pattern
+  - Temp directories use `test-fixtures/temp-{name}-${Date.now()}` with teardown cleanup

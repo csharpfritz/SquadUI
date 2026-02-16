@@ -1114,6 +1114,25 @@ All 3 test files compile cleanly against current `main` with `tsc --noEmit` — 
 ## Sprint Goal
 **Ship Add Skill feature and close the skills management loop with QA validation.**
 
+---
+
+### 2026-02-16: Canvas charts must only render on visible tabs
+
+**By:** Rusty
+**What:** Dashboard canvas charts (velocity and burndown) are now deferred until their tab becomes visible, rather than rendering on page load when they're hidden.
+**Why:** Canvas elements inside `display: none` containers return `offsetWidth === 0`, causing `canvas.width = 0` and producing blank charts. The burndown milestone selector also had a duplicate event listener bug — each tab switch added another `change` handler. Both issues are fixed in `htmlTemplate.ts`.
+
+---
+
+### 2026-02-16: Test hardening conventions for new test files
+**By:** Basher
+**What:** Established patterns for command registration tests and tree provider tests in the SquadUI test suite.
+**Why:** With 11 new test files added in the test hardening sprint (#54), it's important that all future test files follow these conventions:
+1. Command registration tests must use the `this.skip()` triple-guard pattern (`extension/isActive/workspace`) to avoid false failures in CI environments without workspaces.
+2. Tree provider tests must `await` `getChildren()` even if the underlying method appears synchronous — `DecisionsTreeProvider.getChildren()` is async.
+3. Temp directories should use `test-fixtures/temp-{name}-${Date.now()}` with teardown cleanup to avoid cross-test pollution.
+4. Private method access uses `(instance as any).method.bind(instance)` — consistent with existing test patterns.
+
 ## Context & Opportunity
 
 v0.5.0/v0.5.1 polished the sidebar heavily — member ordering, icon upgrades (Scribe ✏️, Ralph 👁️, Copilot 🤖), decision/skill label cleanup, cross-project log parsing. The infrastructure is solid.

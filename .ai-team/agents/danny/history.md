@@ -43,3 +43,7 @@
  Dashboard decisions sort order  decisions list on dashboard should be sorted most-recent first  decided by Jeffrey T. Fritz
  Add Skill Error Handling  network failures now throw exceptions for better UX instead of silent empty arrays  decided by Rusty
  📌 Team update (2026-02-15): FileWatcherService watch pattern broadened from `**/.ai-team/orchestration-log/**/*.md` to `**/.ai-team/**/*.md` to catch all team metadata changes for automatic UI tree refresh — decided by Rusty
+
+📌 Team update (2026-02-16): Canvas charts must render on-demand when their tab becomes visible, not on page load. Hidden canvases report offsetWidth === 0, producing blank charts. Milestone selector also had duplicate event listeners that accumulated with each tab switch — both fixed in htmlTemplate.ts — decided by Rusty
+
+📌 Team update (2026-02-16): Test hardening conventions established — command registration tests use triple-guard pattern (extension/isActive/workspace); tree provider tests must await getChildren(); temp directories use test-fixtures/temp-{name}-${Date.now()} with teardown; private methods accessed via (instance as any).method.bind(instance) — decided by Basher

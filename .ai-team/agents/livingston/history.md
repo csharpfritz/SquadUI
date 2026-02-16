@@ -46,3 +46,5 @@
 ### 2026-02-15: Team Update — VS 2026 Extension CI/CD Separation Requirement
 
 📌 **Team update (2026-02-15):** VS 2026 extension must have separate build and publish CI processes from the VS Code extension. Different languages (C#/.NET vs TypeScript), different package formats (VSIX vs .vsix), different marketplaces (VS Marketplace vs VS Code Marketplace). Independent pipelines prevent coupling and allow independent release cadences. Plan for separate `.github/workflows/` files for VS 2026 extension build/release. — decided by Jeffrey T. Fritz (via Copilot)
+
+📌 Team update (2026-02-16): Test hardening conventions established — command registration tests use triple-guard pattern (extension/isActive/workspace); tree provider tests must await getChildren(); temp directories use test-fixtures/temp-{name}-${Date.now()} with teardown; private methods accessed via (instance as any).method.bind(instance) — decided by Basher

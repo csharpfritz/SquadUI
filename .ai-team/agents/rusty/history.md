@@ -55,3 +55,5 @@
 - **Fix pattern:** Removed `renderBurndownChart()` and `renderVelocityChart()` from initial page load. Both are now rendered on-demand when the user clicks their tab. Added `offsetWidth === 0` guard in both chart functions as belt-and-suspenders.
 - **Duplicate listener bug:** `renderBurndownChart()` was adding a new `change` listener to the milestone `<select>` on every call. Fixed by tracking rendered tabs in a `Set` and only attaching the listener once.
 - **Key files:** `src/views/dashboard/htmlTemplate.ts` — all three fixes are in the `<script>` block of the dashboard HTML template.
+
+📌 Team update (2026-02-16): Test hardening conventions established — command registration tests use triple-guard pattern (extension/isActive/workspace); tree provider tests must await getChildren(); temp directories use test-fixtures/temp-{name}-${Date.now()} with teardown; private methods accessed via (instance as any).method.bind(instance) — decided by Basher

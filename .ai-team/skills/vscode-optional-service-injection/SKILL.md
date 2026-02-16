@@ -2,7 +2,7 @@
 name: "vscode-optional-service-injection"
 description: "Pattern for VS Code tree views that consume optional services with graceful degradation"
 domain: "vscode-extensions"
-confidence: "low"
+confidence: "medium"
 source: "earned"
 ---
 
