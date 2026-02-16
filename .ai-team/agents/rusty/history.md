@@ -57,3 +57,8 @@
 - **Key files:** `src/views/dashboard/htmlTemplate.ts` — all three fixes are in the `<script>` block of the dashboard HTML template.
 
 📌 Team update (2026-02-16): Test hardening conventions established — command registration tests use triple-guard pattern (extension/isActive/workspace); tree provider tests must await getChildren(); temp directories use test-fixtures/temp-{name}-${Date.now()} with teardown; private methods accessed via (instance as any).method.bind(instance) — decided by Basher
+
+### Closed-Milestone Burndown Fix (2026-02-16)
+- **Bug:** Burndown chart for completed milestones appeared empty because `endDateObj` always extended to today. For a milestone completed weeks ago, the actual burndown curve was compressed into a tiny sliver with a long flat zero line.
+- **Fix:** In `DashboardDataBuilder.buildMilestoneBurndown()` (line ~300), added check: if all issues have `closedAt`, end date = latest close date (or `dueDate` if later). Open milestones retain original behavior (end at today). Surgical change — only the end-date computation was modified.
+- **Key insight:** Always consider whether a milestone is open vs closed when computing chart boundaries. Chart time axes should reflect the meaningful work period, not extend to the present for historical data.
