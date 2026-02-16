@@ -48,3 +48,21 @@
 📌 **Team update (2026-02-15):** VS 2026 extension must have separate build and publish CI processes from the VS Code extension. Different languages (C#/.NET vs TypeScript), different package formats (VSIX vs .vsix), different marketplaces (VS Marketplace vs VS Code Marketplace). Independent pipelines prevent coupling and allow independent release cadences. Plan for separate `.github/workflows/` files for VS 2026 extension build/release. — decided by Jeffrey T. Fritz (via Copilot)
 
 📌 Team update (2026-02-16): Test hardening conventions established — command registration tests use triple-guard pattern (extension/isActive/workspace); tree provider tests must await getChildren(); temp directories use test-fixtures/temp-{name}-${Date.now()} with teardown; private methods accessed via (instance as any).method.bind(instance) — decided by Basher
+
+### 2026-02-16: Release v0.7.1 — Agents Folder Scanning Fallback
+
+**Release process executed successfully:**
+- Bumped version: `0.7.0` → `0.7.1` in `package.json`
+- Updated `CHANGELOG.md`: Added v0.7.1 section with agents folder scanning feature, 9 new tests, 3-level fallback chain
+- Committed: `chore: release v0.7.1` (commit 5300f24)
+- Tagged: `git tag v0.7.1` and pushed with `git push origin main --tags`
+- CI workflow (databaseId 22076469158): Queued → In Progress → **Success** ✅
+- Release workflow (databaseId 22076469044): Automatically triggered by tag push → **Success** ✅
+- GitHub Release: Auto-created by Release workflow with VSIX artifact (`squadui-0.7.1.vsix`, 2.63 MiB), pre-release flag set (version < 1.0.0)
+- Release notes: Auto-generated with compare URL to v0.7.0
+
+**Key observations:**
+- Release workflow executed in parallel with CI, both completed successfully
+- github-actions[bot] created the release automatically per release.yml `softprops/action-gh-release@v2` configuration
+- VSIX packaging and marketplace publish appears successful (release shows artifact with SHA256)
+- No manual release creation needed — release.yml workflow handled it end-to-end
