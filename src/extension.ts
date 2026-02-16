@@ -158,44 +158,72 @@ export function activate(context: vscode.ExtensionContext): void {
     // Register squad init command
     let allocationPollInterval: ReturnType<typeof setInterval> | undefined;
     let initInProgress = false;
+    let initTerminalClosed = false;
     let resolveAllocation: (() => void) | undefined;
+
+    const finishAllocationIfReady = () => {
+        // Only clear spinner when BOTH conditions are met:
+        // 1. Members have appeared in team.md
+        // 2. The terminal has closed (both init + copilot commands finished)
+        if (!initInProgress) { return; }
+        const membersLoaded = dataProvider.getSquadMembers().then(members => members.length > 0);
+        membersLoaded.then(loaded => {
+            if (loaded && initTerminalClosed) {
+                teamView.message = undefined;
+                initInProgress = false;
+                resolveAllocation?.();
+                resolveAllocation = undefined;
+                if (allocationPollInterval) {
+                    clearInterval(allocationPollInterval);
+                    allocationPollInterval = undefined;
+                }
+                vscode.window.showInformationMessage('Squad team allocated successfully!');
+            }
+        });
+    };
+
     context.subscriptions.push(
-        registerInitSquadCommand(context, () => {
-            initInProgress = true;
-            dataProvider.refresh();
-            teamProvider.refresh();
-            skillsProvider.refresh();
-            decisionsProvider.refresh();
-            statusBar?.update();
-            vscode.commands.executeCommand('setContext', 'squadui.hasTeam', true);
-            teamView.message = 'Allocating team members…';
-            // Show built-in progress bar on the team view
-            vscode.window.withProgress(
-                { location: { viewId: 'squadTeam' } },
-                () => new Promise<void>(resolve => { resolveAllocation = resolve; })
-            );
-            // Polling fallback: check for members every 3s until they appear
-            if (allocationPollInterval) { clearInterval(allocationPollInterval); }
-            allocationPollInterval = setInterval(() => {
+        registerInitSquadCommand(context,
+            // onInitStart: spinner begins
+            () => {
+                initInProgress = true;
+                initTerminalClosed = false;
                 dataProvider.refresh();
                 teamProvider.refresh();
                 skillsProvider.refresh();
                 decisionsProvider.refresh();
                 statusBar?.update();
-                dataProvider.getSquadMembers().then(members => {
-                    if (members.length > 0) {
-                        teamView.message = undefined;
-                        initInProgress = false;
-                        resolveAllocation?.();
-                        resolveAllocation = undefined;
-                        if (allocationPollInterval) {
-                            clearInterval(allocationPollInterval);
-                            allocationPollInterval = undefined;
-                        }
-                    }
-                });
-            }, 3000);
-        })
+                vscode.commands.executeCommand('setContext', 'squadui.hasTeam', true);
+                teamView.message = 'Allocating team members…';
+                // Show built-in progress bar on the team view
+                vscode.window.withProgress(
+                    { location: { viewId: 'squadTeam' } },
+                    () => new Promise<void>(resolve => { resolveAllocation = resolve; })
+                );
+                // Polling: refresh views every 3s so members appear as they're written
+                if (allocationPollInterval) { clearInterval(allocationPollInterval); }
+                allocationPollInterval = setInterval(() => {
+                    dataProvider.refresh();
+                    teamProvider.refresh();
+                    skillsProvider.refresh();
+                    decisionsProvider.refresh();
+                    statusBar?.update();
+                    finishAllocationIfReady();
+                }, 3000);
+            },
+            // onTerminalClose: both commands finished, clear spinner if members loaded
+            () => {
+                initTerminalClosed = true;
+                // Final refresh to pick up any last-second writes
+                dataProvider.refresh();
+                teamProvider.refresh();
+                skillsProvider.refresh();
+                decisionsProvider.refresh();
+                statusBar?.update();
+                finishAllocationIfReady();
+                // If members haven't loaded yet, the poll interval will catch them
+            }
+        )
     );
 
     // Register squad upgrade command
@@ -380,24 +408,10 @@ export function activate(context: vscode.ExtensionContext): void {
         statusBar?.update();
         const teamExists = fs.existsSync(teamMdPath);
         vscode.commands.executeCommand('setContext', 'squadui.hasTeam', teamExists);
-        // Update loading message on team view
-        if (teamExists) {
-            dataProvider.getSquadMembers().then(members => {
-                if (members.length > 0) {
-                    teamView.message = undefined;
-                    initInProgress = false;
-                    resolveAllocation?.();
-                    resolveAllocation = undefined;
-                    // Clear polling interval if members have loaded
-                    if (allocationPollInterval) {
-                        clearInterval(allocationPollInterval);
-                        allocationPollInterval = undefined;
-                    }
-                } else if (initInProgress) {
-                    teamView.message = 'Allocating team members…';
-                }
-            });
-        } else {
+        // During init, keep refreshing views but let finishAllocationIfReady control spinner
+        if (teamExists && initInProgress) {
+            finishAllocationIfReady();
+        } else if (!teamExists) {
             teamView.message = undefined;
         }
     });

@@ -29,7 +29,8 @@ const UNIVERSES: UniverseOption[] = [
  */
 export function registerInitSquadCommand(
     context: vscode.ExtensionContext,
-    onInitComplete: () => void
+    onInitStart: () => void,
+    onTerminalClose: () => void
 ): vscode.Disposable {
     return vscode.commands.registerCommand('squadui.initSquad', async () => {
         const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
@@ -64,7 +65,7 @@ export function registerInitSquadCommand(
         }
 
         // Start spinner immediately so user sees progress
-        onInitComplete();
+        onInitStart();
 
         // Step 3 — Launch terminal with flags, then invoke copilot agent to set up charters
         const terminal = vscode.window.createTerminal({
@@ -77,13 +78,12 @@ export function registerInitSquadCommand(
         const copilotCmd = `copilot --agent squad -p "${copilotPrompt}" --allow-all-tools`;
         terminal.sendText(`${initCmd} && ${copilotCmd}`);
 
-        // Auto-refresh when team.md appears (don't wait for terminal close)
+        // Auto-refresh when team.md appears
         let initCompleted = false;
         const completeInit = () => {
             if (initCompleted) { return; }
             initCompleted = true;
             watcher.dispose();
-            vscode.window.showInformationMessage('Squad installed! Copilot is setting up your team charters...');
         };
 
         const teamMdPattern = new vscode.RelativePattern(workspaceFolder, '.ai-team/team.md');
@@ -91,11 +91,12 @@ export function registerInitSquadCommand(
         watcher.onDidCreate(() => completeInit());
         watcher.onDidChange(() => completeInit());
 
-        // Fallback: terminal close still triggers refresh
+        // Signal extension when the terminal closes (both commands finished)
         const listener = vscode.window.onDidCloseTerminal(closedTerminal => {
             if (closedTerminal === terminal) {
                 listener.dispose();
                 completeInit();
+                onTerminalClose();
             }
         });
 

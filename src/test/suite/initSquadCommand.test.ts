@@ -14,7 +14,7 @@ suite('initSquadCommand', () => {
     suite('registerInitSquadCommand()', () => {
         test('returns a Disposable', () => {
             const context = { subscriptions: [] } as any;
-            const disposable = registerInitSquadCommand(context, () => {});
+            const disposable = registerInitSquadCommand(context, () => {}, () => {});
 
             assert.ok(disposable, 'Should return a disposable');
             assert.ok(typeof disposable.dispose === 'function', 'Disposable should have dispose()');
