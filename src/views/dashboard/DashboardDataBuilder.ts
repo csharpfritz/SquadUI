@@ -299,7 +299,22 @@ export class DashboardDataBuilder {
 
         const today = new Date();
         today.setHours(0, 0, 0, 0);
-        const endDateObj = dueDate ? new Date(Math.max(today.getTime(), new Date(dueDate).getTime())) : today;
+
+        // For closed milestones, end at the last issue close date (not today)
+        const allClosed = issues.every(i => !!i.closedAt);
+        let effectiveEnd: Date;
+        if (allClosed) {
+            const lastClose = new Date(Math.max(...issues.map(i => new Date(i.closedAt!).getTime())));
+            lastClose.setHours(0, 0, 0, 0);
+            effectiveEnd = dueDate
+                ? new Date(Math.max(lastClose.getTime(), new Date(dueDate).getTime()))
+                : lastClose;
+        } else {
+            effectiveEnd = dueDate
+                ? new Date(Math.max(today.getTime(), new Date(dueDate).getTime()))
+                : today;
+        }
+        const endDateObj = effectiveEnd;
 
         // Build daily close events: date → set of issue numbers closed on that date
         const closeEvents = new Map<string, Set<number>>();
