@@ -107,17 +107,16 @@ export function activate(context: vscode.ExtensionContext): void {
             skillsProvider.refresh();
             decisionsProvider.refresh();
             statusBar?.update();
-            // Clear loading message after manual refresh (only if init was in progress)
-            dataProvider.getSquadMembers().then(members => {
-                if (members.length > 0) {
-                    teamView.message = undefined;
-                    initInProgress = false;
-                    resolveAllocation?.();
-                    resolveAllocation = undefined;
-                } else if (initInProgress) {
-                    teamView.message = 'Allocating team members…';
-                }
-            });
+            // During init, don't clear spinner — let finishAllocationIfReady handle it
+            if (initInProgress) {
+                finishAllocationIfReady();
+            } else {
+                dataProvider.getSquadMembers().then(members => {
+                    if (members.length > 0) {
+                        teamView.message = undefined;
+                    }
+                });
+            }
             vscode.window.showInformationMessage('Squad tree refreshed');
         })
     );
@@ -163,12 +162,20 @@ export function activate(context: vscode.ExtensionContext): void {
 
     const finishAllocationIfReady = () => {
         // Only clear spinner when BOTH conditions are met:
-        // 1. Members have appeared in team.md
+        // 1. Agent folders exist on disk (charters have been written)
         // 2. The terminal has closed (both init + copilot commands finished)
         if (!initInProgress) { return; }
-        const membersLoaded = dataProvider.getSquadMembers().then(members => members.length > 0);
-        membersLoaded.then(loaded => {
-            if (loaded && initTerminalClosed) {
+        if (!initTerminalClosed) { return; }
+        // Check for agent directories on disk — not just team.md entries
+        const agentsDir = path.join(workspaceRoot, '.ai-team', 'agents');
+        const agentFoldersExist = fs.existsSync(agentsDir) && 
+            fs.readdirSync(agentsDir).some(entry => {
+                const entryPath = path.join(agentsDir, entry);
+                return fs.statSync(entryPath).isDirectory() && 
+                    !entry.startsWith('_') && entry !== 'scribe';
+            });
+        dataProvider.getSquadMembers().then(members => {
+            if (members.length > 0 && agentFoldersExist) {
                 teamView.message = undefined;
                 initInProgress = false;
                 resolveAllocation?.();
@@ -177,6 +184,7 @@ export function activate(context: vscode.ExtensionContext): void {
                     clearInterval(allocationPollInterval);
                     allocationPollInterval = undefined;
                 }
+                vscode.commands.executeCommand('setContext', 'squadui.hasTeam', true);
                 vscode.window.showInformationMessage('Squad team allocated successfully!');
             }
         });
@@ -407,11 +415,14 @@ export function activate(context: vscode.ExtensionContext): void {
         decisionsProvider.refresh();
         statusBar?.update();
         const teamExists = fs.existsSync(teamMdPath);
-        vscode.commands.executeCommand('setContext', 'squadui.hasTeam', teamExists);
+        // During init, never reset hasTeam to false — the init wizard already set it true
+        if (!initInProgress) {
+            vscode.commands.executeCommand('setContext', 'squadui.hasTeam', teamExists);
+        }
         // During init, keep refreshing views but let finishAllocationIfReady control spinner
         if (teamExists && initInProgress) {
             finishAllocationIfReady();
-        } else if (!teamExists) {
+        } else if (!teamExists && !initInProgress) {
             teamView.message = undefined;
         }
     });
