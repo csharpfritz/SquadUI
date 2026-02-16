@@ -178,7 +178,7 @@ suite('squadFolderDetection', () => {
             assert.strictEqual(result, true);
         });
 
-        test('returns true when only .ai-team has team.md', () => {
+        test('returns false when .squad exists but only .ai-team has team.md', () => {
             const legacyDir = path.join(tempDir, '.ai-team');
             const newDir = path.join(tempDir, '.squad');
             fs.mkdirSync(legacyDir);
