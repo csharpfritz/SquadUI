@@ -63,13 +63,16 @@ export function registerInitSquadCommand(
             return; // user cancelled
         }
 
-        // Step 3 — Launch terminal with flags
+        // Step 3 — Launch terminal with flags, then invoke copilot agent to set up charters
         const terminal = vscode.window.createTerminal({
             name: 'Squad Init',
             cwd: workspaceFolder.uri,
         });
         terminal.show();
-        terminal.sendText(`npx github:bradygaster/squad init --universe "${selectedUniverse.universe}" --mission "${mission}"`);
+        const initCmd = `npx github:bradygaster/squad init --universe "${selectedUniverse.universe}" --mission "${mission}"`;
+        const copilotPrompt = `Set up the team for this project. The universe is ${selectedUniverse.universe}. The mission is: ${mission}`;
+        const copilotCmd = `copilot -a squad "${copilotPrompt}"`;
+        terminal.sendText(`${initCmd} && ${copilotCmd}`);
 
         // Auto-refresh when team.md appears (don't wait for terminal close)
         let initCompleted = false;
@@ -78,9 +81,7 @@ export function registerInitSquadCommand(
             initCompleted = true;
             watcher.dispose();
             onInitComplete();
-            vscode.window.showInformationMessage('Squad installed! Opening Copilot Chat to set up your team...');
-            const chatPrompt = `@squad Set up the team for this project. The universe is ${selectedUniverse.universe}. The mission is: ${mission}`;
-            vscode.commands.executeCommand('workbench.action.chat.open', chatPrompt);
+            vscode.window.showInformationMessage('Squad installed! Copilot is setting up your team charters...');
         };
 
         const teamMdPattern = new vscode.RelativePattern(workspaceFolder, '.ai-team/team.md');

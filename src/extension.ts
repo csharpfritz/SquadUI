@@ -109,7 +109,7 @@ export function activate(context: vscode.ExtensionContext): void {
             statusBar?.update();
             // Clear loading message after manual refresh
             dataProvider.getSquadMembers().then(members => {
-                teamView.message = members.length === 0 && fs.existsSync(teamMdPath) ? 'Loading team...' : undefined;
+                teamView.message = members.length === 0 && fs.existsSync(teamMdPath) ? '$(loading~spin) Allocating team members...' : undefined;
             });
             vscode.window.showInformationMessage('Squad tree refreshed');
         })
@@ -149,6 +149,7 @@ export function activate(context: vscode.ExtensionContext): void {
     );
 
     // Register squad init command
+    let allocationPollInterval: ReturnType<typeof setInterval> | undefined;
     context.subscriptions.push(
         registerInitSquadCommand(context, () => {
             dataProvider.refresh();
@@ -157,18 +158,25 @@ export function activate(context: vscode.ExtensionContext): void {
             decisionsProvider.refresh();
             statusBar?.update();
             vscode.commands.executeCommand('setContext', 'squadui.hasTeam', true);
-            teamView.message = 'Loading team...';
-            // Delayed re-refresh to catch files written after init returns
-            setTimeout(() => {
+            teamView.message = '$(loading~spin) Allocating team members...';
+            // Polling fallback: check for members every 3s until they appear
+            if (allocationPollInterval) { clearInterval(allocationPollInterval); }
+            allocationPollInterval = setInterval(() => {
                 dataProvider.refresh();
                 teamProvider.refresh();
                 skillsProvider.refresh();
                 decisionsProvider.refresh();
                 statusBar?.update();
                 dataProvider.getSquadMembers().then(members => {
-                    teamView.message = members.length === 0 ? 'Loading team...' : undefined;
+                    if (members.length > 0) {
+                        teamView.message = undefined;
+                        if (allocationPollInterval) {
+                            clearInterval(allocationPollInterval);
+                            allocationPollInterval = undefined;
+                        }
+                    }
                 });
-            }, 2000);
+            }, 3000);
         })
     );
 
@@ -357,7 +365,16 @@ export function activate(context: vscode.ExtensionContext): void {
         // Update loading message on team view
         if (teamExists) {
             dataProvider.getSquadMembers().then(members => {
-                teamView.message = members.length === 0 ? 'Loading team...' : undefined;
+                if (members.length > 0) {
+                    teamView.message = undefined;
+                    // Clear polling interval if members have loaded
+                    if (allocationPollInterval) {
+                        clearInterval(allocationPollInterval);
+                        allocationPollInterval = undefined;
+                    }
+                } else {
+                    teamView.message = '$(loading~spin) Allocating team members...';
+                }
             });
         } else {
             teamView.message = undefined;

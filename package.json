@@ -37,11 +37,13 @@
         },
         {
           "id": "squadSkills",
-          "name": "Skills"
+          "name": "Skills",
+          "when": "squadui.hasTeam"
         },
         {
           "id": "squadDecisions",
-          "name": "Decisions"
+          "name": "Decisions",
+          "when": "squadui.hasTeam"
         }
       ]
     },
@@ -130,16 +132,6 @@
     "viewsWelcome": [
       {
         "view": "squadTeam",
-        "contents": "$(people)\nReady to build your AI team?\n[Form your Squad](command:squadui.initSquad)",
-        "when": "!squadui.hasTeam"
-      },
-      {
-        "view": "squadSkills",
-        "contents": "$(people)\nReady to build your AI team?\n[Form your Squad](command:squadui.initSquad)",
-        "when": "!squadui.hasTeam"
-      },
-      {
-        "view": "squadDecisions",
         "contents": "$(people)\nReady to build your AI team?\n[Form your Squad](command:squadui.initSquad)",
         "when": "!squadui.hasTeam"
       }

@@ -115,3 +115,10 @@
 - **Info message updated:** Now reads "Squad installed! Opening Copilot Chat to set up your team..." to reflect the chat panel flow.
 - **Everything else unchanged:** FileSystemWatcher, terminal close fallback, `initCompleted` guard, `context.subscriptions.push(watcher, listener)`.
 📌 Team update (2026-02-16): Chat Panel Handoff — Init wizard no longer invokes Copilot agent via CLI in terminal. After `squad init` completes and team.md appears, opens VS Code Copilot Chat panel with `@squad` agent selected and setup prompt pre-filled. User sees Squad working in chat panel while sidebar populates. — decided by Rusty
+
+### Terminal CLI Handoff & Spinner Indicator (2026-02-16)
+- **Chat panel replaced with terminal CLI:** `workbench.action.chat.open` removed from `completeInit()`. Now chains `copilot -a squad "prompt"` after `squad init` via `&&` in a single `terminal.sendText()` call. Uses `copilot` CLI (not `gh copilot`), `-a squad` flag for agent selection.
+- **Spinner codicon:** `$(loading~spin)` in `teamView.message` renders an animated spinner in VS Code tree view messages. Set to `'$(loading~spin) Allocating team members...'` when init completes. Cleared to `undefined` when `getSquadMembers()` returns non-empty array.
+- **Polling fallback:** 3-second `setInterval` in the init callback checks for members and clears spinner. Belt-and-suspenders alongside the FileWatcherService `onFileChange` handler, which also clears the spinner when members appear.
+- **Key insight:** `$(loading~spin)` only works in `TreeView.message`, not in tree item labels. It's a codicon animation reference, not a ThemeIcon.
+📌 Team update (2026-02-16): Terminal CLI Handoff & Spinner — Replaced chat panel handoff with `copilot -a squad` CLI command chained via `&&` in terminal. Added `$(loading~spin)` spinner codicon in team panel message during allocation. 3-second polling fallback clears spinner when members load. — decided by Rusty

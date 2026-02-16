@@ -1,0 +1,4 @@
+### 2026-02-16: Replace chat panel handoff with terminal CLI command + add spinner
+**By:** Rusty
+**What:** Removed `workbench.action.chat.open` from init flow. Now chains `copilot -a squad "prompt"` after `squad init` via `&&` in the same terminal. Added `$(loading~spin) Allocating team members...` spinner in team panel while charters are being populated. Spinner cleared by both FileWatcher and a 3-second polling fallback.
+**Why:** The chat panel approach (`workbench.action.chat.open`) didn't work in practice — it wasn't reliably opening with the right agent context. Terminal CLI via `copilot -a squad` is a direct invocation that actually works. The spinner gives the user visual feedback that something is happening between `squad init` finishing and the team members appearing in the sidebar. Polling fallback ensures the spinner always clears even if the FileWatcher misses a change event.
