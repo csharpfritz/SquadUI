@@ -5,6 +5,30 @@ All notable changes to the SquadUI extension will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.0] - 2026-02-16
+
+### Added
+- **Init Wizard**: Native "Form your Squad" wizard with universe selector, mission input, and automated team allocation via Copilot CLI
+- **Welcome View**: "Form your Squad" button appears when no `.ai-team/` team exists, with conditional panel visibility (Skills and Decisions panels hidden until a squad is active)
+- **Upgrade Command**: Version-aware upgrade button checks installed Squad CLI version against latest and offers one-click upgrade
+- **Native Progress Bar**: Animated blue progress bar on the Team panel during squad allocation using `vscode.window.withProgress({ location: { viewId } })`
+- **File System Watcher**: Auto-refreshes Team panel when `.ai-team/` files change on disk — members appear incrementally during allocation
+- **CLI Copilot Handoff**: Init wizard chains `squad init` → `copilot --agent squad` terminal commands for fully automated team provisioning
+- **Conditional Toolbar**: Dashboard and Add Member buttons hidden when no squad exists (`squadui.hasTeam` context key)
+- **32 SquadVersionService tests** and **init wizard test suite**
+
+### Fixed
+- **Init spinner lifecycle**: Progress bar now requires BOTH terminal close AND members on disk before clearing — prevents premature spinner stop
+- **Welcome button flash**: File watcher no longer resets `squadui.hasTeam` context during active init, preventing the "Form your Squad" button from flashing back
+- **Agent folder verification**: Allocation checks for agent directories on disk (not just `team.md` entries) before declaring success
+- **Progress bar always stops on terminal close**: `stopAllocationProgress()` unconditionally resolves the progress bar when the terminal returns control
+- **Copilot CLI syntax**: Uses `copilot --agent squad -p "prompt" --allow-all-tools` (not `-a`)
+- **Team panel race condition**: Fixed display resilience when `team.md` is partially written during init
+- **Codicon spinner rendering**: Replaced `$(loading~spin)` text (renders as literal text in `TreeView.message`) with native VS Code progress bar API
+
+### Changed
+- **Init command callbacks**: Split from single `onInitComplete` into dual `onInitStart` / `onTerminalClose` callbacks for precise lifecycle control
+
 ## [0.6.1] - 2026-02-15
 
 ### Fixed
@@ -104,6 +128,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Team.md parser service for member roster management
 - Orchestration log service for runtime activity tracking
 
+[0.7.0]: https://github.com/csharpfritz/SquadUI/releases/tag/v0.7.0
+[0.6.1]: https://github.com/csharpfritz/SquadUI/releases/tag/v0.6.1
 [0.6.0]: https://github.com/csharpfritz/SquadUI/releases/tag/v0.6.0
 [0.5.0]: https://github.com/csharpfritz/SquadUI/releases/tag/v0.5.0
 [0.4.0]: https://github.com/csharpfritz/SquadUI/releases/tag/v0.4.0
