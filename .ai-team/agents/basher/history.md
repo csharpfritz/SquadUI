@@ -124,3 +124,19 @@
   - Upgrade button when-clause includes `squadui.upgradeAvailable`
 - Test approach: stub private methods via `(service as any).methodName` for network/exec isolation; test pure functions (isNewer, normalizeVersion) directly
 - Compilation clean, full suite 820 passing (32 new + 788 existing)
+
+### Team Display Resilience Tests (2026-02-16)
+- New test file: `src/test/suite/teamDisplayResilience.test.ts` — 12 tests across 8 suites
+- **Scenarios covered:**
+  1. Happy path: getSquadMembers() with valid Members table — 3 members, correct roles
+  2. Partial write: team.md exists but no Members section — returns empty (race condition during init)
+  3. Retry on empty roster: mock TeamMdService returns empty first, populated second — validates retry mechanism Rusty is adding
+  4. Log-participant fallback: no team.md, derives members from orchestration log participants with generic "Squad Member" role
+  5. No retry when team.md missing: spy confirms parseTeamMd called exactly once when file doesn't exist (null return)
+  6. FileWatcherService glob pattern: verifies WATCH_PATTERN includes `.ai-team` and `*.md`
+  7. TeamTreeProvider empty members: getChildren() returns empty array without crash when no members
+  8. Cache invalidation: refresh() clears all 4 cache fields, re-read from disk returns updated data
+- Uses `(provider as any).teamMdService.parseTeamMd` override pattern to simulate race condition without flaky timing
+- Retry delay set to 0ms compatibility — tests are deterministic, no timing assertions
+- Temp dirs use `test-fixtures/temp-resilience-${Date.now()}` with teardown cleanup
+- Compilation clean (`npx tsc --noEmit`); test execution deferred until Rusty's retry changes land
