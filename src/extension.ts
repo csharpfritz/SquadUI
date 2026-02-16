@@ -107,6 +107,10 @@ export function activate(context: vscode.ExtensionContext): void {
             skillsProvider.refresh();
             decisionsProvider.refresh();
             statusBar?.update();
+            // Clear loading message after manual refresh
+            dataProvider.getSquadMembers().then(members => {
+                teamView.message = members.length === 0 && fs.existsSync(teamMdPath) ? 'Loading team...' : undefined;
+            });
             vscode.window.showInformationMessage('Squad tree refreshed');
         })
     );
@@ -153,6 +157,18 @@ export function activate(context: vscode.ExtensionContext): void {
             decisionsProvider.refresh();
             statusBar?.update();
             vscode.commands.executeCommand('setContext', 'squadui.hasTeam', true);
+            teamView.message = 'Loading team...';
+            // Delayed re-refresh to catch files written after init returns
+            setTimeout(() => {
+                dataProvider.refresh();
+                teamProvider.refresh();
+                skillsProvider.refresh();
+                decisionsProvider.refresh();
+                statusBar?.update();
+                dataProvider.getSquadMembers().then(members => {
+                    teamView.message = members.length === 0 ? 'Loading team...' : undefined;
+                });
+            }, 2000);
         })
     );
 
@@ -338,6 +354,14 @@ export function activate(context: vscode.ExtensionContext): void {
         statusBar?.update();
         const teamExists = fs.existsSync(teamMdPath);
         vscode.commands.executeCommand('setContext', 'squadui.hasTeam', teamExists);
+        // Update loading message on team view
+        if (teamExists) {
+            dataProvider.getSquadMembers().then(members => {
+                teamView.message = members.length === 0 ? 'Loading team...' : undefined;
+            });
+        } else {
+            teamView.message = undefined;
+        }
     });
 }
 

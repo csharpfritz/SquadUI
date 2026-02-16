@@ -81,3 +81,10 @@
 - **Manual check command:** `squadui.checkForUpdates` (category: "Squad") — force-checks version and shows notification with result. "Upgrade Now" button triggers `squadui.upgradeSquad`.
 - **Post-upgrade flow:** Upgrade callback resets `upgradeAvailable` to false immediately, then force re-checks. This ensures the button disappears right away and only reappears if another update is released.
 - **Key pattern:** Non-blocking version check on activation — uses `.then()` instead of `await` to avoid slowing down extension startup.
+
+### Team Display Resilience (2026-02-16)
+- **Race condition fix:** `SquadDataProvider.getSquadMembers()` now retries once (after configurable delay, default 1.5s) when team.md exists on disk but `parseTeamMd()` returns a roster with 0 members. Handles the race where `squad init` sets `hasTeam=true` before the Members table is fully written. Fresh `TeamMdService` instance used for retry to avoid stale state.
+- **Delayed re-refresh on init:** `extension.ts` init callback now schedules a second refresh pass 2s after init completes, catching files that arrive after the init terminal command started but before the file watcher picks them up.
+- **Tree view loading message:** When `hasTeam` is true but members array is empty, `teamView.message` is set to `'Loading team...'` for user feedback. Cleared automatically when members load successfully. Applied in init callback, file watcher handler, and manual refresh command.
+- **Retry delay testability:** `retryDelayMs` is a constructor parameter on `SquadDataProvider` (default 1500ms), allowing tests to use a short delay.
+- **Key insight:** When squad init creates `.ai-team/team.md`, the file may exist before the Members table rows are written. A single delayed retry is sufficient — no polling loop needed.

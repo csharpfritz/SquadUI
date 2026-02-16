@@ -8,6 +8,8 @@
  * 3. If team.md is missing, falls back to log-participant discovery
  */
 
+import * as fs from 'fs';
+import * as path from 'path';
 import { SquadMember, Task, WorkDetails, OrchestrationLogEntry, DecisionEntry } from '../models';
 import { OrchestrationLogService } from './OrchestrationLogService';
 import { TeamMdService } from './TeamMdService';
@@ -28,9 +30,11 @@ export class SquadDataProvider {
     private cachedMembers: SquadMember[] | null = null;
     private cachedTasks: Task[] | null = null;
     private cachedDecisions: DecisionEntry[] | null = null;
+    private retryDelayMs: number;
 
-    constructor(teamRoot: string) {
+    constructor(teamRoot: string, retryDelayMs: number = 1500) {
         this.teamRoot = teamRoot;
+        this.retryDelayMs = retryDelayMs;
         this.orchestrationService = new OrchestrationLogService();
         this.teamMdService = new TeamMdService();
         this.decisionService = new DecisionService();
@@ -61,7 +65,18 @@ export class SquadDataProvider {
         const tasks = await this.getTasks();
 
         // Try team.md as authoritative roster first
-        const roster = await this.teamMdService.parseTeamMd(this.teamRoot);
+        let roster = await this.teamMdService.parseTeamMd(this.teamRoot);
+
+        // If team.md exists but has no members yet, retry once after a delay
+        // to handle the race where squad init is still writing the file
+        if (roster && roster.members.length === 0) {
+            const teamMdPath = path.join(this.teamRoot, '.ai-team', 'team.md');
+            if (fs.existsSync(teamMdPath)) {
+                await new Promise(resolve => setTimeout(resolve, this.retryDelayMs));
+                this.teamMdService = new TeamMdService();
+                roster = await this.teamMdService.parseTeamMd(this.teamRoot);
+            }
+        }
 
         let members: SquadMember[];
 
