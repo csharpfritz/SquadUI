@@ -140,22 +140,22 @@
       "view/title": [
         {
           "command": "squadui.addMember",
-          "when": "view == squadTeam",
+          "when": "view == squadTeam && squadui.hasTeam",
           "group": "navigation"
         },
         {
           "command": "squadui.refreshTree",
-          "when": "view == squadTeam",
+          "when": "view == squadTeam && squadui.hasTeam",
           "group": "navigation"
         },
         {
           "command": "squadui.openDashboard",
-          "when": "view == squadTeam",
+          "when": "view == squadTeam && squadui.hasTeam",
           "group": "navigation"
         },
         {
           "command": "squadui.addSkill",
-          "when": "view == squadSkills",
+          "when": "view == squadSkills && squadui.hasTeam",
           "group": "navigation"
         },
         {
