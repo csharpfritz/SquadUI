@@ -20,6 +20,7 @@ import {
     OrchestrationLogEntry,
     DecisionEntry,
     DashboardData,
+    GitHubIssue,
 } from '../../models';
 
 // ─── Test Helpers ────────────────────────────────────────────────────────────
@@ -70,6 +71,19 @@ function makeLogEntry(overrides: Partial<OrchestrationLogEntry> & { date: string
 /** Creates a minimal DecisionEntry. */
 function makeDecision(title: string, date?: string): DecisionEntry {
     return { title, date, filePath: 'decisions.md' };
+}
+
+/** Creates a minimal GitHubIssue with sensible defaults. */
+function makeIssue(overrides: Partial<GitHubIssue> & { number: number }): GitHubIssue {
+    return {
+        title: `Issue #${overrides.number}`,
+        state: 'open',
+        labels: [],
+        htmlUrl: `https://github.com/test/repo/issues/${overrides.number}`,
+        createdAt: daysAgo(10).toISOString(),
+        updatedAt: daysAgo(0).toISOString(),
+        ...overrides,
+    };
 }
 
 suite('DashboardDataBuilder', () => {
@@ -523,6 +537,37 @@ suite('DashboardDataBuilder', () => {
             const result = builder.buildDashboardData([], members, tasks, []);
 
             assert.strictEqual(result.activity.swimlanes[0].tasks.length, 3);
+        });
+    });
+
+    // ─── Burndown End-Date Bounding Tests ─────────────────────────────────
+
+    suite('Milestone Burndown End-Date Bounding', () => {
+
+        test('closed milestone ends at last close date', () => {
+            const issues: GitHubIssue[] = [
+                makeIssue({ number: 1, state: 'closed', createdAt: daysAgo(10).toISOString(), closedAt: daysAgo(5).toISOString() }),
+                makeIssue({ number: 2, state: 'closed', createdAt: daysAgo(8).toISOString(), closedAt: daysAgo(3).toISOString() }),
+                makeIssue({ number: 3, state: 'closed', createdAt: daysAgo(6).toISOString(), closedAt: daysAgo(2).toISOString() }),
+            ];
+            const result = builder.buildMilestoneBurndown('Closed Sprint', 1, issues);
+            const lastPoint = result.dataPoints[result.dataPoints.length - 1];
+
+            // Last data point date should be the latest closedAt (2 days ago), NOT today
+            assert.strictEqual(lastPoint.date, daysAgoStr(2));
+            assert.notStrictEqual(lastPoint.date, todayStr());
+        });
+
+        test('open milestone extends to today', () => {
+            const issues: GitHubIssue[] = [
+                makeIssue({ number: 1, state: 'closed', createdAt: daysAgo(10).toISOString(), closedAt: daysAgo(5).toISOString() }),
+                makeIssue({ number: 2, state: 'open', createdAt: daysAgo(8).toISOString() }),
+            ];
+            const result = builder.buildMilestoneBurndown('Active Sprint', 2, issues);
+            const lastPoint = result.dataPoints[result.dataPoints.length - 1];
+
+            // With open issues, the burndown should extend to today
+            assert.strictEqual(lastPoint.date, todayStr());
         });
     });
 
