@@ -74,8 +74,8 @@ export function registerInitSquadCommand(
         terminal.show();
         const initCmd = `npx github:bradygaster/squad init --universe "${selectedUniverse.universe}" --mission "${mission}"`;
         const copilotPrompt = `Set up the team for this project. The universe is ${selectedUniverse.universe}. The mission is: ${mission}`;
-        const copilotCmd = `copilot -a squad "${copilotPrompt}"`;
-        terminal.sendText(`${initCmd} & ${copilotCmd}`);
+        const copilotCmd = `copilot --agent squad -p "${copilotPrompt}" --allow-all-tools`;
+        terminal.sendText(`${initCmd} && ${copilotCmd}`);
 
         // Auto-refresh when team.md appears (don't wait for terminal close)
         let initCompleted = false;
