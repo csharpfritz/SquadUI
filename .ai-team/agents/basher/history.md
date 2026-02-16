@@ -143,3 +143,21 @@
  Team update (2026-02-16): Native Init Wizard  squad init replaced with native VS Code wizard: QuickPick (15 universes)  InputBox (mission description)  Terminal with --universe and --mission flags. viewsWelcome now covers all three panels (squadTeam, squadSkills, squadDecisions). Upgrade button only in Team toolbar. API signatures unchanged  existing tests pass.  decided by Rusty
  Team update (2026-02-16): Conditional Upgrade Button via Version Check  new context key squadui.upgradeAvailable set when SquadVersionService confirms newer release. Upgrade button gated on squadui.hasTeam && squadui.upgradeAvailable. Manual re-check available via squadui.checkForUpdates command. Post-upgrade flow resets context and re-checks.  decided by Rusty
  Team update (2026-02-16): Team Display Resilience  Race Condition Handling  SquadDataProvider.getSquadMembers() retries once (after configurable delay) when team.md exists but roster is empty. Delayed re-refresh 2s after init. Tree view shows "Loading team..." when hasTeam is true but members empty. Retry delay is constructor-configurable for testability.  decided by Rusty
+
+### Agents Folder Discovery Tests (2026-02-17)
+- New test file: `src/test/suite/agentsFolderDiscovery.test.ts` — 9 test cases
+- Written test-first for Linus's `discoverMembersFromAgentsFolder()` method in SquadDataProvider
+- **Test cases:**
+  1. Agents folder with charter files — discovers members with roles extracted from `## Identity` → `- **Role:**` line
+  2. Agents folder without charter files — discovers members with default "Squad Member" role, capitalized folder names
+  3. Skips `_alumni` and `scribe` directories — only non-excluded dirs produce members
+  4. Empty agents folder — returns empty array (falls through to log participant fallback)
+  5. No agents folder — `.ai-team/` exists but no `agents/` subdirectory, returns empty array gracefully
+  6. team.md takes priority — when team.md has valid Members table, agents folder is not consulted
+  7. Role extraction: `- **Role:** Backend Dev` format → "Backend Dev"
+  8. Role extraction: charter with no Identity section → default role
+  9. Role extraction: charter with Identity but no Role line → default role
+- All tests use empty team.md (no Members table) to force the agents folder fallback path, except test 6 which validates priority
+- Temp dirs use `test-fixtures/temp-agents-${Date.now()}` with teardown cleanup
+- Tests compile clean (`npx tsc --noEmit`); execution deferred until Linus's implementation lands
+- Follows established patterns: Mocha TDD, `SquadDataProvider(dir, 0)` for zero retry delay, `fs.mkdirSync/writeFileSync` for fixtures

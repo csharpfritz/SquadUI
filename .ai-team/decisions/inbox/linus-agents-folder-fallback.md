@@ -1,0 +1,4 @@
+### 2026-02-16: Agents folder scanning fallback for team detection
+**By:** Linus
+**What:** Added a second-level fallback in SquadDataProvider.getSquadMembers() that scans `.ai-team/agents/` subdirectories to discover team members when team.md parsing returns empty. Each agent folder's `charter.md` is read to extract the role from the `- **Role:** {role}` line. Special folders `_alumni` and `scribe` are skipped. The detection chain is now: team.md → agents folder → log participants.
+**Why:** Many users have teams allocated but team.md doesn't parse correctly due to different heading formats or missing tables. The agents ARE present as folders on disk, so scanning them provides a reliable middle-ground fallback before falling back to orchestration log participants (which is less accurate and only works after sessions have been logged).

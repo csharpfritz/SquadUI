@@ -61,3 +61,13 @@
 - Existing H2/H3 parsing is completely untouched — the H1 block uses `continue` before reaching H2/H3 logic
 
 📌 Team update (2026-02-16): Test hardening conventions established — command registration tests use triple-guard pattern (extension/isActive/workspace); tree provider tests must await getChildren(); temp directories use test-fixtures/temp-{name}-${Date.now()} with teardown; private methods accessed via (instance as any).method.bind(instance) — decided by Basher
+
+### Agents Folder Scanning Fallback
+- Added `discoverMembersFromAgentsFolder()` to SquadDataProvider as a second-level fallback in the member detection chain
+- Detection order is now: team.md Members/Roster table → agents folder scan → orchestration log participants
+- Scans `.ai-team/agents/` subdirectories, skipping `_alumni` and `scribe`
+- Reads `charter.md` from each agent folder to extract role via `- **Role:** {role}` regex
+- Falls back to "Squad Member" default role if no charter or no Role line found
+- Folder names are capitalized for display (e.g., `danny` → `Danny`)
+- Method is self-contained and handles missing/unreadable agents directory gracefully (returns empty array)
+- Pre-existing test suite at `agentsFolderDiscovery.test.ts` validates all edge cases
