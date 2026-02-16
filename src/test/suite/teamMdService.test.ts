@@ -444,6 +444,48 @@ suite('TeamMdService', () => {
         });
     });
 
+    suite('parseContent() — Roster heading fallback', () => {
+        test('parses members when heading is ## Roster instead of ## Members', () => {
+            const content = [
+                '# Team',
+                '',
+                '## Roster',
+                '',
+                '| Name | Role | Charter | Status |',
+                '|------|------|---------|--------|',
+                '| Alice | Engineer | `.ai-team/agents/alice/charter.md` | ✅ Active |',
+                '| Bob | Designer | `.ai-team/agents/bob/charter.md` | ✅ Active |',
+            ].join('\n');
+
+            const roster = service.parseContent(content);
+
+            assert.strictEqual(roster.members.length, 2);
+            assert.strictEqual(roster.members[0].name, 'Alice');
+            assert.strictEqual(roster.members[1].name, 'Bob');
+        });
+
+        test('parses members with ## Roster under # Team Roster title', () => {
+            const content = [
+                '# Team Roster',
+                '',
+                '## Roster',
+                '',
+                '| Name | Role | Status |',
+                '|------|------|--------|',
+                '| Charlie | QA | ✅ Active |',
+                '| Dana | DevOps | 🔨 Working |',
+            ].join('\n');
+
+            const roster = service.parseContent(content);
+
+            assert.strictEqual(roster.members.length, 2);
+            assert.strictEqual(roster.members[0].name, 'Charlie');
+            assert.strictEqual(roster.members[0].role, 'QA');
+            assert.strictEqual(roster.members[1].name, 'Dana');
+            assert.strictEqual(roster.members[1].status, 'working');
+        });
+    });
+
     suite('parseContent() — edge cases', () => {
         test('handles team.md with only a title', () => {
             const roster = service.parseContent('# My Team');

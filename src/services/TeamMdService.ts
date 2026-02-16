@@ -106,8 +106,8 @@ export class TeamMdService {
     private parseMembers(content: string): SquadMember[] {
         const members: SquadMember[] = [];
 
-        // Find the Members section
-        const membersSection = this.extractSection(content, 'Members');
+        // Find the Members section, falling back to Roster
+        const membersSection = this.extractSection(content, 'Members') ?? this.extractSection(content, 'Roster');
         if (!membersSection) {
             return members;
         }
