@@ -69,14 +69,7 @@ export function registerInitSquadCommand(
             cwd: workspaceFolder.uri,
         });
         terminal.show();
-        const initCmd = `npx github:bradygaster/squad init --universe "${selectedUniverse.universe}" --mission "${mission}"`;
-        const copilotPrompt = `Set up the team for this project. The universe is ${selectedUniverse.universe}. The mission is: ${mission}`;
-        const copilotFlags = `--agent squad --allow-all-tools -i '${copilotPrompt}'`;
-        // Prefer "gh copilot" but fall back to bare "copilot" if gh extension unavailable
-        const copilotCmd = process.platform === 'win32'
-            ? `(gh copilot -- ${copilotFlags} 2>nul || copilot ${copilotFlags})`
-            : `(gh copilot -- ${copilotFlags} 2>/dev/null || copilot ${copilotFlags})`;
-        terminal.sendText(`${initCmd} && ${copilotCmd}`);
+        terminal.sendText(`npx github:bradygaster/squad init --universe "${selectedUniverse.universe}" --mission "${mission}"`);
 
         // Auto-refresh when team.md appears (don't wait for terminal close)
         let initCompleted = false;
@@ -85,7 +78,9 @@ export function registerInitSquadCommand(
             initCompleted = true;
             watcher.dispose();
             onInitComplete();
-            vscode.window.showInformationMessage('Squad initialized! Your team is ready.');
+            vscode.window.showInformationMessage('Squad installed! Opening Copilot Chat to set up your team...');
+            const chatPrompt = `@squad Set up the team for this project. The universe is ${selectedUniverse.universe}. The mission is: ${mission}`;
+            vscode.commands.executeCommand('workbench.action.chat.open', chatPrompt);
         };
 
         const teamMdPattern = new vscode.RelativePattern(workspaceFolder, '.ai-team/team.md');

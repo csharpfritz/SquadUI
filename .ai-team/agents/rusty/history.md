@@ -100,3 +100,18 @@
 - **Cleanup:** Watcher is disposed after firing. Terminal close listener remains as fallback and also disposes the watcher if it hasn't fired yet. Both are pushed to `context.subscriptions`.
 - **Key pattern:** `vscode.RelativePattern(workspaceFolder, '.ai-team/team.md')` scopes the watcher to a single file in the workspace — no glob needed, no noise from other file changes.
 📌 Team update (2026-02-16): Init Auto-Refresh — FileSystemWatcher on `.ai-team/team.md` triggers tree refresh immediately when file appears, instead of waiting for terminal close. Terminal close kept as fallback. Double-refresh prevented via boolean guard. — decided by Rusty
+
+### Two-Command Init: Squad Init + Agent Charter Setup (2026-02-16)
+- **Change:** `terminal.sendText()` in `initSquadCommand.ts` now chains two commands with `&&`: (1) `npx github:bradygaster/squad init --universe "..." --mission "..."` scaffolds the `.ai-team/` directory, then (2) `gh copilot -- --agent squad --allow-all-tools -i 'Set up the team...'` invokes the Squad Copilot agent to populate charters.
+- **Chaining strategy:** Single `sendText()` call with `&&` — second command only runs if init exits successfully. Cleaner than detecting terminal command completion programmatically.
+- **Quote handling:** First command uses double quotes around universe/mission values (template literal interpolation). Second command uses single quotes around the `-i` prompt to avoid conflicts. Works in both cmd.exe and PowerShell.
+- **No other changes:** FileSystemWatcher, terminal close fallback, `initCompleted` guard, and all existing behavior remain untouched.
+📌 Team update (2026-02-16): Two-Command Init — `terminal.sendText()` now chains `squad init` + `gh copilot -- --agent squad` with `&&` so charters are populated automatically after scaffolding. Single sendText call, single quotes for the Copilot prompt. — decided by Rusty
+
+### Chat Panel Handoff for Init (2026-02-16)
+- **Change:** Removed CLI-based Copilot agent invocation from `terminal.sendText()`. Terminal now only runs `npx github:bradygaster/squad init --universe "..." --mission "..."`.
+- **New flow:** After `.ai-team/team.md` appears (FileSystemWatcher) or terminal closes (fallback), `completeInit()` calls `onInitComplete()` then opens the Copilot Chat panel via `vscode.commands.executeCommand('workbench.action.chat.open', chatPrompt)` with `@squad` agent pre-selected and prompt pre-filled.
+- **Removed:** `copilotPrompt`, `copilotFlags`, `copilotCmd` variables and the `&&` chaining logic. `process.platform` check for win32/unix null redirect no longer needed.
+- **Info message updated:** Now reads "Squad installed! Opening Copilot Chat to set up your team..." to reflect the chat panel flow.
+- **Everything else unchanged:** FileSystemWatcher, terminal close fallback, `initCompleted` guard, `context.subscriptions.push(watcher, listener)`.
+📌 Team update (2026-02-16): Chat Panel Handoff — Init wizard no longer invokes Copilot agent via CLI in terminal. After `squad init` completes and team.md appears, opens VS Code Copilot Chat panel with `@squad` agent selected and setup prompt pre-filled. User sees Squad working in chat panel while sidebar populates. — decided by Rusty
