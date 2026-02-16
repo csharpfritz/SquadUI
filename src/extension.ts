@@ -190,6 +190,18 @@ export function activate(context: vscode.ExtensionContext): void {
         });
     };
 
+    const stopAllocationProgress = () => {
+        // Unconditionally stop the progress bar and polling when terminal closes
+        initInProgress = false;
+        resolveAllocation?.();
+        resolveAllocation = undefined;
+        teamView.message = undefined;
+        if (allocationPollInterval) {
+            clearInterval(allocationPollInterval);
+            allocationPollInterval = undefined;
+        }
+    };
+
     context.subscriptions.push(
         registerInitSquadCommand(context,
             // onInitStart: spinner begins
@@ -219,7 +231,7 @@ export function activate(context: vscode.ExtensionContext): void {
                     finishAllocationIfReady();
                 }, 3000);
             },
-            // onTerminalClose: both commands finished, clear spinner if members loaded
+            // onTerminalClose: commands finished, stop progress bar
             () => {
                 initTerminalClosed = true;
                 // Final refresh to pick up any last-second writes
@@ -228,8 +240,14 @@ export function activate(context: vscode.ExtensionContext): void {
                 skillsProvider.refresh();
                 decisionsProvider.refresh();
                 statusBar?.update();
-                finishAllocationIfReady();
-                // If members haven't loaded yet, the poll interval will catch them
+                // Always stop the progress bar when terminal closes
+                stopAllocationProgress();
+                // Update hasTeam based on what's actually on disk now
+                const teamExists = fs.existsSync(path.join(workspaceRoot, '.ai-team', 'team.md'));
+                vscode.commands.executeCommand('setContext', 'squadui.hasTeam', teamExists);
+                if (teamExists) {
+                    vscode.window.showInformationMessage('Squad team allocated successfully!');
+                }
             }
         )
     );
