@@ -312,14 +312,14 @@ export class GitHubIssuesService {
 
     /**
      * Fetches available milestones from the repository.
-     * Returns open milestones sorted by most recently created.
+     * Returns all milestones (open and closed) sorted by most recently created.
      */
     async getMilestones(workspaceRoot: string): Promise<GitHubMilestone[]> {
         const config = await this.getIssueSource(workspaceRoot);
         if (!config) { return []; }
 
         try {
-            const apiPath = `/repos/${config.owner}/${config.repo}/milestones?state=open&sort=created&direction=desc&per_page=10`;
+            const apiPath = `/repos/${config.owner}/${config.repo}/milestones?state=all&sort=created&direction=desc&per_page=10`;
             const raw = await this.apiGet<Array<{
                 number: number; title: string; state: string;
                 open_issues: number; closed_issues: number;
