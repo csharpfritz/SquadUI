@@ -70,7 +70,7 @@ export class DecisionService {
             if (hashCount === 1) {
                 const h1Match = line.match(/^#\s+Decision:\s+(.+)$/i);
                 if (h1Match) {
-                    let title = h1Match[1].trim();
+                    const title = h1Match[1].trim();
                     let date: string | undefined;
                     let author: string | undefined;
 
