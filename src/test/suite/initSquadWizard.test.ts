@@ -102,6 +102,7 @@ suite('initSquadWizard', () => {
             let universeList: unknown;
             try {
                 // Dynamic import to avoid compile error if not yet exported
+                // eslint-disable-next-line @typescript-eslint/no-var-requires
                 const mod = require('../../commands/initSquadCommand') as Record<string, unknown>;
                 universeList = mod.UNIVERSE_OPTIONS ?? mod.universeOptions ?? mod.UNIVERSES;
             } catch {

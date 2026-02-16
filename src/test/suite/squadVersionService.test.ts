@@ -12,6 +12,8 @@
  */
 
 import * as assert from 'assert';
+import * as fs from 'fs';
+import * as path from 'path';
 import { SquadVersionService } from '../../services/SquadVersionService';
 
 suite('SquadVersionService', () => {
@@ -307,8 +309,6 @@ suite('SquadVersionService', () => {
         let packageJson: any;
 
         setup(() => {
-            const fs = require('fs');
-            const path = require('path');
             const pkgPath = path.resolve(__dirname, '../../../package.json');
             packageJson = JSON.parse(fs.readFileSync(pkgPath, 'utf-8'));
         });
