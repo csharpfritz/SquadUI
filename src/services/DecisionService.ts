@@ -5,6 +5,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { DecisionEntry } from '../models';
+import { getSquadPath } from '../utils/squadFolderDetection';
 
 export class DecisionService {
     /**
@@ -18,7 +19,7 @@ export class DecisionService {
         this.parseDecisionsMd(workspaceRoot, decisions);
 
         // Also scan individual files in decisions/ directory
-        const decisionsDir = path.join(workspaceRoot, '.ai-team', 'decisions');
+        const decisionsDir = getSquadPath(workspaceRoot, 'decisions');
         if (fs.existsSync(decisionsDir)) {
             this.scanDirectory(decisionsDir, decisions);
         }
@@ -28,7 +29,7 @@ export class DecisionService {
     }
 
     private parseDecisionsMd(workspaceRoot: string, decisions: DecisionEntry[]): void {
-        const filePath = path.join(workspaceRoot, '.ai-team', 'decisions.md');
+        const filePath = getSquadPath(workspaceRoot, 'decisions.md');
         if (!fs.existsSync(filePath)) {
             return;
         }

@@ -108,7 +108,7 @@ export function registerAddSkillCommand(
         // Step 3: Confirm & install
         const confirm = await vscode.window.showQuickPick(
             [
-                { label: '$(check) Install', description: `Download "${skill.name}" to .ai-team/skills/` },
+                { label: '$(check) Install', description: `Download "${skill.name}" to squad skills directory` },
                 { label: '$(close) Cancel', description: 'Go back' },
             ],
             {

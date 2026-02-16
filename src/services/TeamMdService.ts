@@ -4,8 +4,8 @@
  */
 
 import * as fs from 'fs';
-import * as path from 'path';
 import { SquadMember, TeamRoster } from '../models';
+import { getSquadPath } from '../utils/squadFolderDetection';
 
 /**
  * Represents the @copilot capability profile parsed from team.md.
@@ -40,17 +40,15 @@ export interface ExtendedTeamRoster extends TeamRoster {
  * Handles malformed/missing files gracefully.
  */
 export class TeamMdService {
-    private static readonly TEAM_MD_PATH = '.ai-team/team.md';
-
     /**
      * Parses a team.md file from the specified workspace root.
      * 
-     * @param workspaceRoot - Root directory containing the .ai-team folder
+     * @param workspaceRoot - Root directory containing the .squad or .ai-team folder
      * @returns Parsed team roster, or null if file doesn't exist
      * @throws Error if file exists but cannot be parsed
      */
     async parseTeamMd(workspaceRoot: string): Promise<ExtendedTeamRoster | null> {
-        const teamMdPath = path.join(workspaceRoot, TeamMdService.TEAM_MD_PATH);
+        const teamMdPath = getSquadPath(workspaceRoot, 'team.md');
 
         // Check if file exists
         try {

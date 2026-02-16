@@ -1,11 +1,13 @@
 /**
  * Service for reading and parsing orchestration log files.
- * Logs are stored in `.ai-team/log/` or `.ai-team/orchestration-log/` directories.
+ * Logs are stored in `.squad/log/` or `.squad/orchestration-log/` directories
+ * (or legacy `.ai-team/log/` or `.ai-team/orchestration-log/`).
  */
 
 import * as fs from 'fs';
 import * as path from 'path';
 import { OrchestrationLogEntry, Task, MemberStatus } from '../models';
+import { getSquadPath } from '../utils/squadFolderDetection';
 
 /**
  * Service for discovering and parsing orchestration log files.
@@ -17,19 +19,20 @@ export class OrchestrationLogService {
 
     /**
      * Discovers all log files in the orchestration-log directory.
-     * Searches for .md files in `.ai-team/orchestration-log/` or `.ai-team/log/`.
+     * Searches for .md files in `.squad/orchestration-log/` or `.squad/log/`
+     * (or legacy `.ai-team/orchestration-log/` or `.ai-team/log/`).
      * 
-     * @param teamRoot - Root directory containing the .ai-team folder
+     * @param teamRoot - Root directory containing the squad folder
      * @returns Array of absolute paths to log files
      */
     async discoverLogFiles(teamRoot: string): Promise<string[]> {
-        const aiTeamDir = path.join(teamRoot, '.ai-team');
+        const squadDir = getSquadPath(teamRoot, '');
         
         // Collect files from ALL log directories (union)
         const allFiles: string[] = [];
 
         for (const dirName of OrchestrationLogService.LOG_DIRECTORIES) {
-            const logDir = path.join(aiTeamDir, dirName);
+            const logDir = path.join(squadDir, dirName);
             
             try {
                 const exists = await this.directoryExists(logDir);

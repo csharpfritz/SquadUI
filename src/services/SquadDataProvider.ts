@@ -9,11 +9,11 @@
  */
 
 import * as fs from 'fs';
-import * as path from 'path';
 import { SquadMember, Task, WorkDetails, OrchestrationLogEntry, DecisionEntry } from '../models';
 import { OrchestrationLogService } from './OrchestrationLogService';
 import { TeamMdService } from './TeamMdService';
 import { DecisionService } from './DecisionService';
+import { getSquadPath } from '../utils/squadFolderDetection';
 
 /**
  * Provides squad data to the UI layer.
@@ -70,7 +70,7 @@ export class SquadDataProvider {
         // If team.md exists but has no members yet, retry once after a delay
         // to handle the race where squad init is still writing the file
         if (roster && roster.members.length === 0) {
-            const teamMdPath = path.join(this.teamRoot, '.ai-team', 'team.md');
+            const teamMdPath = getSquadPath(this.teamRoot, 'team.md');
             if (fs.existsSync(teamMdPath)) {
                 await new Promise(resolve => setTimeout(resolve, this.retryDelayMs));
                 this.teamMdService = new TeamMdService();

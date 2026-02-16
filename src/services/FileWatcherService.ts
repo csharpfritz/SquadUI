@@ -1,10 +1,11 @@
 /**
- * Service for watching .ai-team file changes (team roster, charters, decisions,
- * orchestration logs, skills). Uses VS Code's FileSystemWatcher API internally
- * but exposes a testable interface.
+ * Service for watching squad folder file changes (team roster, charters, decisions,
+ * orchestration logs, skills). Supports both .squad and .ai-team folder structures.
+ * Uses VS Code's FileSystemWatcher API internally but exposes a testable interface.
  */
 
 import * as vscode from 'vscode';
+import { getSquadWatchPattern } from '../utils/squadFolderDetection';
 
 /** Event types emitted by the file watcher */
 export type FileWatcherEventType = 'created' | 'changed' | 'deleted';
@@ -25,13 +26,13 @@ export interface CacheInvalidator {
 }
 
 /**
- * Watches the .ai-team directory for file changes (team.md, charters,
- * decisions, orchestration logs, skills). Debounces rapid changes to
- * prevent thrashing.
+ * Watches the squad directory for file changes (team.md, charters,
+ * decisions, orchestration logs, skills). Supports both .squad and .ai-team folders.
+ * Debounces rapid changes to prevent thrashing.
  */
 export class FileWatcherService implements vscode.Disposable {
     private static readonly DEFAULT_DEBOUNCE_MS = 300;
-    private static readonly WATCH_PATTERN = '**/.ai-team/**/*.md';
+    private static readonly WATCH_PATTERN = getSquadWatchPattern();
 
     private watcher: vscode.FileSystemWatcher | undefined;
     private debounceTimer: NodeJS.Timeout | undefined;
@@ -50,7 +51,7 @@ export class FileWatcherService implements vscode.Disposable {
     }
 
     /**
-     * Starts watching for .ai-team file changes.
+     * Starts watching for squad folder file changes.
      * Safe to call multiple times; subsequent calls are no-ops.
      */
     start(): void {

@@ -86,7 +86,7 @@ export function registerInitSquadCommand(
             watcher.dispose();
         };
 
-        const teamMdPattern = new vscode.RelativePattern(workspaceFolder, '.ai-team/team.md');
+        const teamMdPattern = new vscode.RelativePattern(workspaceFolder, '{.squad,.ai-team}/team.md');
         const watcher = vscode.workspace.createFileSystemWatcher(teamMdPattern, false, false, true);
         watcher.onDidCreate(() => completeInit());
         watcher.onDidChange(() => completeInit());

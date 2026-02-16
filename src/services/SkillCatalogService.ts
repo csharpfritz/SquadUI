@@ -13,6 +13,7 @@ import * as https from 'https';
 import * as fs from 'fs';
 import * as path from 'path';
 import { Skill } from '../models';
+import { getSquadPath } from '../utils/squadFolderDetection';
 
 /** Request timeout in milliseconds */
 const REQUEST_TIMEOUT_MS = 15_000;
@@ -79,17 +80,17 @@ export class SkillCatalogService {
     }
 
     /**
-     * Downloads a skill and writes it to `.ai-team/skills/{name}/SKILL.md`.
+     * Downloads a skill and writes it to `.squad/skills/{name}/SKILL.md` or `.ai-team/skills/{name}/SKILL.md`.
      * Creates directories as needed. Throws if the skill directory already exists
      * unless `force` is true.
      *
      * @param skill - The skill to download
-     * @param teamRoot - Workspace root containing the .ai-team directory
+     * @param teamRoot - Workspace root containing the squad directory
      * @param force - If true, overwrite an existing skill directory
      */
     async downloadSkill(skill: Skill, teamRoot: string, force = false): Promise<void> {
         const slug = this.slugify(skill.name);
-        const skillDir = path.join(teamRoot, '.ai-team', 'skills', slug);
+        const skillDir = getSquadPath(teamRoot, path.join('skills', slug));
         const skillFile = path.join(skillDir, 'SKILL.md');
 
         // Duplicate protection: refuse to overwrite unless forced
@@ -112,13 +113,13 @@ export class SkillCatalogService {
     }
 
     /**
-     * Reads installed skills from `.ai-team/skills/` on disk.
+     * Reads installed skills from `.squad/skills/` or `.ai-team/skills/` on disk.
      * Each subdirectory with a SKILL.md is treated as an installed skill.
      *
-     * @param teamRoot - Workspace root containing the .ai-team directory
+     * @param teamRoot - Workspace root containing the squad directory
      */
     getInstalledSkills(teamRoot: string): Skill[] {
-        const skillsDir = path.join(teamRoot, '.ai-team', 'skills');
+        const skillsDir = getSquadPath(teamRoot, 'skills');
         if (!fs.existsSync(skillsDir)) {
             return [];
         }

@@ -5,6 +5,7 @@ import { GitHubIssue } from './models';
 import { SquadDataProvider, FileWatcherService, GitHubIssuesService, SquadVersionService } from './services';
 import { TeamTreeProvider, SkillsTreeProvider, DecisionsTreeProvider, WorkDetailsWebview, IssueDetailWebview, SquadStatusBar, SquadDashboardWebview } from './views';
 import { registerInitSquadCommand, registerUpgradeSquadCommand, registerAddMemberCommand, registerRemoveMemberCommand, registerAddSkillCommand } from './commands';
+import { hasSquadTeam, getSquadPath } from './utils/squadFolderDetection';
 
 let fileWatcher: FileWatcherService | undefined;
 let webview: WorkDetailsWebview | undefined;
@@ -23,9 +24,8 @@ export function activate(context: vscode.ExtensionContext): void {
         return;
     }
 
-    // Set initial hasTeam context based on .ai-team/team.md existence
-    const teamMdPath = path.join(workspaceRoot, '.ai-team', 'team.md');
-    const hasTeam = fs.existsSync(teamMdPath);
+    // Set initial hasTeam context based on team.md existence
+    const hasTeam = hasSquadTeam(workspaceRoot);
     vscode.commands.executeCommand('setContext', 'squadui.hasTeam', hasTeam);
 
     // Create version service and check for upgrades if team exists
@@ -167,7 +167,7 @@ export function activate(context: vscode.ExtensionContext): void {
         if (!initInProgress) { return; }
         if (!initTerminalClosed) { return; }
         // Check for agent directories on disk — not just team.md entries
-        const agentsDir = path.join(workspaceRoot, '.ai-team', 'agents');
+        const agentsDir = getSquadPath(workspaceRoot, 'agents');
         const agentFoldersExist = fs.existsSync(agentsDir) && 
             fs.readdirSync(agentsDir).some(entry => {
                 const entryPath = path.join(agentsDir, entry);
@@ -243,7 +243,7 @@ export function activate(context: vscode.ExtensionContext): void {
                 // Always stop the progress bar when terminal closes
                 stopAllocationProgress();
                 // Update hasTeam based on what's actually on disk now
-                const teamExists = fs.existsSync(path.join(workspaceRoot, '.ai-team', 'team.md'));
+                const teamExists = hasSquadTeam(workspaceRoot);
                 vscode.commands.executeCommand('setContext', 'squadui.hasTeam', teamExists);
                 if (teamExists) {
                     vscode.window.showInformationMessage('Squad team allocated successfully!');
@@ -372,12 +372,12 @@ export function activate(context: vscode.ExtensionContext): void {
 
             // If topic is provided, this is a (date, topic) call from the tree view — resolve the file
             if (topic) {
-                const aiTeamDir = path.join(workspaceRoot, '.ai-team');
+                const squadDir = getSquadPath(workspaceRoot, '');
                 const logDirs = ['orchestration-log', 'log'];
                 let found = false;
 
                 for (const dir of logDirs) {
-                    const logDir = path.join(aiTeamDir, dir);
+                    const logDir = path.join(squadDir, dir);
                     if (!fs.existsSync(logDir)) { continue; }
                     const files = fs.readdirSync(logDir);
                     const match = files.find(f => f.includes(filePathOrDate) && f.includes(topic));
@@ -432,7 +432,7 @@ export function activate(context: vscode.ExtensionContext): void {
         skillsProvider.refresh();
         decisionsProvider.refresh();
         statusBar?.update();
-        const teamExists = fs.existsSync(teamMdPath);
+        const teamExists = hasSquadTeam(workspaceRoot);
         // During init, never reset hasTeam to false — the init wizard already set it true
         if (!initInProgress) {
             vscode.commands.executeCommand('setContext', 'squadui.hasTeam', teamExists);
