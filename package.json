@@ -125,7 +125,17 @@
     "viewsWelcome": [
       {
         "view": "squadTeam",
-        "contents": "No Squad team found in this workspace.\n[Initialize Squad](command:squadui.initSquad)\n[Upgrade Existing Team](command:squadui.upgradeSquad)\nRun 'Squad: Initialize' to set up your AI team.",
+        "contents": "$(people)\nReady to build your AI team?\n[Form your Squad](command:squadui.initSquad)",
+        "when": "!squadui.hasTeam"
+      },
+      {
+        "view": "squadSkills",
+        "contents": "$(people)\nReady to build your AI team?\n[Form your Squad](command:squadui.initSquad)",
+        "when": "!squadui.hasTeam"
+      },
+      {
+        "view": "squadDecisions",
+        "contents": "$(people)\nReady to build your AI team?\n[Form your Squad](command:squadui.initSquad)",
         "when": "!squadui.hasTeam"
       }
     ],

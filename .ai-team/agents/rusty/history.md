@@ -62,3 +62,11 @@
 - **Bug:** Burndown chart for completed milestones appeared empty because `endDateObj` always extended to today. For a milestone completed weeks ago, the actual burndown curve was compressed into a tiny sliver with a long flat zero line.
 - **Fix:** In `DashboardDataBuilder.buildMilestoneBurndown()` (line ~300), added check: if all issues have `closedAt`, end date = latest close date (or `dueDate` if later). Open milestones retain original behavior (end at today). Surgical change — only the end-date computation was modified.
 - **Key insight:** Always consider whether a milestone is open vs closed when computing chart boundaries. Chart time axes should reflect the meaningful work period, not extend to the present for historical data.
+
+### Native Init Wizard (2026-02-16)
+- **Issue #41:** Replaced terminal-only `squad init` with native VS Code wizard: QuickPick (universe) → InputBox (mission) → Terminal with `--universe` and `--mission` flags.
+- **UniverseOption interface:** Extended `vscode.QuickPickItem` with `universe` and `capacity` fields. 15 universes from the Squad casting system, each with "14 characters available" description.
+- **viewsWelcome expansion:** Welcome view now covers all three panels (squadTeam, squadSkills, squadDecisions) with consistent "Form your Squad" CTA. Removed "Upgrade Existing Team" button — upgrade is for existing teams only, accessible via toolbar.
+- **Cancellation handling:** Both QuickPick and InputBox abort cleanly on Escape — no terminal spawned, no side effects.
+- **Key pattern:** `vscode.window.showQuickPick` with typed items lets you attach metadata (universe name, capacity) to each option without string parsing. Much better than raw label matching.
+- **extension.ts unchanged:** The `onInitComplete` callback already refreshed all three providers and set `squadui.hasTeam` — no modifications needed.
