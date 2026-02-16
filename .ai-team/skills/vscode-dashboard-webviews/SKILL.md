@@ -308,3 +308,5 @@ buildVelocityTimeline(tasks: Task[]): DataPoint[] {
 - **Forgetting `retainContextWhenHidden`** — Tabs lose state when user switches away.
 - **JavaScript tooltips** — Use pure CSS tooltips. Lighter and theme-aware via CSS variables.
 - **Inline HTML attribute styling** — Use CSS classes and VS Code theme variables for consistent theming.
+- **Rendering canvas charts on hidden tabs** — Canvas elements inside `display: none` containers return `offsetWidth === 0`. Setting `canvas.width = canvas.offsetWidth` produces a zero-width bitmap. Always defer canvas rendering until the tab is visible. Add `offsetWidth === 0` guards as safety nets.
+- **Re-attaching event listeners on re-render** — When a render function is called multiple times (e.g., on tab switch), use a guard (`Set`, flag) to attach listeners only once. Otherwise each call stacks duplicate handlers.

@@ -49,3 +49,9 @@
 - **Context key `squadui.hasTeam`:** Set on activation by checking `fs.existsSync(.ai-team/team.md)`. Updated to `true` in both init and upgrade `onComplete` callbacks. FileWatcher `onFileChange` handler also re-checks existence so context stays in sync with filesystem.
 - **Package.json updates:** Added `squadui.upgradeSquad` command (title: "Upgrade Team", category: "Squad", icon: `$(arrow-up)`), upgrade button in Team view title bar (gated on `squadui.hasTeam`), no commandPalette restriction so it's always accessible.
 - **Key pattern:** VS Code `viewsWelcome` uses `\n` for line breaks in the contents string, `[Button Text](command:id)` for command links. The `when` clause uses context keys set via `setContext` command.
+
+### Dashboard Canvas Chart Rendering Fix (2026-02-16)
+- **Hidden tab canvas bug:** Canvas elements inside `display: none` tabs return `offsetWidth === 0`. Setting `canvas.width = canvas.offsetWidth` on hidden tabs produces a zero-width canvas — nothing renders. Charts must only be drawn when their tab is visible.
+- **Fix pattern:** Removed `renderBurndownChart()` and `renderVelocityChart()` from initial page load. Both are now rendered on-demand when the user clicks their tab. Added `offsetWidth === 0` guard in both chart functions as belt-and-suspenders.
+- **Duplicate listener bug:** `renderBurndownChart()` was adding a new `change` listener to the milestone `<select>` on every call. Fixed by tracking rendered tabs in a `Set` and only attaching the listener once.
+- **Key files:** `src/views/dashboard/htmlTemplate.ts` — all three fixes are in the `<script>` block of the dashboard HTML template.

@@ -540,7 +540,7 @@ export function getDashboardHtml(data: DashboardData): string {
                 document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
                 document.getElementById(targetTab + '-tab').classList.add('active');
 
-                // Re-render canvas charts when their tab becomes visible
+                // Render canvas charts when their tab becomes visible
                 // (canvas needs non-zero offsetWidth to render correctly)
                 if (targetTab === 'burndown') {
                     requestAnimationFrame(() => renderBurndownChart());
@@ -646,10 +646,14 @@ export function getDashboardHtml(data: DashboardData): string {
             ).join('');
             selector.style.display = 'block';
 
-            selector.addEventListener('change', (e) => {
-                currentMilestoneIndex = parseInt(e.target.value, 10);
-                drawBurndown(milestones[currentMilestoneIndex], container);
-            });
+            // Only attach the change listener once to prevent duplicates
+            if (!renderedTabs.has('burndown')) {
+                renderedTabs.add('burndown');
+                selector.addEventListener('change', (e) => {
+                    currentMilestoneIndex = parseInt(e.target.value, 10);
+                    drawBurndown(milestones[currentMilestoneIndex], container);
+                });
+            }
 
             drawBurndown(milestones[currentMilestoneIndex], container);
         }
@@ -687,6 +691,8 @@ export function getDashboardHtml(data: DashboardData): string {
         function drawBurndownCanvas(milestone) {
             const canvas = document.getElementById('burndown-canvas');
             if (!canvas) return;
+            // Skip rendering if canvas is not visible (zero width on hidden tabs)
+            if (canvas.offsetWidth === 0) return;
             const ctx = canvas.getContext('2d');
             const dp = milestone.dataPoints;
             const members = milestone.memberNames;
@@ -839,6 +845,8 @@ export function getDashboardHtml(data: DashboardData): string {
         // Render velocity chart (simple line chart with Canvas)
         function renderVelocityChart() {
             const canvas = document.getElementById('velocity-chart');
+            // Skip rendering if canvas is not visible (zero width on hidden tabs)
+            if (!canvas || canvas.offsetWidth === 0) return;
             const ctx = canvas.getContext('2d');
             const timeline = velocityData.timeline;
 
@@ -1042,10 +1050,12 @@ export function getDashboardHtml(data: DashboardData): string {
             });
         }
 
-        // Initialize visualizations
+        // Track which tabs have been rendered to avoid re-initializing listeners
+        const renderedTabs = new Set();
+
+        // Initialize visualizations — only render charts on visible tabs.
+        // Canvas charts on hidden tabs get offsetWidth=0 and render blank.
         renderTeamOverview();
-        renderBurndownChart();
-        renderVelocityChart();
         renderHeatmap();
         renderActivitySwimlanes();
         renderRecentSessions();
