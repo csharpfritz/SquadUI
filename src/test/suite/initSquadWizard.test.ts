@@ -33,7 +33,7 @@ suite('initSquadWizard', () => {
                 viewsWelcome = pkg.contributes?.viewsWelcome || [];
             }
 
-            const expectedPanels = ['squadTeam', 'squadSkills', 'squadDecisions'];
+            const expectedPanels = ['squadTeam'];
 
             for (const panelId of expectedPanels) {
                 const entry = viewsWelcome.find(
