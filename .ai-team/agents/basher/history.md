@@ -97,3 +97,30 @@
 - Tests 3, 5, 6, 7 use `this.skip()` guard (extension/isActive/workspace) — pending until live workspace available
 - Tests 1, 2 pass now (package.json already configured); test 4 passes with graceful fallback
 - Compilation clean (`npx tsc --noEmit`), full suite 788 passing
+
+### SquadVersionService Tests (2026-02-16)
+- New test file: `src/test/suite/squadVersionService.test.ts` — 32 tests total
+- **isNewer() semver comparison (11 tests):**
+  - Identical versions → false; newer major/minor/patch → true; current ahead → false
+  - Different segment counts (1.0 vs 1.0.0), single-segment, four-segment, 0.x versions
+- **normalizeVersion() v-prefix stripping (5 tests):**
+  - Lowercase/uppercase v stripped; no-op without prefix; middle-of-string v preserved
+  - Leading whitespace prevents `^v` match (trim happens after replace)
+- **Caching behavior (3 tests):**
+  - Second `checkForUpgrade()` returns cached result without re-fetching
+  - Caches `available: false` results too
+  - `resetCache()` forces next `checkForUpgrade()` to re-fetch
+- **forceCheck() bypass (2 tests):**
+  - Always re-fetches regardless of cache state
+  - Updates cached result for subsequent `checkForUpgrade()` calls
+- **Error handling (7 tests):**
+  - GitHub API fails → `{ available: false }`; CLI not installed → same
+  - Both fail → same; getLatestVersion throws → same; getInstalledVersion throws → same
+  - Both throw → same; partial failure includes available version info
+- **UpgradeCheckResult shape (2 tests):**
+  - Includes currentVersion/latestVersion when upgrade available and when not
+- **package.json validation (2 tests):**
+  - `squadui.checkForUpdates` command declared with category "Squad"
+  - Upgrade button when-clause includes `squadui.upgradeAvailable`
+- Test approach: stub private methods via `(service as any).methodName` for network/exec isolation; test pure functions (isNewer, normalizeVersion) directly
+- Compilation clean, full suite 820 passing (32 new + 788 existing)
