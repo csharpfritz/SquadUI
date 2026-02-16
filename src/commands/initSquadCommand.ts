@@ -73,15 +73,29 @@ export function registerInitSquadCommand(
             `npx github:bradygaster/squad init --universe "${selectedUniverse.universe}" --mission "${mission}"`
         );
 
-        // Listen for terminal close to refresh data
+        // Auto-refresh when team.md appears (don't wait for terminal close)
+        let initCompleted = false;
+        const completeInit = () => {
+            if (initCompleted) { return; }
+            initCompleted = true;
+            watcher.dispose();
+            onInitComplete();
+            vscode.window.showInformationMessage('Squad initialized! Your team is ready.');
+        };
+
+        const teamMdPattern = new vscode.RelativePattern(workspaceFolder, '.ai-team/team.md');
+        const watcher = vscode.workspace.createFileSystemWatcher(teamMdPattern, false, false, true);
+        watcher.onDidCreate(() => completeInit());
+        watcher.onDidChange(() => completeInit());
+
+        // Fallback: terminal close still triggers refresh
         const listener = vscode.window.onDidCloseTerminal(closedTerminal => {
             if (closedTerminal === terminal) {
                 listener.dispose();
-                onInitComplete();
-                vscode.window.showInformationMessage('Squad initialization complete. Tree view refreshed.');
+                completeInit();
             }
         });
 
-        context.subscriptions.push(listener);
+        context.subscriptions.push(watcher, listener);
     });
 }
