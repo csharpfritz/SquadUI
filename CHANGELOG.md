@@ -5,6 +5,15 @@ All notable changes to the SquadUI extension will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.1] - 2026-02-16
+
+### Added
+- Agents folder scanning fallback for team member detection — when `team.md` parsing fails, the extension now discovers members by scanning `.ai-team/agents/` subdirectories and reading `charter.md` for role extraction
+- 9 new tests covering agents folder discovery, exclusion rules, priority ordering, and role extraction edge cases
+
+### Changed
+- Team detection now uses a 3-level fallback chain: `team.md` Members/Roster table → agents folder scan → orchestration log participants
+
 ## [0.7.0] - 2026-02-16
 
 ### Added
@@ -128,6 +137,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Team.md parser service for member roster management
 - Orchestration log service for runtime activity tracking
 
+[0.7.1]: https://github.com/csharpfritz/SquadUI/compare/v0.7.0...v0.7.1
 [0.7.0]: https://github.com/csharpfritz/SquadUI/releases/tag/v0.7.0
 [0.6.1]: https://github.com/csharpfritz/SquadUI/releases/tag/v0.6.1
 [0.6.0]: https://github.com/csharpfritz/SquadUI/releases/tag/v0.6.0
