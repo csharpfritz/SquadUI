@@ -112,8 +112,10 @@ export function activate(context: vscode.ExtensionContext): void {
                 if (members.length > 0) {
                     teamView.message = undefined;
                     initInProgress = false;
+                    resolveAllocation?.();
+                    resolveAllocation = undefined;
                 } else if (initInProgress) {
-                    teamView.message = '$(loading~spin) Allocating team members...';
+                    teamView.message = 'Allocating team members…';
                 }
             });
             vscode.window.showInformationMessage('Squad tree refreshed');
@@ -156,6 +158,7 @@ export function activate(context: vscode.ExtensionContext): void {
     // Register squad init command
     let allocationPollInterval: ReturnType<typeof setInterval> | undefined;
     let initInProgress = false;
+    let resolveAllocation: (() => void) | undefined;
     context.subscriptions.push(
         registerInitSquadCommand(context, () => {
             initInProgress = true;
@@ -165,7 +168,12 @@ export function activate(context: vscode.ExtensionContext): void {
             decisionsProvider.refresh();
             statusBar?.update();
             vscode.commands.executeCommand('setContext', 'squadui.hasTeam', true);
-            teamView.message = '$(loading~spin) Allocating team members...';
+            teamView.message = 'Allocating team members…';
+            // Show built-in progress bar on the team view
+            vscode.window.withProgress(
+                { location: { viewId: 'squadTeam' } },
+                () => new Promise<void>(resolve => { resolveAllocation = resolve; })
+            );
             // Polling fallback: check for members every 3s until they appear
             if (allocationPollInterval) { clearInterval(allocationPollInterval); }
             allocationPollInterval = setInterval(() => {
@@ -178,6 +186,8 @@ export function activate(context: vscode.ExtensionContext): void {
                     if (members.length > 0) {
                         teamView.message = undefined;
                         initInProgress = false;
+                        resolveAllocation?.();
+                        resolveAllocation = undefined;
                         if (allocationPollInterval) {
                             clearInterval(allocationPollInterval);
                             allocationPollInterval = undefined;
@@ -376,13 +386,15 @@ export function activate(context: vscode.ExtensionContext): void {
                 if (members.length > 0) {
                     teamView.message = undefined;
                     initInProgress = false;
+                    resolveAllocation?.();
+                    resolveAllocation = undefined;
                     // Clear polling interval if members have loaded
                     if (allocationPollInterval) {
                         clearInterval(allocationPollInterval);
                         allocationPollInterval = undefined;
                     }
                 } else if (initInProgress) {
-                    teamView.message = '$(loading~spin) Allocating team members...';
+                    teamView.message = 'Allocating team members…';
                 }
             });
         } else {
