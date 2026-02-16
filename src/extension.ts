@@ -107,9 +107,14 @@ export function activate(context: vscode.ExtensionContext): void {
             skillsProvider.refresh();
             decisionsProvider.refresh();
             statusBar?.update();
-            // Clear loading message after manual refresh
+            // Clear loading message after manual refresh (only if init was in progress)
             dataProvider.getSquadMembers().then(members => {
-                teamView.message = members.length === 0 && fs.existsSync(teamMdPath) ? '$(loading~spin) Allocating team members...' : undefined;
+                if (members.length > 0) {
+                    teamView.message = undefined;
+                    initInProgress = false;
+                } else if (initInProgress) {
+                    teamView.message = '$(loading~spin) Allocating team members...';
+                }
             });
             vscode.window.showInformationMessage('Squad tree refreshed');
         })
@@ -150,8 +155,10 @@ export function activate(context: vscode.ExtensionContext): void {
 
     // Register squad init command
     let allocationPollInterval: ReturnType<typeof setInterval> | undefined;
+    let initInProgress = false;
     context.subscriptions.push(
         registerInitSquadCommand(context, () => {
+            initInProgress = true;
             dataProvider.refresh();
             teamProvider.refresh();
             skillsProvider.refresh();
@@ -170,6 +177,7 @@ export function activate(context: vscode.ExtensionContext): void {
                 dataProvider.getSquadMembers().then(members => {
                     if (members.length > 0) {
                         teamView.message = undefined;
+                        initInProgress = false;
                         if (allocationPollInterval) {
                             clearInterval(allocationPollInterval);
                             allocationPollInterval = undefined;
@@ -367,12 +375,13 @@ export function activate(context: vscode.ExtensionContext): void {
             dataProvider.getSquadMembers().then(members => {
                 if (members.length > 0) {
                     teamView.message = undefined;
+                    initInProgress = false;
                     // Clear polling interval if members have loaded
                     if (allocationPollInterval) {
                         clearInterval(allocationPollInterval);
                         allocationPollInterval = undefined;
                     }
-                } else {
+                } else if (initInProgress) {
                     teamView.message = '$(loading~spin) Allocating team members...';
                 }
             });
