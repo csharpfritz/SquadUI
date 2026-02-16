@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs';
 import { GitHubIssue } from './models';
-import { SquadDataProvider, FileWatcherService, GitHubIssuesService } from './services';
+import { SquadDataProvider, FileWatcherService, GitHubIssuesService, SquadVersionService } from './services';
 import { TeamTreeProvider, SkillsTreeProvider, DecisionsTreeProvider, WorkDetailsWebview, IssueDetailWebview, SquadStatusBar, SquadDashboardWebview } from './views';
 import { registerInitSquadCommand, registerUpgradeSquadCommand, registerAddMemberCommand, registerRemoveMemberCommand, registerAddSkillCommand } from './commands';
 
@@ -11,6 +11,7 @@ let webview: WorkDetailsWebview | undefined;
 let issueWebview: IssueDetailWebview | undefined;
 let dashboardWebview: SquadDashboardWebview | undefined;
 let statusBar: SquadStatusBar | undefined;
+let versionService: SquadVersionService | undefined;
 
 export function activate(context: vscode.ExtensionContext): void {
     console.log('SquadUI extension is now active');
@@ -26,6 +27,14 @@ export function activate(context: vscode.ExtensionContext): void {
     const teamMdPath = path.join(workspaceRoot, '.ai-team', 'team.md');
     const hasTeam = fs.existsSync(teamMdPath);
     vscode.commands.executeCommand('setContext', 'squadui.hasTeam', hasTeam);
+
+    // Create version service and check for upgrades if team exists
+    versionService = new SquadVersionService();
+    if (hasTeam) {
+        versionService.checkForUpgrade().then(result => {
+            vscode.commands.executeCommand('setContext', 'squadui.upgradeAvailable', result.available);
+        });
+    }
 
     // Create services
     const dataProvider = new SquadDataProvider(workspaceRoot);
@@ -156,6 +165,37 @@ export function activate(context: vscode.ExtensionContext): void {
             decisionsProvider.refresh();
             statusBar?.update();
             vscode.commands.executeCommand('setContext', 'squadui.hasTeam', true);
+            // Reset upgrade state and re-check after upgrade
+            vscode.commands.executeCommand('setContext', 'squadui.upgradeAvailable', false);
+            versionService?.forceCheck().then(result => {
+                vscode.commands.executeCommand('setContext', 'squadui.upgradeAvailable', result.available);
+            });
+        })
+    );
+
+    // Register check for updates command
+    context.subscriptions.push(
+        vscode.commands.registerCommand('squadui.checkForUpdates', async () => {
+            if (!versionService) {
+                vscode.window.showInformationMessage('Unable to check for Squad CLI updates');
+                return;
+            }
+            const result = await versionService.forceCheck();
+            vscode.commands.executeCommand('setContext', 'squadui.upgradeAvailable', result.available);
+
+            if (result.available) {
+                const action = await vscode.window.showInformationMessage(
+                    `Squad CLI update available: ${result.currentVersion} → ${result.latestVersion}`,
+                    'Upgrade Now'
+                );
+                if (action === 'Upgrade Now') {
+                    vscode.commands.executeCommand('squadui.upgradeSquad');
+                }
+            } else if (result.currentVersion) {
+                vscode.window.showInformationMessage(`Squad CLI is up to date (v${result.currentVersion})`);
+            } else {
+                vscode.window.showInformationMessage('Unable to check for Squad CLI updates');
+            }
         })
     );
 

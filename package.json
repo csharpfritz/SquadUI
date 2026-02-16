@@ -120,6 +120,11 @@
         "title": "Upgrade Team",
         "category": "Squad",
         "icon": "$(arrow-up)"
+      },
+      {
+        "command": "squadui.checkForUpdates",
+        "title": "Check for Updates",
+        "category": "Squad"
       }
     ],
     "viewsWelcome": [
@@ -163,7 +168,7 @@
         },
         {
           "command": "squadui.upgradeSquad",
-          "when": "view == squadTeam && squadui.hasTeam",
+          "when": "view == squadTeam && squadui.hasTeam && squadui.upgradeAvailable",
           "group": "navigation"
         }
       ],

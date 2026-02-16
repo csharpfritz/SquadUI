@@ -22,3 +22,4 @@ export {
 } from './GitHubIssuesService';
 export { SkillCatalogService } from './SkillCatalogService';
 export { DecisionService } from './DecisionService';
+export { SquadVersionService, type UpgradeCheckResult } from './SquadVersionService';

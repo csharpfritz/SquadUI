@@ -70,3 +70,14 @@
 - **Cancellation handling:** Both QuickPick and InputBox abort cleanly on Escape — no terminal spawned, no side effects.
 - **Key pattern:** `vscode.window.showQuickPick` with typed items lets you attach metadata (universe name, capacity) to each option without string parsing. Much better than raw label matching.
 - **extension.ts unchanged:** The `onInitComplete` callback already refreshed all three providers and set `squadui.hasTeam` — no modifications needed.
+
+### Upgrade Availability Detection (Issue #42)
+- **SquadVersionService:** New service at `src/services/SquadVersionService.ts` — compares installed Squad CLI version vs latest GitHub release to determine if upgrade is available.
+- **GitHub API call:** Uses Node.js `https` module (not fetch) to hit `api.github.com/repos/bradygaster/squad/releases/latest`, parses `tag_name`. Handles redirects, timeouts, errors gracefully — never throws.
+- **Installed version detection:** Runs `npx github:bradygaster/squad --version` via `execSync` with 15s timeout. Regex extracts semver pattern from output.
+- **Semver comparison:** Simple numeric comparison of major.minor.patch parts — no external dependency.
+- **Caching:** `checkForUpgrade()` returns cached result after first call. `forceCheck()` bypasses cache. `resetCache()` clears stored result.
+- **Context key `squadui.upgradeAvailable`:** Set via `setContext` when version check completes. Upgrade button in Team toolbar now gated on `squadui.hasTeam && squadui.upgradeAvailable` — only visible when an upgrade is actually available.
+- **Manual check command:** `squadui.checkForUpdates` (category: "Squad") — force-checks version and shows notification with result. "Upgrade Now" button triggers `squadui.upgradeSquad`.
+- **Post-upgrade flow:** Upgrade callback resets `upgradeAvailable` to false immediately, then force re-checks. This ensures the button disappears right away and only reappears if another update is released.
+- **Key pattern:** Non-blocking version check on activation — uses `.then()` instead of `await` to avoid slowing down extension startup.
