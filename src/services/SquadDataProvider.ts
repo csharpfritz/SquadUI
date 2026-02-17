@@ -3,9 +3,10 @@
  * Caches parsed data internally and exposes a clean API for the webview.
  *
  * Member resolution order:
- * 1. team.md (authoritative roster via TeamMdService)
- * 2. Orchestration logs overlay status/tasks on top
- * 3. If team.md is missing, falls back to log-participant discovery
+ * 1. team.md Members/Roster table (authoritative roster via TeamMdService)
+ * 2. Agents folder scan (.ai-team/agents/ subdirectories with charter.md parsing)
+ * 3. Orchestration log participants (legacy fallback)
+ * 4. Orchestration logs overlay status/tasks on all paths above
  */
 
 import * as fs from 'fs';
@@ -51,10 +52,12 @@ export class SquadDataProvider {
 
     /**
      * Returns all squad members with their current status.
-     * Always reads from team.md first (authoritative roster), then overlays
-     * status and tasks from orchestration logs. Falls back to log-participant
-     * discovery if team.md is missing.
+     * Resolution order:
+     * 1. team.md Members/Roster table (authoritative roster)
+     * 2. Agents folder scan (.ai-team/agents/ subdirectories)
+     * 3. Orchestration log participants (legacy fallback)
      *
+     * All paths overlay status and tasks from orchestration logs.
      * Data is cached after first call until refresh() is invoked.
      */
     async getSquadMembers(): Promise<SquadMember[]> {
@@ -98,25 +101,42 @@ export class SquadDataProvider {
                 };
             });
         } else {
-            // Fallback: derive members from log participants (legacy behavior)
-            const memberNames = new Set<string>();
-            for (const entry of entries) {
-                for (const participant of entry.participants) {
-                    memberNames.add(participant);
-                }
-            }
+            // Fallback 1: discover members from .ai-team/agents/ folders
+            const agentMembers = await this.discoverMembersFromAgentsFolder();
 
-            members = [];
-            for (const name of memberNames) {
-                const logStatus = memberStates.get(name) ?? 'idle';
-                const currentTask = tasks.find(t => t.assignee === name && t.status === 'in_progress');
-                const status = (logStatus === 'working' && !currentTask) ? 'idle' : logStatus;
-                members.push({
-                    name,
-                    role: 'Squad Member',
-                    status,
-                    currentTask,
+            if (agentMembers.length > 0) {
+                members = agentMembers.map(member => {
+                    const logStatus = memberStates.get(member.name) ?? 'idle';
+                    const currentTask = tasks.find(t => t.assignee === member.name && t.status === 'in_progress');
+                    const status = (logStatus === 'working' && !currentTask) ? 'idle' : logStatus;
+                    return {
+                        name: member.name,
+                        role: member.role,
+                        status,
+                        currentTask,
+                    };
                 });
+            } else {
+                // Fallback 2: derive members from log participants (legacy behavior)
+                const memberNames = new Set<string>();
+                for (const entry of entries) {
+                    for (const participant of entry.participants) {
+                        memberNames.add(participant);
+                    }
+                }
+
+                members = [];
+                for (const name of memberNames) {
+                    const logStatus = memberStates.get(name) ?? 'idle';
+                    const currentTask = tasks.find(t => t.assignee === name && t.status === 'in_progress');
+                    const status = (logStatus === 'working' && !currentTask) ? 'idle' : logStatus;
+                    members.push({
+                        name,
+                        role: 'Squad Member',
+                        status,
+                        currentTask,
+                    });
+                }
             }
         }
 
@@ -199,6 +219,62 @@ export class SquadDataProvider {
     }
 
     // ─── Public Data Access Methods ───────────────────────────────────────
+
+    /**
+     * Discovers squad members by scanning .ai-team/agents/ subdirectories.
+     * Reads charter.md from each folder to extract the member's role.
+     * Skips special folders (_alumni, scribe).
+     *
+     * @returns Array of SquadMember with idle status (no log overlay applied)
+     */
+    private async discoverMembersFromAgentsFolder(): Promise<SquadMember[]> {
+        const agentsDir = path.join(this.teamRoot, '.ai-team', 'agents');
+        const skipFolders = new Set(['_alumni', 'scribe']);
+
+        try {
+            await fs.promises.access(agentsDir, fs.constants.R_OK);
+        } catch {
+            return [];
+        }
+
+        let dirEntries: fs.Dirent[];
+        try {
+            dirEntries = await fs.promises.readdir(agentsDir, { withFileTypes: true });
+        } catch {
+            return [];
+        }
+
+        const members: SquadMember[] = [];
+
+        for (const entry of dirEntries) {
+            if (!entry.isDirectory() || skipFolders.has(entry.name)) {
+                continue;
+            }
+
+            const folderName = entry.name;
+            const displayName = folderName.charAt(0).toUpperCase() + folderName.slice(1);
+            let role = 'Squad Member';
+
+            const charterPath = path.join(agentsDir, folderName, 'charter.md');
+            try {
+                const charterContent = await fs.promises.readFile(charterPath, 'utf-8');
+                const roleMatch = charterContent.match(/-\s*\*\*Role:\*\*\s*(.+)/i);
+                if (roleMatch) {
+                    role = roleMatch[1].trim();
+                }
+            } catch {
+                // No charter.md or unreadable — use default role
+            }
+
+            members.push({
+                name: displayName,
+                role,
+                status: 'idle',
+            });
+        }
+
+        return members;
+    }
 
     /**
      * Returns all parsed orchestration log entries.

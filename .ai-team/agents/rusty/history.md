@@ -122,3 +122,5 @@
 - **Polling fallback:** 3-second `setInterval` in the init callback checks for members and clears spinner. Belt-and-suspenders alongside the FileWatcherService `onFileChange` handler, which also clears the spinner when members appear.
 - **Key insight:** `$(loading~spin)` only works in `TreeView.message`, not in tree item labels. It's a codicon animation reference, not a ThemeIcon.
 📌 Team update (2026-02-16): Terminal CLI Handoff & Spinner — Replaced chat panel handoff with `copilot -a squad` CLI command chained via `&&` in terminal. Added `$(loading~spin)` spinner codicon in team panel message during allocation. 3-second polling fallback clears spinner when members load. — decided by Rusty
+
+ Team update (2026-02-16): Agents folder scanning added as fallback for team detection  decided by Linus
