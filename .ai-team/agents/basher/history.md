@@ -161,3 +161,23 @@
 - Temp dirs use `test-fixtures/temp-agents-${Date.now()}` with teardown cleanup
 - Tests compile clean (`npx tsc --noEmit`); execution deferred until Linus's implementation lands
 - Follows established patterns: Mocha TDD, `SquadDataProvider(dir, 0)` for zero retry delay, `fs.mkdirSync/writeFileSync` for fixtures
+
+### Session Log Isolation Tests (2026-02-17)
+- New test file: `src/test/suite/sessionLogIsolation.test.ts` — 13 tests total
+- Validates that session logs in `log/` do not pollute task status or member working state
+- **Two test fixtures created:**
+  1. `test-fixtures/sensei-scenario/` — session logs with participant names (bold-name fallback parsing)
+  2. `test-fixtures/session-log-issues/` — session logs with issue references (#21, #22, #28)
+- **Key learnings:**
+  - Test fixtures must include both `log/` and `orchestration-log/` directories to validate isolation
+  - `parseOrchestrationLogs()` reads ONLY from `orchestration-log/`
+  - `parseAllLogs()` reads from BOTH directories (still used for display)
+  - Member "working" status requires BOTH: (1) appearing in most recent orchestration log, AND (2) having in_progress tasks
+  - Completed prose tasks don't trigger "working" status (by design — lines 94-96 of SquadDataProvider)
+- **Test suites:**
+  1. Sensei scenario (5 tests) — members from session logs only are idle; orchestration log parsing is isolated
+  2. Issue reference scenario (4 tests) — issues from session log don't create tasks; Rusty working, Livingston idle
+  3. Parser isolation (3 tests) — `discoverOrchestrationLogFiles()` vs `discoverLogFiles()` behavior
+- Tests compile clean (`npx tsc --noEmit`); all 881 tests passing
+- Validates the fix for the bug where session logs were being read for task/member status derivation
+
