@@ -13,6 +13,7 @@ import * as https from 'https';
 import * as fs from 'fs';
 import * as path from 'path';
 import { Skill } from '../models';
+import { normalizeEol } from '../utils/eol';
 
 /** Request timeout in milliseconds */
 const REQUEST_TIMEOUT_MS = 15_000;
@@ -138,7 +139,7 @@ export class SkillCatalogService {
                 continue;
             }
 
-            const content = fs.readFileSync(skillFile, 'utf-8');
+            const content = normalizeEol(fs.readFileSync(skillFile, 'utf-8'));
             const parsed = this.parseInstalledSkill(entry.name, content);
             skills.push(parsed);
         }
@@ -165,7 +166,7 @@ export class SkillCatalogService {
      */
     parseAwesomeReadme(markdown: string): Skill[] {
         const skills: Skill[] = [];
-        const lines = markdown.split('\n');
+        const lines = normalizeEol(markdown).split('\n');
 
         // Table row: | [Name](../skills/name/SKILL.md) | Description | Assets |
         const tableRowRegex = /^\|\s*\[([^\]]+)\]\(([^)]+)\)\s*\|\s*(.*?)\s*\|/;

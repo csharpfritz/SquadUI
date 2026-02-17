@@ -547,4 +547,106 @@ suite('TeamMdService', () => {
             assert.strictEqual(roster.members.length, 50);
         });
     });
+
+    suite('parseContent() — cross-platform line endings (CRLF)', () => {
+        test('parses members table with Windows line endings', () => {
+            const content = [
+                '# Team Roster',
+                '',
+                '## Members',
+                '',
+                '| Name | Role | Charter | Status |',
+                '|------|------|---------|--------|',
+                '| Rusty | Lead | charter.md | ✅ Active |',
+                '| Linus | Frontend Dev | charter.md | ✅ Active |',
+                '',
+                '## Project Context',
+                '',
+                '- **Owner:** Test',
+            ].join('\r\n');
+
+            const roster = service.parseContent(content);
+
+            assert.strictEqual(roster.members.length, 2);
+            assert.strictEqual(roster.members[0].name, 'Rusty');
+            assert.strictEqual(roster.members[1].name, 'Linus');
+            assert.strictEqual(roster.members[1].role, 'Frontend Dev');
+        });
+
+        test('parses Roster heading with CRLF line endings', () => {
+            const content = [
+                '# Team Roster',
+                '',
+                '## Roster',
+                '',
+                '| Name | Role | Status |',
+                '|------|------|--------|',
+                '| Danny | Lead | ✅ Active |',
+                '| Basher | Tester | ✅ Active |',
+            ].join('\r\n');
+
+            const roster = service.parseContent(content);
+
+            assert.strictEqual(roster.members.length, 2);
+            assert.strictEqual(roster.members[0].name, 'Danny');
+            assert.strictEqual(roster.members[1].role, 'Tester');
+        });
+
+        test('extracts repository and owner from CRLF content', () => {
+            const content = [
+                '# Team',
+                '',
+                '## Members',
+                '',
+                '| Name | Role |',
+                '|------|------|',
+                '| Rusty | Lead |',
+                '',
+                '## Project Context',
+                '',
+                '- **Owner:** Shayne Boyer (spboyer@live.com)',
+                '- **Repository:** spboyer/sensei',
+            ].join('\r\n');
+
+            const roster = service.parseContent(content);
+
+            assert.strictEqual(roster.members.length, 1);
+            assert.strictEqual(roster.owner, 'Shayne Boyer');
+            assert.strictEqual(roster.repository, 'spboyer/sensei');
+        });
+
+        test('extracts copilot capabilities from CRLF content', () => {
+            const content = [
+                '## Members',
+                '',
+                '| Name | Role |',
+                '|------|------|',
+                '| Rusty | Lead |',
+                '',
+                '## Coding Agent',
+                '',
+                '<!-- copilot-auto-assign: true -->',
+                '🟢 Good fit: bug fixes, tests',
+                '🟡 Needs review: refactoring',
+            ].join('\r\n');
+
+            const roster = service.parseContent(content);
+
+            assert.ok(roster.copilotCapabilities);
+            assert.strictEqual(roster.copilotCapabilities!.autoAssign, true);
+        });
+
+        test('handles mixed LF and CRLF in same file', () => {
+            const content =
+                '## Members\r\n\n' +
+                '| Name | Role |\r\n' +
+                '|------|------|\n' +
+                '| Danny | Lead |\r\n' +
+                '| Rusty | Dev |\n';
+
+            const roster = service.parseContent(content);
+
+            assert.strictEqual(roster.members.length, 2);
+        });
+    });
 });

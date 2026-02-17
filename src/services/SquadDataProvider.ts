@@ -15,6 +15,7 @@ import { SquadMember, Task, WorkDetails, OrchestrationLogEntry, DecisionEntry } 
 import { OrchestrationLogService } from './OrchestrationLogService';
 import { TeamMdService } from './TeamMdService';
 import { DecisionService } from './DecisionService';
+import { normalizeEol } from '../utils/eol';
 
 /**
  * Provides squad data to the UI layer.
@@ -257,7 +258,7 @@ export class SquadDataProvider {
 
             const charterPath = path.join(agentsDir, folderName, 'charter.md');
             try {
-                const charterContent = await fs.promises.readFile(charterPath, 'utf-8');
+                const charterContent = normalizeEol(await fs.promises.readFile(charterPath, 'utf-8'));
                 const roleMatch = charterContent.match(/-\s*\*\*Role:\*\*\s*(.+)/i);
                 if (roleMatch) {
                     role = roleMatch[1].trim();

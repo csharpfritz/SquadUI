@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs';
+import { normalizeEol } from '../utils/eol';
 
 /** Names to exclude from the remove-member QuickPick (non-removable roles). */
 const EXCLUDED_NAMES = new Set(['scribe', 'ralph', '@copilot']);
@@ -16,7 +17,7 @@ interface MemberRow {
  * Parse the Members table in team.md and return removable rows.
  */
 function parseMemberRows(teamMdPath: string): MemberRow[] {
-    const content = fs.readFileSync(teamMdPath, 'utf-8');
+    const content = normalizeEol(fs.readFileSync(teamMdPath, 'utf-8'));
     const lines = content.split('\n');
     const rows: MemberRow[] = [];
 
@@ -138,7 +139,7 @@ export function registerRemoveMemberCommand(
         }
 
         // Remove row from team.md
-        const content = fs.readFileSync(teamMdPath, 'utf-8');
+        const content = normalizeEol(fs.readFileSync(teamMdPath, 'utf-8'));
         const lines = content.split('\n');
         lines.splice(member.lineIndex, 1);
         fs.writeFileSync(teamMdPath, lines.join('\n'), 'utf-8');

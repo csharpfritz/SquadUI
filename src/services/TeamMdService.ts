@@ -6,6 +6,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { SquadMember, TeamRoster } from '../models';
+import { normalizeEol } from '../utils/eol';
 
 /**
  * Represents the @copilot capability profile parsed from team.md.
@@ -66,7 +67,7 @@ export class TeamMdService {
             return null;
         }
 
-        const content = await fs.promises.readFile(teamMdPath, 'utf-8');
+        const content = normalizeEol(await fs.promises.readFile(teamMdPath, 'utf-8'));
         return this.parseContent(content);
     }
 
@@ -77,12 +78,14 @@ export class TeamMdService {
      * @returns Parsed team roster
      */
     parseContent(content: string): ExtendedTeamRoster {
-        const members = this.parseMembers(content);
-        const repository = this.extractRepository(content);
-        const owner = this.extractOwner(content);
-        const copilotCapabilities = this.extractCopilotCapabilities(content);
-        const issueMatching = this.extractIssueMatching(content);
-        const memberAliases = this.extractMemberAliases(content);
+        // Normalize line endings for cross-platform compatibility (Windows CRLF → LF)
+        const normalized = normalizeEol(content);
+        const members = this.parseMembers(normalized);
+        const repository = this.extractRepository(normalized);
+        const owner = this.extractOwner(normalized);
+        const copilotCapabilities = this.extractCopilotCapabilities(normalized);
+        const issueMatching = this.extractIssueMatching(normalized);
+        const memberAliases = this.extractMemberAliases(normalized);
 
         const roster: ExtendedTeamRoster = {
             members,

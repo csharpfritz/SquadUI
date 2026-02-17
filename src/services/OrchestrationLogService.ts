@@ -7,6 +7,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { OrchestrationLogEntry, Task, MemberStatus } from '../models';
+import { normalizeEol } from '../utils/eol';
 
 /**
  * Service for discovering and parsing orchestration log files.
@@ -89,7 +90,7 @@ export class OrchestrationLogService {
      * @throws Error if file cannot be read
      */
     async parseLogFile(filePath: string): Promise<OrchestrationLogEntry> {
-        const content = await fs.promises.readFile(filePath, 'utf-8');
+        const content = normalizeEol(await fs.promises.readFile(filePath, 'utf-8'));
         const filename = path.basename(filePath);
 
         // Extract date and topic from filename: YYYY-MM-DD-topic.md or YYYY-MM-DDThhmm-topic.md

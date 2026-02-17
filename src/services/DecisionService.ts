@@ -5,6 +5,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { DecisionEntry } from '../models';
+import { normalizeEol } from '../utils/eol';
 
 export class DecisionService {
     private squadFolder: '.squad' | '.ai-team';
@@ -39,7 +40,7 @@ export class DecisionService {
             return;
         }
 
-        const fileContent = fs.readFileSync(filePath, 'utf-8');
+        const fileContent = normalizeEol(fs.readFileSync(filePath, 'utf-8'));
         const lines = fileContent.split('\n');
 
         // Known subsection headings to filter out
@@ -221,7 +222,7 @@ export class DecisionService {
 
     private parseDecisionFile(filePath: string): DecisionEntry | null {
         try {
-            const content = fs.readFileSync(filePath, 'utf-8');
+            const content = normalizeEol(fs.readFileSync(filePath, 'utf-8'));
 
             let title = 'Untitled Decision';
             // Prefer H1 heading for title; fall back to H2/H3
