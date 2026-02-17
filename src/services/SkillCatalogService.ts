@@ -13,7 +13,6 @@ import * as https from 'https';
 import * as fs from 'fs';
 import * as path from 'path';
 import { Skill } from '../models';
-import { getSquadPath } from '../utils/squadFolderDetection';
 
 /** Request timeout in milliseconds */
 const REQUEST_TIMEOUT_MS = 15_000;
@@ -87,10 +86,11 @@ export class SkillCatalogService {
      * @param skill - The skill to download
      * @param teamRoot - Workspace root containing the squad directory
      * @param force - If true, overwrite an existing skill directory
+     * @param squadFolder - The squad folder name ('.squad' or '.ai-team'), defaults to '.ai-team'
      */
-    async downloadSkill(skill: Skill, teamRoot: string, force = false): Promise<void> {
+    async downloadSkill(skill: Skill, teamRoot: string, force = false, squadFolder: '.squad' | '.ai-team' = '.ai-team'): Promise<void> {
         const slug = this.slugify(skill.name);
-        const skillDir = getSquadPath(teamRoot, path.join('skills', slug));
+        const skillDir = path.join(teamRoot, squadFolder, 'skills', slug);
         const skillFile = path.join(skillDir, 'SKILL.md');
 
         // Duplicate protection: refuse to overwrite unless forced
@@ -117,9 +117,10 @@ export class SkillCatalogService {
      * Each subdirectory with a SKILL.md is treated as an installed skill.
      *
      * @param teamRoot - Workspace root containing the squad directory
+     * @param squadFolder - The squad folder name ('.squad' or '.ai-team'), defaults to '.ai-team'
      */
-    getInstalledSkills(teamRoot: string): Skill[] {
-        const skillsDir = getSquadPath(teamRoot, 'skills');
+    getInstalledSkills(teamRoot: string, squadFolder: '.squad' | '.ai-team' = '.ai-team'): Skill[] {
+        const skillsDir = path.join(teamRoot, squadFolder, 'skills');
         if (!fs.existsSync(skillsDir)) {
             return [];
         }

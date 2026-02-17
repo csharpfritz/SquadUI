@@ -31,7 +31,8 @@ function toQuickPickItems(skills: Skill[]): SkillQuickPickItem[] {
 
 export function registerAddSkillCommand(
     _context: vscode.ExtensionContext,
-    onSkillAdded: () => void
+    onSkillAdded: () => void,
+    squadFolder: '.squad' | '.ai-team' = '.ai-team'
 ): vscode.Disposable {
     const catalogService = new SkillCatalogService();
 
@@ -125,7 +126,7 @@ export function registerAddSkillCommand(
         try {
             await vscode.window.withProgress(
                 { location: vscode.ProgressLocation.Notification, title: `Installing ${skill.name}...` },
-                () => catalogService.downloadSkill(skill, teamRoot)
+                () => catalogService.downloadSkill(skill, teamRoot, false, squadFolder)
             );
 
             vscode.window.showInformationMessage(`Installed skill: ${skill.name}`);
@@ -149,7 +150,7 @@ export function registerAddSkillCommand(
                     try {
                         await vscode.window.withProgress(
                             { location: vscode.ProgressLocation.Notification, title: `Overwriting ${skill.name}...` },
-                            () => catalogService.downloadSkill(skill, teamRoot, true)
+                            () => catalogService.downloadSkill(skill, teamRoot, true, squadFolder)
                         );
                         vscode.window.showInformationMessage(`Reinstalled skill: ${skill.name}`);
                         onSkillAdded();

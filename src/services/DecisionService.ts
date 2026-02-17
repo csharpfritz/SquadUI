@@ -5,9 +5,14 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { DecisionEntry } from '../models';
-import { getSquadPath } from '../utils/squadFolderDetection';
 
 export class DecisionService {
+    private squadFolder: '.squad' | '.ai-team';
+
+    constructor(squadFolder: '.squad' | '.ai-team' = '.ai-team') {
+        this.squadFolder = squadFolder;
+    }
+
     /**
      * Parse decisions from both decisions.md and the decisions/ directory.
      * Returns decisions in reverse chronological order (newest first).
@@ -19,7 +24,7 @@ export class DecisionService {
         this.parseDecisionsMd(workspaceRoot, decisions);
 
         // Also scan individual files in decisions/ directory
-        const decisionsDir = getSquadPath(workspaceRoot, 'decisions');
+        const decisionsDir = path.join(workspaceRoot, this.squadFolder, 'decisions');
         if (fs.existsSync(decisionsDir)) {
             this.scanDirectory(decisionsDir, decisions);
         }
@@ -29,7 +34,7 @@ export class DecisionService {
     }
 
     private parseDecisionsMd(workspaceRoot: string, decisions: DecisionEntry[]): void {
-        const filePath = getSquadPath(workspaceRoot, 'decisions.md');
+        const filePath = path.join(workspaceRoot, this.squadFolder, 'decisions.md');
         if (!fs.existsSync(filePath)) {
             return;
         }

@@ -15,7 +15,8 @@ const ROLE_PICKS: vscode.QuickPickItem[] = [
 
 export function registerAddMemberCommand(
     _context: vscode.ExtensionContext,
-    _onMemberAdded: () => void
+    _onMemberAdded: () => void,
+    _squadFolder: '.squad' | '.ai-team' = '.ai-team'
 ): vscode.Disposable {
     return vscode.commands.registerCommand('squadui.addMember', async () => {
         const workspaceFolder = vscode.workspace.workspaceFolders?.[0];

@@ -1,6 +1,9 @@
 /**
  * Utility for detecting Squad folder location.
  * Supports both the new `.squad/` and legacy `.ai-team/` folder structures.
+ * 
+ * The extension detects the folder once at initialization and passes it as a parameter
+ * to services. This avoids constantly checking the filesystem.
  */
 
 import * as fs from 'fs';
@@ -10,10 +13,12 @@ import * as path from 'path';
  * Detects which squad folder structure exists in the workspace.
  * Checks for `.squad/` first (new structure), then falls back to `.ai-team/` (legacy).
  * 
+ * This should be called once at extension initialization and the result cached.
+ * 
  * @param workspaceRoot - Root directory of the workspace
- * @returns '.squad' if new structure exists, '.ai-team' if legacy exists, or null if neither exists
+ * @returns '.squad' if new structure exists, '.ai-team' if legacy exists, or '.squad' as default
  */
-export function detectSquadFolder(workspaceRoot: string): '.squad' | '.ai-team' | null {
+export function detectSquadFolder(workspaceRoot: string): '.squad' | '.ai-team' {
     const newFolder = path.join(workspaceRoot, '.squad');
     const legacyFolder = path.join(workspaceRoot, '.ai-team');
     
@@ -27,42 +32,19 @@ export function detectSquadFolder(workspaceRoot: string): '.squad' | '.ai-team' 
         return '.ai-team';
     }
     
-    return null;
-}
-
-/**
- * Returns the squad folder name to use for the workspace.
- * If neither folder exists, returns the new folder name '.squad' by default.
- * 
- * @param workspaceRoot - Root directory of the workspace
- * @returns '.squad' or '.ai-team'
- */
-export function getSquadFolderName(workspaceRoot: string): '.squad' | '.ai-team' {
-    return detectSquadFolder(workspaceRoot) ?? '.squad';
-}
-
-/**
- * Constructs a path within the squad folder (either .squad or .ai-team).
- * Automatically detects which folder structure is in use.
- * 
- * @param workspaceRoot - Root directory of the workspace
- * @param relativePath - Path relative to the squad folder (e.g., 'team.md', 'agents/rusty/charter.md')
- * @returns Full path to the file/directory
- */
-export function getSquadPath(workspaceRoot: string, relativePath: string): string {
-    const folderName = getSquadFolderName(workspaceRoot);
-    return path.join(workspaceRoot, folderName, relativePath);
+    // Default to new structure for new installations
+    return '.squad';
 }
 
 /**
  * Checks if a squad team exists (team.md file present).
- * Works with both .squad and .ai-team folder structures.
  * 
  * @param workspaceRoot - Root directory of the workspace
- * @returns true if team.md exists in either folder structure
+ * @param squadFolder - The squad folder name ('.squad' or '.ai-team')
+ * @returns true if team.md exists
  */
-export function hasSquadTeam(workspaceRoot: string): boolean {
-    const teamMdPath = getSquadPath(workspaceRoot, 'team.md');
+export function hasSquadTeam(workspaceRoot: string, squadFolder: '.squad' | '.ai-team'): boolean {
+    const teamMdPath = path.join(workspaceRoot, squadFolder, 'team.md');
     return fs.existsSync(teamMdPath);
 }
 

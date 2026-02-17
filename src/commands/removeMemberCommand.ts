@@ -1,7 +1,6 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs';
-import { getSquadPath } from '../utils/squadFolderDetection';
 
 /** Names to exclude from the remove-member QuickPick (non-removable roles). */
 const EXCLUDED_NAMES = new Set(['scribe', 'ralph', '@copilot']);
@@ -59,7 +58,8 @@ function parseMemberRows(teamMdPath: string): MemberRow[] {
 
 export function registerRemoveMemberCommand(
     _context: vscode.ExtensionContext,
-    onMemberRemoved: () => void
+    onMemberRemoved: () => void,
+    squadFolder: '.squad' | '.ai-team' = '.ai-team'
 ): vscode.Disposable {
     return vscode.commands.registerCommand('squadui.removeMember', async (item?: any) => {
         const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
@@ -69,7 +69,7 @@ export function registerRemoveMemberCommand(
         }
 
         const teamRoot = workspaceFolder.uri.fsPath;
-        const teamMdPath = getSquadPath(teamRoot, 'team.md');
+        const teamMdPath = path.join(teamRoot, squadFolder, 'team.md');
 
         if (!fs.existsSync(teamMdPath)) {
             vscode.window.showErrorMessage('Squad: team.md not found. Initialize your squad first.');
@@ -128,11 +128,11 @@ export function registerRemoveMemberCommand(
         }
 
         // Move agent directory to alumni
-        const agentDir = getSquadPath(teamRoot, path.join('agents', member.slug));
-        const alumniDir = getSquadPath(teamRoot, path.join('agents', '_alumni', member.slug));
+        const agentDir = path.join(teamRoot, squadFolder, 'agents', member.slug);
+        const alumniDir = path.join(teamRoot, squadFolder, 'agents', '_alumni', member.slug);
 
         if (fs.existsSync(agentDir)) {
-            const alumniParent = getSquadPath(teamRoot, path.join('agents', '_alumni'));
+            const alumniParent = path.join(teamRoot, squadFolder, 'agents', '_alumni');
             fs.mkdirSync(alumniParent, { recursive: true });
             fs.renameSync(agentDir, alumniDir);
         }

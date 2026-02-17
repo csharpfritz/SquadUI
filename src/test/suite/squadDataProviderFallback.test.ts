@@ -42,7 +42,7 @@ suite('SquadDataProvider — Fallback Behavior', () => {
                 '| Gamma | QA | ✅ Active |',
             ].join('\n'));
 
-            const provider = new SquadDataProvider(dir);
+            const provider = new SquadDataProvider(dir, '.ai-team');
             const members = await provider.getSquadMembers();
 
             assert.strictEqual(members.length, 3);
@@ -79,7 +79,7 @@ suite('SquadDataProvider — Fallback Behavior', () => {
                 'Alpha is working on something.',
             ].join('\n'));
 
-            const provider = new SquadDataProvider(dir);
+            const provider = new SquadDataProvider(dir, '.ai-team');
             const members = await provider.getSquadMembers();
 
             const alpha = members.find(m => m.name === 'Alpha');
@@ -116,7 +116,7 @@ suite('SquadDataProvider — Fallback Behavior', () => {
                 'Alpha architected stuff.',
             ].join('\n'));
 
-            const provider = new SquadDataProvider(dir);
+            const provider = new SquadDataProvider(dir, '.ai-team');
             const members = await provider.getSquadMembers();
 
             assert.strictEqual(members[0].role, 'Architect', 'Role should come from team.md, not logs');
@@ -138,7 +138,7 @@ suite('SquadDataProvider — Fallback Behavior', () => {
                 'Working together.',
             ].join('\n'));
 
-            const provider = new SquadDataProvider(dir);
+            const provider = new SquadDataProvider(dir, '.ai-team');
             const members = await provider.getSquadMembers();
 
             assert.strictEqual(members.length, 2);
@@ -160,7 +160,7 @@ suite('SquadDataProvider — Fallback Behavior', () => {
                 'Solo work.',
             ].join('\n'));
 
-            const provider = new SquadDataProvider(dir);
+            const provider = new SquadDataProvider(dir, '.ai-team');
             const members = await provider.getSquadMembers();
 
             assert.strictEqual(members[0].role, 'Squad Member');
@@ -189,7 +189,7 @@ suite('SquadDataProvider — Fallback Behavior', () => {
                 'Session 2.',
             ].join('\n'));
 
-            const provider = new SquadDataProvider(dir);
+            const provider = new SquadDataProvider(dir, '.ai-team');
             const members = await provider.getSquadMembers();
 
             // Alice should appear once, not twice
@@ -204,7 +204,7 @@ suite('SquadDataProvider — Fallback Behavior', () => {
             const dir = path.join(tempDir, 'empty-project');
             await fs.promises.mkdir(dir, { recursive: true });
 
-            const provider = new SquadDataProvider(dir);
+            const provider = new SquadDataProvider(dir, '.ai-team');
             const members = await provider.getSquadMembers();
 
             assert.deepStrictEqual(members, []);
@@ -214,7 +214,7 @@ suite('SquadDataProvider — Fallback Behavior', () => {
             const dir = path.join(tempDir, 'empty-tasks');
             await fs.promises.mkdir(dir, { recursive: true });
 
-            const provider = new SquadDataProvider(dir);
+            const provider = new SquadDataProvider(dir, '.ai-team');
             const tasks = await provider.getTasksForMember('Anyone');
 
             assert.deepStrictEqual(tasks, []);
@@ -246,7 +246,7 @@ suite('SquadDataProvider — Fallback Behavior', () => {
                 '| Livingston | DevOps/CI | `.ai-team/agents/livingston/charter.md` | 📋 Silent |',
             ].join('\n'));
 
-            const provider = new SquadDataProvider(dir);
+            const provider = new SquadDataProvider(dir, '.ai-team');
             const members = await provider.getSquadMembers();
 
             // All 5 members should be present
@@ -282,7 +282,7 @@ suite('SquadDataProvider — Fallback Behavior', () => {
                 '| Alice | Engineer | ✅ Active |',
             ].join('\n'));
 
-            const provider = new SquadDataProvider(dir);
+            const provider = new SquadDataProvider(dir, '.ai-team');
             const tasks = await provider.getTasksForMember('Alice');
 
             assert.deepStrictEqual(tasks, [], 'No tasks should exist with only team.md');
@@ -303,7 +303,7 @@ suite('SquadDataProvider — Fallback Behavior', () => {
                 '| Alice | Engineer | ✅ Active |',
             ].join('\n'));
 
-            const provider = new SquadDataProvider(dir);
+            const provider = new SquadDataProvider(dir, '.ai-team');
             const details = await provider.getWorkDetails('any-task');
 
             assert.strictEqual(details, undefined);
@@ -325,7 +325,7 @@ suite('SquadDataProvider — Fallback Behavior', () => {
                 '| Bob | Designer | ✅ Active |',
             ].join('\n'));
 
-            const provider = new SquadDataProvider(dir);
+            const provider = new SquadDataProvider(dir, '.ai-team');
             const members = await provider.getSquadMembers();
 
             for (const member of members) {
@@ -350,7 +350,7 @@ suite('SquadDataProvider — Fallback Behavior', () => {
                 '| Alice | Engineer | ✅ Active |',
             ].join('\n'));
 
-            const provider = new SquadDataProvider(dir);
+            const provider = new SquadDataProvider(dir, '.ai-team');
             const members1 = await provider.getSquadMembers();
             assert.strictEqual(members1.length, 1);
 

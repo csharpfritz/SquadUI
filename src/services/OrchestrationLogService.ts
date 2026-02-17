@@ -7,7 +7,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { OrchestrationLogEntry, Task, MemberStatus } from '../models';
-import { getSquadPath } from '../utils/squadFolderDetection';
 
 /**
  * Service for discovering and parsing orchestration log files.
@@ -16,6 +15,11 @@ import { getSquadPath } from '../utils/squadFolderDetection';
 export class OrchestrationLogService {
     /** Log directory names to search (in order of preference) */
     private static readonly LOG_DIRECTORIES = ['orchestration-log', 'log'];
+    private squadFolder: '.squad' | '.ai-team';
+
+    constructor(squadFolder: '.squad' | '.ai-team' = '.ai-team') {
+        this.squadFolder = squadFolder;
+    }
 
     /**
      * Discovers all log files in the orchestration-log directory.
@@ -26,7 +30,7 @@ export class OrchestrationLogService {
      * @returns Array of absolute paths to log files
      */
     async discoverLogFiles(teamRoot: string): Promise<string[]> {
-        const squadDir = getSquadPath(teamRoot, '');
+        const squadDir = path.join(teamRoot, this.squadFolder);
         
         // Collect files from ALL log directories (union)
         const allFiles: string[] = [];

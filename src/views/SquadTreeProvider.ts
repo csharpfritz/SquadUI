@@ -361,8 +361,11 @@ export class SkillsTreeProvider implements vscode.TreeDataProvider<SquadTreeItem
     private _onDidChangeTreeData = new vscode.EventEmitter<SquadTreeItem | undefined | null | void>();
     readonly onDidChangeTreeData = this._onDidChangeTreeData.event;
     private skillCatalogService = new SkillCatalogService();
+    private squadFolder: '.squad' | '.ai-team';
 
-    constructor(private dataProvider: SquadDataProvider) {}
+    constructor(private dataProvider: SquadDataProvider, squadFolder: '.squad' | '.ai-team' = '.ai-team') {
+        this.squadFolder = squadFolder;
+    }
 
     refresh(): void {
         this._onDidChangeTreeData.fire();
@@ -381,7 +384,7 @@ export class SkillsTreeProvider implements vscode.TreeDataProvider<SquadTreeItem
 
     private getSkillItems(): SquadTreeItem[] {
         const workspaceRoot = this.dataProvider.getWorkspaceRoot();
-        const skills = this.skillCatalogService.getInstalledSkills(workspaceRoot);
+        const skills = this.skillCatalogService.getInstalledSkills(workspaceRoot, this.squadFolder);
 
         return skills.map(skill => {
             const item = new SquadTreeItem(
