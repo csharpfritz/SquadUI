@@ -61,6 +61,35 @@ export class OrchestrationLogService {
     }
 
     /**
+     * Discovers log files from orchestration-log ONLY (not session logs).
+     * Used for deriving task status and member working state.
+     * Session logs in `log/` are narrative records that should not affect status.
+     * 
+     * @param teamRoot - Root directory containing the squad folder
+     * @returns Array of absolute paths to orchestration log files only
+     */
+    async discoverOrchestrationLogFiles(teamRoot: string): Promise<string[]> {
+        const squadDir = path.join(teamRoot, this.squadFolder);
+        const logDir = path.join(squadDir, 'orchestration-log');
+        
+        try {
+            const exists = await this.directoryExists(logDir);
+            if (!exists) {
+                return [];
+            }
+
+            const files = await fs.promises.readdir(logDir);
+            const mdFiles = files
+                .filter(file => file.endsWith('.md') && !file.toLowerCase().startsWith('readme'))
+                .map(file => path.join(logDir, file));
+
+            return mdFiles.sort();
+        } catch (error) {
+            return [];
+        }
+    }
+
+    /**
      * Parses a single log file into an OrchestrationLogEntry.
      * 
      * Expected format:
@@ -122,6 +151,32 @@ export class OrchestrationLogService {
      */
     async parseAllLogs(teamRoot: string): Promise<OrchestrationLogEntry[]> {
         const logFiles = await this.discoverLogFiles(teamRoot);
+        const entries: OrchestrationLogEntry[] = [];
+
+        for (const filePath of logFiles) {
+            try {
+                const entry = await this.parseLogFile(filePath);
+                entries.push(entry);
+            } catch (error) {
+                // Skip malformed files, log warning in production
+                console.warn(`Failed to parse log file ${filePath}:`, error);
+            }
+        }
+
+        // Sort by date descending (newest first)
+        return entries.sort((a, b) => b.date.localeCompare(a.date));
+    }
+
+    /**
+     * Parses orchestration log files ONLY (excludes session logs).
+     * Use this for deriving task status and member working state.
+     * Session logs in `log/` are narrative records that should not affect status.
+     * 
+     * @param teamRoot - Root directory containing the .ai-team folder
+     * @returns Array of parsed orchestration log entries, sorted by date (newest first)
+     */
+    async parseOrchestrationLogs(teamRoot: string): Promise<OrchestrationLogEntry[]> {
+        const logFiles = await this.discoverOrchestrationLogFiles(teamRoot);
         const entries: OrchestrationLogEntry[] = [];
 
         for (const filePath of logFiles) {

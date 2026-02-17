@@ -66,7 +66,7 @@ export class SquadDataProvider {
             return this.cachedMembers;
         }
 
-        const entries = await this.getLogEntries();
+        const entries = await this.getOrchestrationLogEntries();
         const memberStates = this.orchestrationService.getMemberStates(entries);
         const tasks = await this.getTasks();
 
@@ -290,6 +290,14 @@ export class SquadDataProvider {
     }
 
     /**
+     * Returns orchestration log entries ONLY (excludes session logs).
+     * Used internally for deriving task status and member working state.
+     */
+    private async getOrchestrationLogEntries(): Promise<OrchestrationLogEntry[]> {
+        return await this.orchestrationService.parseOrchestrationLogs(this.teamRoot);
+    }
+
+    /**
      * Returns all active tasks from orchestration logs.
      */
     async getTasks(): Promise<Task[]> {
@@ -297,7 +305,7 @@ export class SquadDataProvider {
             return this.cachedTasks;
         }
 
-        const entries = await this.getLogEntries();
+        const entries = await this.getOrchestrationLogEntries();
         this.cachedTasks = this.orchestrationService.getActiveTasks(entries);
         return this.cachedTasks;
     }
