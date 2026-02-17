@@ -66,3 +66,20 @@
 - github-actions[bot] created the release automatically per release.yml `softprops/action-gh-release@v2` configuration
 - VSIX packaging and marketplace publish appears successful (release shows artifact with SHA256)
 - No manual release creation needed — release.yml workflow handled it end-to-end
+
+### 2026-02-17: Release v0.7.2 — Cross-Platform EOL + Dual Folder Support
+
+**Release process executed:**
+- Deleted 6 stale remote branches: `squad/bugfix-sensei-team-detection`, `copilot/add-sample-orchestration-logs`, `squad/23-v020-service-tests`, `squad/24-init-command`, `squad/47-decision-markdown-preview`, `squad/51-fix-add-member-agent-mode`
+- Kept 2 active branches: `squad/charter-preview-mode`, `squad/fix-decision-scroll-to-heading`
+- Bumped version: `0.7.1` → `0.7.2` in `package.json`
+- Updated `CHANGELOG.md`: Added v0.7.2 section with cross-platform EOL fix and dual folder structure support
+- Committed: `chore: release v0.7.2` (commit 9ea8a70)
+- Tagged: `git tag v0.7.2` and pushed to origin
+- Release workflow expected to trigger automatically via tag push (`v*` pattern)
+
+**Branch cleanup conventions established:**
+- Use `git push origin --delete` for batch remote branch deletion
+- Keep branches that have open/unmerged PRs or no PR yet
+- Delete branches whose PRs are merged or closed
+- Verify with `git ls-remote --tags` after pushing tags
