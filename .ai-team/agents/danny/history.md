@@ -47,3 +47,5 @@
 📌 Team update (2026-02-16): Canvas charts must render on-demand when their tab becomes visible, not on page load. Hidden canvases report offsetWidth === 0, producing blank charts. Milestone selector also had duplicate event listeners that accumulated with each tab switch — both fixed in htmlTemplate.ts — decided by Rusty
 
 📌 Team update (2026-02-16): Test hardening conventions established — command registration tests use triple-guard pattern (extension/isActive/workspace); tree provider tests must await getChildren(); temp directories use test-fixtures/temp-{name}-${Date.now()} with teardown; private methods accessed via (instance as any).method.bind(instance) — decided by Basher
+
+📌 Team update (2026-02-17): Branch cleanup convention established — after releases, delete stale remote branches: (1) whose PRs merged/closed, (2) pointing to main HEAD. Use `git push origin --delete {branch}` for batch deletion. Keep branches with open PRs or active work. Reduces remote clutter and avoids contributor confusion — decided by Livingston
