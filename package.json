@@ -2,7 +2,7 @@
   "name": "squadui",
   "displayName": "SquadUI",
   "description": "Visualize Squad team members and their tasks",
-  "version": "0.7.1",
+  "version": "0.7.2",
   "publisher": "csharpfritz",
   "icon": "images/icon.png",
   "repository": {
