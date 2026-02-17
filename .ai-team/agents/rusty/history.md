@@ -124,3 +124,8 @@
 📌 Team update (2026-02-16): Terminal CLI Handoff & Spinner — Replaced chat panel handoff with `copilot -a squad` CLI command chained via `&&` in terminal. Added `$(loading~spin)` spinner codicon in team panel message during allocation. 3-second polling fallback clears spinner when members load. — decided by Rusty
 
  Team update (2026-02-16): Agents folder scanning added as fallback for team detection  decided by Linus
+
+### VSCE Version Alignment (2026-02-17)
+- **engines.vscode / @types/vscode alignment:** VSCE enforces that `@types/vscode` version must not exceed `engines.vscode`. If `@types/vscode` is `^1.109.0`, then `engines.vscode` must be `>=^1.109.0`. This is checked at `vsce package` time — CI will fail if they're mismatched.
+- **Fix applied:** Updated `engines.vscode` from `^1.85.0` to `^1.109.0` to match `@types/vscode`. Deleted and re-created `v0.7.2` tag at new HEAD. Release CI should now pass.
+📌 Team update (2026-02-17): VSCE Version Alignment — engines.vscode must always be >= @types/vscode. VSCE enforces this at package time. Updated from ^1.85.0 to ^1.109.0 to fix failed v0.7.2 release. — decided by Rusty
