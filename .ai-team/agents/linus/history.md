@@ -62,6 +62,8 @@
 
 📌 Team update (2026-02-16): Test hardening conventions established — command registration tests use triple-guard pattern (extension/isActive/workspace); tree provider tests must await getChildren(); temp directories use test-fixtures/temp-{name}-${Date.now()} with teardown; private methods accessed via (instance as any).method.bind(instance) — decided by Basher
 
+📌 Team update (2026-02-17): Orchestration Log vs Session Log Scope — OrchestrationLogService now uses separate discoverOrchestrationLogFiles() and parseOrchestrationLogs() methods for task status derivation; session logs in log/ remain for display only (Recent Activity, log cards). Prevents false "working" indicators from old session logs. — decided by Rusty
+
 ### Agents Folder Scanning Fallback
 - Added `discoverMembersFromAgentsFolder()` to SquadDataProvider as a second-level fallback in the member detection chain
 - Detection order is now: team.md Members/Roster table → agents folder scan → orchestration log participants

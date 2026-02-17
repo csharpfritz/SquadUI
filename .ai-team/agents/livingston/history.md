@@ -49,6 +49,8 @@
 
 📌 Team update (2026-02-16): Test hardening conventions established — command registration tests use triple-guard pattern (extension/isActive/workspace); tree provider tests must await getChildren(); temp directories use test-fixtures/temp-{name}-${Date.now()} with teardown; private methods accessed via (instance as any).method.bind(instance) — decided by Basher
 
+📌 Team update (2026-02-17): engines.vscode Version Alignment — engines.vscode must always be >= @types/vscode version. VSCE enforces this at package time. v0.7.2 release failed due to mismatch (^1.85.0 vs ^1.109.0); bumped engines.vscode to ^1.109.0 to match @types/vscode. — decided by Rusty
+
 ### 2026-02-16: Release v0.7.1 — Agents Folder Scanning Fallback
 
 **Release process executed successfully:**
