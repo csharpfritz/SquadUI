@@ -270,7 +270,7 @@ suite('SquadDataProvider', () => {
     let provider: SquadDataProvider;
 
     setup(() => {
-        provider = new SquadDataProvider(TEST_FIXTURES_ROOT);
+        provider = new SquadDataProvider(TEST_FIXTURES_ROOT, '.ai-team');
     });
 
     suite('getSquadMembers()', () => {
@@ -511,7 +511,7 @@ suite('Edge Cases', () => {
         const emptyDir = path.join(tempDir, 'empty-project');
         await fs.promises.mkdir(emptyDir, { recursive: true });
         
-        const provider = new SquadDataProvider(emptyDir);
+        const provider = new SquadDataProvider(emptyDir, '.ai-team');
         const members = await provider.getSquadMembers();
         
         // No team.md and no logs = no members
@@ -522,7 +522,7 @@ suite('Edge Cases', () => {
         const noAiTeam = path.join(tempDir, 'no-ai-team');
         await fs.promises.mkdir(noAiTeam, { recursive: true });
         
-        const provider = new SquadDataProvider(noAiTeam);
+        const provider = new SquadDataProvider(noAiTeam, '.ai-team');
         const members = await provider.getSquadMembers();
         const tasks = await provider.getTasksForMember('Anyone');
         
@@ -545,7 +545,7 @@ suite('Edge Cases', () => {
             '| Bob | Designer | `.ai-team/agents/bob/charter.md` | ✅ Active |',
         ].join('\n'));
 
-        const provider = new SquadDataProvider(teamOnlyDir);
+        const provider = new SquadDataProvider(teamOnlyDir, '.ai-team');
         const members = await provider.getSquadMembers();
 
         assert.strictEqual(members.length, 2, 'Should have 2 members from team.md');
@@ -567,7 +567,7 @@ suite('Edge Cases', () => {
             '| Alice | Engineer | `.ai-team/agents/alice/charter.md` | ✅ Active |',
         ].join('\n'));
 
-        const provider = new SquadDataProvider(teamOnlyDir);
+        const provider = new SquadDataProvider(teamOnlyDir, '.ai-team');
         const members = await provider.getSquadMembers();
 
         assert.strictEqual(members.length, 1);
@@ -590,7 +590,7 @@ suite('Edge Cases', () => {
             '| Bob | Backend Dev | `.ai-team/agents/bob/charter.md` | ✅ Active |',
         ].join('\n'));
 
-        const provider = new SquadDataProvider(teamOnlyDir);
+        const provider = new SquadDataProvider(teamOnlyDir, '.ai-team');
         const members = await provider.getSquadMembers();
 
         const alice = members.find(m => m.name === 'Alice');
@@ -612,7 +612,7 @@ suite('Edge Cases', () => {
             'Test session.',
         ].join('\n'));
 
-        const provider = new SquadDataProvider(logOnlyDir);
+        const provider = new SquadDataProvider(logOnlyDir, '.ai-team');
         const members = await provider.getSquadMembers();
 
         assert.strictEqual(members.length, 2, 'Should derive 2 members from log');

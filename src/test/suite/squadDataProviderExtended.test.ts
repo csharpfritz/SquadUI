@@ -33,12 +33,12 @@ suite('SquadDataProvider — Extended Coverage', () => {
 
     suite('getWorkspaceRoot()', () => {
         test('returns the teamRoot passed to constructor', () => {
-            const provider = new SquadDataProvider('/some/path');
+            const provider = new SquadDataProvider('/some/path', '.ai-team');
             assert.strictEqual(provider.getWorkspaceRoot(), '/some/path');
         });
 
         test('returns actual path for test fixtures', () => {
-            const provider = new SquadDataProvider(TEST_FIXTURES_ROOT);
+            const provider = new SquadDataProvider(TEST_FIXTURES_ROOT, '.ai-team');
             assert.strictEqual(provider.getWorkspaceRoot(), TEST_FIXTURES_ROOT);
         });
     });
@@ -53,7 +53,7 @@ suite('SquadDataProvider — Extended Coverage', () => {
                 'TypeScript for everything.',
             ].join('\n'));
 
-            const provider = new SquadDataProvider(tempDir);
+            const provider = new SquadDataProvider(tempDir, '.ai-team');
             const decisions = await provider.getDecisions();
 
             assert.ok(decisions.length >= 1);
@@ -66,7 +66,7 @@ suite('SquadDataProvider — Extended Coverage', () => {
                 '**Date:** 2026-02-01',
             ].join('\n'));
 
-            const provider = new SquadDataProvider(tempDir);
+            const provider = new SquadDataProvider(tempDir, '.ai-team');
             const first = await provider.getDecisions();
             const second = await provider.getDecisions();
 
@@ -79,7 +79,7 @@ suite('SquadDataProvider — Extended Coverage', () => {
                 '**Date:** 2026-02-01',
             ].join('\n'));
 
-            const provider = new SquadDataProvider(tempDir);
+            const provider = new SquadDataProvider(tempDir, '.ai-team');
             const first = await provider.getDecisions();
             provider.refresh();
             const second = await provider.getDecisions();
@@ -88,7 +88,7 @@ suite('SquadDataProvider — Extended Coverage', () => {
         });
 
         test('returns empty array when no decisions exist', async () => {
-            const provider = new SquadDataProvider(tempDir);
+            const provider = new SquadDataProvider(tempDir, '.ai-team');
             const decisions = await provider.getDecisions();
 
             assert.deepStrictEqual(decisions, []);
@@ -122,7 +122,7 @@ suite('SquadDataProvider — Extended Coverage', () => {
                 '- #99',
             ].join('\n'));
 
-            const provider = new SquadDataProvider(tempDir);
+            const provider = new SquadDataProvider(tempDir, '.ai-team');
             const details = await provider.getWorkDetails('99');
 
             if (details) {
@@ -135,7 +135,7 @@ suite('SquadDataProvider — Extended Coverage', () => {
         });
 
         test('getLogEntries caches results', async () => {
-            const provider = new SquadDataProvider(tempDir);
+            const provider = new SquadDataProvider(tempDir, '.ai-team');
             const first = await provider.getLogEntries();
             const second = await provider.getLogEntries();
 
@@ -143,7 +143,7 @@ suite('SquadDataProvider — Extended Coverage', () => {
         });
 
         test('getTasks caches results', async () => {
-            const provider = new SquadDataProvider(tempDir);
+            const provider = new SquadDataProvider(tempDir, '.ai-team');
             const first = await provider.getTasks();
             const second = await provider.getTasks();
 
@@ -179,7 +179,7 @@ suite('SquadDataProvider — Extended Coverage', () => {
                 'All tasks completed.',
             ].join('\n'));
 
-            const provider = new SquadDataProvider(tempDir);
+            const provider = new SquadDataProvider(tempDir, '.ai-team');
             const members = await provider.getSquadMembers();
 
             const alice = members.find(m => m.name === 'Alice');

@@ -79,17 +79,18 @@ export class SkillCatalogService {
     }
 
     /**
-     * Downloads a skill and writes it to `.ai-team/skills/{name}/SKILL.md`.
+     * Downloads a skill and writes it to `.squad/skills/{name}/SKILL.md` or `.ai-team/skills/{name}/SKILL.md`.
      * Creates directories as needed. Throws if the skill directory already exists
      * unless `force` is true.
      *
      * @param skill - The skill to download
-     * @param teamRoot - Workspace root containing the .ai-team directory
+     * @param teamRoot - Workspace root containing the squad directory
      * @param force - If true, overwrite an existing skill directory
+     * @param squadFolder - The squad folder name ('.squad' or '.ai-team'), defaults to '.ai-team'
      */
-    async downloadSkill(skill: Skill, teamRoot: string, force = false): Promise<void> {
+    async downloadSkill(skill: Skill, teamRoot: string, force = false, squadFolder: '.squad' | '.ai-team' = '.ai-team'): Promise<void> {
         const slug = this.slugify(skill.name);
-        const skillDir = path.join(teamRoot, '.ai-team', 'skills', slug);
+        const skillDir = path.join(teamRoot, squadFolder, 'skills', slug);
         const skillFile = path.join(skillDir, 'SKILL.md');
 
         // Duplicate protection: refuse to overwrite unless forced
@@ -112,13 +113,14 @@ export class SkillCatalogService {
     }
 
     /**
-     * Reads installed skills from `.ai-team/skills/` on disk.
+     * Reads installed skills from `.squad/skills/` or `.ai-team/skills/` on disk.
      * Each subdirectory with a SKILL.md is treated as an installed skill.
      *
-     * @param teamRoot - Workspace root containing the .ai-team directory
+     * @param teamRoot - Workspace root containing the squad directory
+     * @param squadFolder - The squad folder name ('.squad' or '.ai-team'), defaults to '.ai-team'
      */
-    getInstalledSkills(teamRoot: string): Skill[] {
-        const skillsDir = path.join(teamRoot, '.ai-team', 'skills');
+    getInstalledSkills(teamRoot: string, squadFolder: '.squad' | '.ai-team' = '.ai-team'): Skill[] {
+        const skillsDir = path.join(teamRoot, squadFolder, 'skills');
         if (!fs.existsSync(skillsDir)) {
             return [];
         }

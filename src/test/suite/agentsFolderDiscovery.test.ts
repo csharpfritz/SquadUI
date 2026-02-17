@@ -72,7 +72,7 @@ suite('SquadDataProvider — Agents Folder Discovery', () => {
                 '**Owner:** TestOwner',
             ].join('\n'));
 
-            const provider = new SquadDataProvider(dir, 0);
+            const provider = new SquadDataProvider(dir, '.ai-team', 0);
             const members = await provider.getSquadMembers();
 
             assert.ok(members.length >= 2, `Should find at least 2 members, got ${members.length}`);
@@ -104,7 +104,7 @@ suite('SquadDataProvider — Agents Folder Discovery', () => {
                 '**Owner:** TestOwner',
             ].join('\n'));
 
-            const provider = new SquadDataProvider(dir, 0);
+            const provider = new SquadDataProvider(dir, '.ai-team', 0);
             const members = await provider.getSquadMembers();
 
             assert.ok(members.length >= 2, `Should find at least 2 members, got ${members.length}`);
@@ -140,7 +140,7 @@ suite('SquadDataProvider — Agents Folder Discovery', () => {
                 '**Owner:** TestOwner',
             ].join('\n'));
 
-            const provider = new SquadDataProvider(dir, 0);
+            const provider = new SquadDataProvider(dir, '.ai-team', 0);
             const members = await provider.getSquadMembers();
 
             const names = members.map(m => m.name.toLowerCase());
@@ -170,7 +170,7 @@ suite('SquadDataProvider — Agents Folder Discovery', () => {
                 '**Owner:** TestOwner',
             ].join('\n'));
 
-            const provider = new SquadDataProvider(dir, 0);
+            const provider = new SquadDataProvider(dir, '.ai-team', 0);
             const members = await provider.getSquadMembers();
 
             assert.deepStrictEqual(members, [], 'Empty agents folder should yield empty members array');
@@ -194,7 +194,7 @@ suite('SquadDataProvider — Agents Folder Discovery', () => {
                 '**Owner:** TestOwner',
             ].join('\n'));
 
-            const provider = new SquadDataProvider(dir, 0);
+            const provider = new SquadDataProvider(dir, '.ai-team', 0);
             const members = await provider.getSquadMembers();
 
             assert.deepStrictEqual(members, [], 'No agents folder should yield empty members array');
@@ -223,7 +223,7 @@ suite('SquadDataProvider — Agents Folder Discovery', () => {
                 '| Beta | Engineer | ✅ Active |',
             ].join('\n'));
 
-            const provider = new SquadDataProvider(dir, 0);
+            const provider = new SquadDataProvider(dir, '.ai-team', 0);
             const members = await provider.getSquadMembers();
 
             assert.strictEqual(members.length, 2, 'Should return exactly 2 members from team.md');
@@ -264,7 +264,7 @@ suite('SquadDataProvider — Agents Folder Discovery', () => {
                 '**Owner:** TestOwner',
             ].join('\n'));
 
-            const provider = new SquadDataProvider(dir, 0);
+            const provider = new SquadDataProvider(dir, '.ai-team', 0);
             const members = await provider.getSquadMembers();
 
             const linus = members.find(m => m.name.toLowerCase() === 'linus');
@@ -297,7 +297,7 @@ suite('SquadDataProvider — Agents Folder Discovery', () => {
                 '**Owner:** TestOwner',
             ].join('\n'));
 
-            const provider = new SquadDataProvider(dir, 0);
+            const provider = new SquadDataProvider(dir, '.ai-team', 0);
             const members = await provider.getSquadMembers();
 
             const mystery = members.find(m => m.name.toLowerCase() === 'mystery');
@@ -331,7 +331,7 @@ suite('SquadDataProvider — Agents Folder Discovery', () => {
                 '**Owner:** TestOwner',
             ].join('\n'));
 
-            const provider = new SquadDataProvider(dir, 0);
+            const provider = new SquadDataProvider(dir, '.ai-team', 0);
             const members = await provider.getSquadMembers();
 
             const enigma = members.find(m => m.name.toLowerCase() === 'enigma');

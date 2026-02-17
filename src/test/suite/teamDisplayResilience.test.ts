@@ -53,7 +53,7 @@ suite('Team Display Resilience', () => {
                 '| Charlie | QA | `.ai-team/agents/charlie/charter.md` | ✅ Active |',
             ].join('\n'));
 
-            const provider = new SquadDataProvider(dir);
+            const provider = new SquadDataProvider(dir, '.ai-team');
             const members = await provider.getSquadMembers();
 
             assert.strictEqual(members.length, 3, 'Should return all 3 members');
@@ -83,7 +83,7 @@ suite('Team Display Resilience', () => {
                 '<!-- Members section not yet written -->',
             ].join('\n'));
 
-            const provider = new SquadDataProvider(dir);
+            const provider = new SquadDataProvider(dir, '.ai-team');
             const members = await provider.getSquadMembers();
 
             // team.md exists but roster.members is empty → falls through to
@@ -110,7 +110,7 @@ suite('Team Display Resilience', () => {
                 '|------|------|---------|--------|',
             ].join('\n'));
 
-            const provider = new SquadDataProvider(dir);
+            const provider = new SquadDataProvider(dir, '.ai-team');
 
             // Override the internal TeamMdService to simulate the race condition:
             // First call returns empty members, second call returns populated
@@ -170,7 +170,7 @@ suite('Team Display Resilience', () => {
                 'Worked on testing.',
             ].join('\n'));
 
-            const provider = new SquadDataProvider(dir);
+            const provider = new SquadDataProvider(dir, '.ai-team');
             const members = await provider.getSquadMembers();
 
             assert.strictEqual(members.length, 2, 'Should derive 2 members from logs');
@@ -191,7 +191,7 @@ suite('Team Display Resilience', () => {
             await fs.promises.mkdir(dir, { recursive: true });
             // No .ai-team directory at all
 
-            const provider = new SquadDataProvider(dir);
+            const provider = new SquadDataProvider(dir, '.ai-team');
 
             // Spy on parseTeamMd to count calls
             let parseCallCount = 0;
@@ -298,7 +298,7 @@ suite('Team Display Resilience', () => {
                 '| Alice | Engineer | `.ai-team/agents/alice/charter.md` | ✅ Active |',
             ].join('\n'));
 
-            const provider = new SquadDataProvider(dir);
+            const provider = new SquadDataProvider(dir, '.ai-team');
             const members1 = await provider.getSquadMembers();
             assert.strictEqual(members1.length, 1, 'Initial read: 1 member');
 
@@ -341,7 +341,7 @@ suite('Team Display Resilience', () => {
                 '| Alice | Engineer | ✅ Active |',
             ].join('\n'));
 
-            const provider = new SquadDataProvider(dir);
+            const provider = new SquadDataProvider(dir, '.ai-team');
 
             // Prime the cache
             await provider.getSquadMembers();

@@ -25,6 +25,7 @@ export class SquadDataProvider {
     private teamMdService: TeamMdService;
     private decisionService: DecisionService;
     private teamRoot: string;
+    private squadFolder: '.squad' | '.ai-team';
 
     // Cached data
     private cachedLogEntries: OrchestrationLogEntry[] | null = null;
@@ -33,12 +34,13 @@ export class SquadDataProvider {
     private cachedDecisions: DecisionEntry[] | null = null;
     private retryDelayMs: number;
 
-    constructor(teamRoot: string, retryDelayMs: number = 1500) {
+    constructor(teamRoot: string, squadFolder: '.squad' | '.ai-team', retryDelayMs: number = 1500) {
         this.teamRoot = teamRoot;
+        this.squadFolder = squadFolder;
         this.retryDelayMs = retryDelayMs;
-        this.orchestrationService = new OrchestrationLogService();
-        this.teamMdService = new TeamMdService();
-        this.decisionService = new DecisionService();
+        this.orchestrationService = new OrchestrationLogService(squadFolder);
+        this.teamMdService = new TeamMdService(squadFolder);
+        this.decisionService = new DecisionService(squadFolder);
     }
 
     /**
@@ -73,10 +75,10 @@ export class SquadDataProvider {
         // If team.md exists but has no members yet, retry once after a delay
         // to handle the race where squad init is still writing the file
         if (roster && roster.members.length === 0) {
-            const teamMdPath = path.join(this.teamRoot, '.ai-team', 'team.md');
+            const teamMdPath = path.join(this.teamRoot, this.squadFolder, 'team.md');
             if (fs.existsSync(teamMdPath)) {
                 await new Promise(resolve => setTimeout(resolve, this.retryDelayMs));
-                this.teamMdService = new TeamMdService();
+                this.teamMdService = new TeamMdService(this.squadFolder);
                 roster = await this.teamMdService.parseTeamMd(this.teamRoot);
             }
         }
