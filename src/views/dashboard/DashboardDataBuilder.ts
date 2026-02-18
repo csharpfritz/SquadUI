@@ -25,7 +25,8 @@ export class DashboardDataBuilder {
         openIssues?: MemberIssueMap,
         closedIssues?: MemberIssueMap,
         milestoneBurndowns?: MilestoneBurndown[],
-        allClosedIssues?: GitHubIssue[]
+        allClosedIssues?: GitHubIssue[],
+        velocityTasks?: Task[]
     ): DashboardData {
         return {
             team: this.buildTeamOverview(members, tasks, logEntries, openIssues, closedIssues),
@@ -33,7 +34,7 @@ export class DashboardDataBuilder {
                 milestones: milestoneBurndowns ?? [],
             },
             velocity: {
-                timeline: this.buildVelocityTimeline(tasks, closedIssues, allClosedIssues),
+                timeline: this.buildVelocityTimeline(velocityTasks ?? tasks, closedIssues, allClosedIssues),
                 heatmap: this.buildActivityHeatmap(members, logEntries),
             },
             activity: {

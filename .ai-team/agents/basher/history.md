@@ -233,3 +233,16 @@
 
  Team update (2026-02-18): Velocity chart now counts ALL closed GitHub issues, not just member-matched  decided by Linus
 
+### Velocity Session Log Counting Tests (2026-02-18)
+- Added 5 new tests across 2 new suite blocks appended to `src/test/suite/dashboardDataBuilder.test.ts`
+- **Suite 1: `Velocity Tasks — Session Log Counting` (4 unit tests):**
+  1. `velocityTasks` (9th arg) routes all-log tasks to velocity timeline — 2 completed today via velocityTasks, orchestration task not counted
+  2. `velocityTasks` undefined falls back to `tasks` parameter — backward compat, existing behavior preserved
+  3. `velocityTasks` accepts session-log-derived task IDs (e.g., `2026-02-18-rocket` prose-derived format) not present in `tasks`
+  4. Swimlanes still use orchestration-only `tasks` even when `velocityTasks` is provided — Danny gets orch-1, Linus gets nothing
+- **Suite 2: `getVelocityTasks() — SquadDataProvider integration` (1 integration test):**
+  5. Uses `test-fixtures/session-log-issues` fixture. `getTasks()` returns only #8 (orchestration-log). `getVelocityTasks()` returns superset including session log issues (#21, #22, #28).
+- Key pattern: `buildDashboardData(logEntries, members, tasks, decisions, openIssues, closedIssues, milestoneBurndowns, allClosedIssues, velocityTasks)` — 9 params total, velocityTasks is the 9th
+- Line 37 in DashboardDataBuilder.ts: `velocityTasks ?? tasks` feeds velocity; line 41: `tasks` feeds swimlanes (no velocityTasks involvement)
+- Compilation clean (`npx tsc --noEmit`); Linus's `velocityTasks` param and `getVelocityTasks()` already on disk
+

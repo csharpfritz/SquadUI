@@ -337,6 +337,16 @@ export class SquadDataProvider {
     }
 
     /**
+     * Returns tasks from ALL log sources (orchestration + session logs).
+     * Used specifically for velocity charts where all work should be counted.
+     * Unlike getTasks(), this includes work recorded in session logs.
+     */
+    async getVelocityTasks(): Promise<Task[]> {
+        const entries = await this.getLogEntries();
+        return this.orchestrationService.getActiveTasks(entries);
+    }
+
+    /**
      * Returns all active tasks from orchestration logs.
      */
     async getTasks(): Promise<Task[]> {

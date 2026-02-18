@@ -104,3 +104,12 @@
 - Key files: `DashboardDataBuilder.ts` (velocity logic), `SquadDashboardWebview.ts` (data fetch), `models/index.ts` (interface)
  Team update (2026-02-18): Active-work marker protocol for detecting agent status during subagent turns  decided by Danny
 
+### Velocity Chart: Session Log Inclusion (2026-02-18)
+- Velocity chart was undercounting — only orchestration-log tasks and closed GitHub issues were counted
+- Session logs in `log/` contain real completed work (issue refs, outcomes, participants) but were excluded by `getTasks()` which deliberately uses orchestration-only entries
+- Added `getVelocityTasks()` to `SquadDataProvider` — uses `getLogEntries()` (all logs) instead of `getOrchestrationLogEntries()`
+- `getTasks()` unchanged — orchestration-only for member status isolation and tree view correctness
+- `DashboardDataBuilder.buildDashboardData()` now accepts optional 9th param `velocityTasks?: Task[]`; velocity timeline uses `velocityTasks ?? tasks`
+- Activity swimlanes still use orchestration-only `tasks` — only velocity benefits from session logs
+- Architectural principle: velocity = all work signals; status = orchestration-only (prevents false "working" indicators from old session logs)
+

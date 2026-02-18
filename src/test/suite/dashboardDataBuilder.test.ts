@@ -13,7 +13,9 @@
  */
 
 import * as assert from 'assert';
+import * as path from 'path';
 import { DashboardDataBuilder } from '../../views/dashboard/DashboardDataBuilder';
+import { SquadDataProvider } from '../../services/SquadDataProvider';
 import {
     Task,
     SquadMember,
@@ -754,5 +756,126 @@ suite('DashboardDataBuilder', () => {
             assert.strictEqual(result.velocity.heatmap.length, 10);
             assert.strictEqual(result.activity.swimlanes.length, 10);
         });
+    });
+});
+
+// ─── Velocity Tasks — Session Log Counting ──────────────────────────────────
+//
+// Tests for the 9th `velocityTasks` parameter on buildDashboardData().
+// When provided, velocity timeline uses velocityTasks (all-log sources)
+// while swimlanes continue using the orchestration-only `tasks` parameter.
+
+suite('Velocity Tasks — Session Log Counting', () => {
+    let builder: DashboardDataBuilder;
+
+    setup(() => {
+        builder = new DashboardDataBuilder();
+    });
+
+    test('velocityTasks parameter uses all-log tasks in velocity chart', () => {
+        const orchestrationTasks: Task[] = [
+            makeTask({ id: 'orch-1', status: 'completed', completedAt: daysAgo(2), assignee: 'Rusty' }),
+        ];
+        const velocityTasks: Task[] = [
+            makeTask({ id: 'vel-1', status: 'completed', completedAt: daysAgo(0), assignee: 'Linus' }),
+            makeTask({ id: 'vel-2', status: 'completed', completedAt: daysAgo(0), assignee: 'Danny' }),
+        ];
+        const result = builder.buildDashboardData(
+            [], [], orchestrationTasks, [],
+            undefined, undefined, undefined, undefined,
+            velocityTasks
+        );
+        const today = result.velocity.timeline.find(p => p.date === todayStr());
+        assert.ok(today, 'Today should be in timeline');
+        assert.strictEqual(today.completedTasks, 2, 'Velocity should use velocityTasks, not tasks');
+
+        // Orchestration task (completed 2 days ago) is NOT counted —
+        // velocityTasks replaces tasks entirely for the velocity timeline
+        const day2 = result.velocity.timeline.find(p => p.date === daysAgoStr(2));
+        assert.strictEqual(day2!.completedTasks, 0, 'Orchestration task should not appear when velocityTasks provided');
+    });
+
+    test('velocityTasks undefined falls back to tasks (backward compat)', () => {
+        const tasks: Task[] = [
+            makeTask({ id: 't1', status: 'completed', completedAt: daysAgo(1), assignee: 'Danny' }),
+        ];
+        const result = builder.buildDashboardData(
+            [], [], tasks, [],
+            undefined, undefined, undefined, undefined,
+            undefined
+        );
+        const day1 = result.velocity.timeline.find(p => p.date === daysAgoStr(1));
+        assert.ok(day1, 'Yesterday should be in timeline');
+        assert.strictEqual(day1.completedTasks, 1, 'Should fall back to tasks when velocityTasks is undefined');
+    });
+
+    test('velocityTasks can include session-log-derived tasks not in tasks', () => {
+        // Prose-derived task ID from session log (date-slug format)
+        const orchestrationTasks: Task[] = [
+            makeTask({ id: '8', status: 'in_progress', assignee: 'Rusty' }),
+        ];
+        const velocityTasks: Task[] = [
+            makeTask({ id: '2026-02-18-rocket', status: 'completed', completedAt: daysAgo(0), assignee: 'Linus' }),
+        ];
+        const result = builder.buildDashboardData(
+            [], [], orchestrationTasks, [],
+            undefined, undefined, undefined, undefined,
+            velocityTasks
+        );
+        const today = result.velocity.timeline.find(p => p.date === todayStr());
+        assert.ok(today, 'Today should be in timeline');
+        assert.strictEqual(today.completedTasks, 1, 'Session-log-derived task should be counted in velocity');
+    });
+
+    test('swimlanes still use orchestration-only tasks even when velocityTasks provided', () => {
+        const members = [makeMember('Danny'), makeMember('Linus')];
+        const orchestrationTasks: Task[] = [
+            makeTask({ id: 'orch-1', assignee: 'Danny', status: 'in_progress', startedAt: daysAgo(2) }),
+        ];
+        const velocityTasks: Task[] = [
+            makeTask({ id: 'vel-1', assignee: 'Linus', status: 'completed', completedAt: daysAgo(0), startedAt: daysAgo(1) }),
+            makeTask({ id: 'vel-2', assignee: 'Danny', status: 'completed', completedAt: daysAgo(0), startedAt: daysAgo(1) }),
+        ];
+        const result = builder.buildDashboardData(
+            [], members, orchestrationTasks, [],
+            undefined, undefined, undefined, undefined,
+            velocityTasks
+        );
+        const dannyLane = result.activity.swimlanes.find(s => s.member === 'Danny')!;
+        const linusLane = result.activity.swimlanes.find(s => s.member === 'Linus')!;
+
+        assert.strictEqual(dannyLane.tasks.length, 1, 'Danny swimlane should have 1 task from orchestration');
+        assert.strictEqual(dannyLane.tasks[0].id, 'orch-1', 'Danny swimlane should use orchestration task');
+        assert.strictEqual(linusLane.tasks.length, 0, 'Linus swimlane should be empty (velocityTasks not used for swimlanes)');
+    });
+});
+
+suite('getVelocityTasks() — SquadDataProvider integration', () => {
+    const SESSION_LOG_ISSUES_FIXTURES = path.resolve(__dirname, '../../../test-fixtures/session-log-issues');
+
+    test('getVelocityTasks() returns tasks from session log entries that getTasks() does not', async () => {
+        const dataProvider = new SquadDataProvider(SESSION_LOG_ISSUES_FIXTURES, '.ai-team', 0);
+
+        const orchestrationTasks = await dataProvider.getTasks();
+        const velocityTasks = await dataProvider.getVelocityTasks();
+
+        // getTasks() returns orchestration-log only (issue #8)
+        const orchIds = orchestrationTasks.map(t => t.id);
+        assert.ok(orchIds.includes('8'), 'getTasks() should include issue #8 from orchestration-log');
+        assert.ok(!orchIds.includes('21'), 'getTasks() should NOT include issue #21 from session log');
+        assert.ok(!orchIds.includes('22'), 'getTasks() should NOT include issue #22 from session log');
+        assert.ok(!orchIds.includes('28'), 'getTasks() should NOT include issue #28 from session log');
+
+        // getVelocityTasks() reads ALL logs — should include session log issues
+        const velIds = velocityTasks.map(t => t.id);
+        assert.ok(
+            velIds.includes('21') || velIds.includes('22') || velIds.includes('28'),
+            `getVelocityTasks() should include at least one session log issue (#21, #22, or #28). Got: ${JSON.stringify(velIds)}`
+        );
+
+        assert.ok(
+            velocityTasks.length > orchestrationTasks.length,
+            `getVelocityTasks() (${velocityTasks.length}) should return more tasks than getTasks() (${orchestrationTasks.length})`
+        );
     });
 });

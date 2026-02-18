@@ -102,6 +102,7 @@ export class SquadDashboardWebview {
             // Fetch data from services
             const members = await this.dataProvider.getSquadMembers();
             const tasks = await this.dataProvider.getTasks();
+            const velocityTasks = await this.dataProvider.getVelocityTasks();
             const logEntries = await this.dataProvider.getLogEntries();
             const decisions = await this.dataProvider.getDecisions();
 
@@ -128,7 +129,8 @@ export class SquadDashboardWebview {
                 openIssues,
                 closedIssues,
                 milestoneBurndowns,
-                allClosedIssues
+                allClosedIssues,
+                velocityTasks
             );
 
             // Render HTML
