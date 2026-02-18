@@ -213,7 +213,7 @@ export function activate(context: vscode.ExtensionContext): void {
         if (!initInProgress) { return; }
         if (!initTerminalClosed) { return; }
         // Check for agent directories on disk — not just team.md entries
-        const agentsDir = path.join(workspaceRoot, squadFolderName, 'agents');
+        const agentsDir = path.join(currentRoot, squadFolderName, 'agents');
         const agentFoldersExist = fs.existsSync(agentsDir) && 
             fs.readdirSync(agentsDir).some(entry => {
                 const entryPath = path.join(agentsDir, entry);
@@ -289,7 +289,7 @@ export function activate(context: vscode.ExtensionContext): void {
                 // Always stop the progress bar when terminal closes
                 stopAllocationProgress();
                 // Update hasTeam based on what's actually on disk now
-                const teamExists = hasSquadTeam(workspaceRoot, squadFolderName);
+                const teamExists = hasSquadTeam(currentRoot, squadFolderName);
                 vscode.commands.executeCommand('setContext', 'squadui.hasTeam', teamExists);
                 if (teamExists) {
                     vscode.window.showInformationMessage('Squad team allocated successfully!');
@@ -356,14 +356,14 @@ export function activate(context: vscode.ExtensionContext): void {
             dataProvider.refresh();
             teamProvider.refresh();
             statusBar?.update();
-        }, squadFolderName)
+        }, squadFolderName, () => currentRoot)
     );
 
     // Register add skill command
     context.subscriptions.push(
         registerAddSkillCommand(context, () => {
             skillsProvider.refresh();
-        }, squadFolderName)
+        }, squadFolderName, () => currentRoot)
     );
 
     // Register view skill command — opens SKILL.md in editor
@@ -374,7 +374,7 @@ export function activate(context: vscode.ExtensionContext): void {
                 return;
             }
             // skillSlug is the directory name, used directly for lookup
-            const skillPath = path.join(workspaceRoot, squadFolderName, 'skills', skillSlug, 'SKILL.md');
+            const skillPath = path.join(currentRoot, squadFolderName, 'skills', skillSlug, 'SKILL.md');
             if (!fs.existsSync(skillPath)) {
                 vscode.window.showWarningMessage(`Skill file not found for ${skillSlug}`);
                 return;
@@ -418,7 +418,7 @@ export function activate(context: vscode.ExtensionContext): void {
 
             // If topic is provided, this is a (date, topic) call from the tree view — resolve the file
             if (topic) {
-                const squadDir = path.join(workspaceRoot, squadFolderName);
+                const squadDir = path.join(currentRoot, squadFolderName);
                 const logDirs = ['orchestration-log', 'log'];
                 let found = false;
 
@@ -463,7 +463,7 @@ export function activate(context: vscode.ExtensionContext): void {
                 return;
             }
             // skillSlug is the directory name, used directly
-            const skillDir = path.join(workspaceRoot, squadFolderName, 'skills', skillSlug);
+            const skillDir = path.join(currentRoot, squadFolderName, 'skills', skillSlug);
             if (fs.existsSync(skillDir)) {
                 fs.rmSync(skillDir, { recursive: true });
                 vscode.window.showInformationMessage(`Removed skill: ${skillSlug}`);
@@ -478,7 +478,7 @@ export function activate(context: vscode.ExtensionContext): void {
         skillsProvider.refresh();
         decisionsProvider.refresh();
         statusBar?.update();
-        const teamExists = hasSquadTeam(workspaceRoot, squadFolderName);
+        const teamExists = hasSquadTeam(currentRoot, squadFolderName);
         // During init, never reset hasTeam to false — the init wizard already set it true
         if (!initInProgress) {
             vscode.commands.executeCommand('setContext', 'squadui.hasTeam', teamExists);
