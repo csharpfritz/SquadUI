@@ -1,3 +1,4 @@
 {
-  "SquadUI.HelloSquadCommand.DisplayName": "Hello Squad"
+  "SquadUI.HelloSquadCommand.DisplayName": "Hello Squad",
+  "SquadUI.ShowTeamRosterCommand.DisplayName": "Squad Team Roster"
 }

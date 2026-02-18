@@ -26,6 +26,7 @@ internal class Extension : Microsoft.VisualStudio.Extensibility.Extension
     {
         base.InitializeServices(serviceCollection);
 
-        // Future services (TeamMdService, DecisionService, etc.) will be registered here.
+        serviceCollection.AddSingleton<Core.Services.TeamMdService>();
+        serviceCollection.AddSingleton<Core.Services.FileWatcherService>();
     }
 }

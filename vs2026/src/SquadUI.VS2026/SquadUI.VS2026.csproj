@@ -13,4 +13,8 @@
   <ItemGroup>
     <ProjectReference Include="..\SquadUI.VS2026.Core\SquadUI.VS2026.Core.csproj" />
   </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="ToolWindows\TeamRosterControl.xaml" LogicalName="SquadUI.VS2026.ToolWindows.TeamRosterControl.xaml" />
+  </ItemGroup>
 </Project>
