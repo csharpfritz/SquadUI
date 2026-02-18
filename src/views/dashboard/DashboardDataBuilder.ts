@@ -24,7 +24,8 @@ export class DashboardDataBuilder {
         decisions: DecisionEntry[],
         openIssues?: MemberIssueMap,
         closedIssues?: MemberIssueMap,
-        milestoneBurndowns?: MilestoneBurndown[]
+        milestoneBurndowns?: MilestoneBurndown[],
+        allClosedIssues?: GitHubIssue[]
     ): DashboardData {
         return {
             team: this.buildTeamOverview(members, tasks, logEntries, openIssues, closedIssues),
@@ -32,7 +33,7 @@ export class DashboardDataBuilder {
                 milestones: milestoneBurndowns ?? [],
             },
             velocity: {
-                timeline: this.buildVelocityTimeline(tasks, closedIssues),
+                timeline: this.buildVelocityTimeline(tasks, closedIssues, allClosedIssues),
                 heatmap: this.buildActivityHeatmap(members, logEntries),
             },
             activity: {
@@ -49,7 +50,7 @@ export class DashboardDataBuilder {
      * Builds velocity timeline: completed tasks per day over the last 30 days.
      * Combines both orchestration-log tasks and closed GitHub issues.
      */
-    private buildVelocityTimeline(tasks: Task[], closedIssues?: MemberIssueMap): VelocityDataPoint[] {
+    private buildVelocityTimeline(tasks: Task[], closedIssues?: MemberIssueMap, allClosedIssues?: GitHubIssue[]): VelocityDataPoint[] {
         const now = new Date();
         const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
 
@@ -70,9 +71,22 @@ export class DashboardDataBuilder {
             tasksByDate.set(dateKey, (tasksByDate.get(dateKey) ?? 0) + 1);
         }
 
-        // Also count closed GitHub issues (by closedAt date)
-        if (closedIssues) {
-            const seenIssues = new Set<number>();
+        // Count ALL closed GitHub issues for velocity (not just member-matched)
+        const seenIssues = new Set<number>();
+        if (allClosedIssues) {
+            for (const issue of allClosedIssues) {
+                if (seenIssues.has(issue.number)) { continue; }
+                seenIssues.add(issue.number);
+                if (issue.closedAt) {
+                    const closedDate = new Date(issue.closedAt);
+                    if (closedDate >= thirtyDaysAgo) {
+                        const dateKey = toLocalDateKey(closedDate);
+                        tasksByDate.set(dateKey, (tasksByDate.get(dateKey) ?? 0) + 1);
+                    }
+                }
+            }
+        } else if (closedIssues) {
+            // Fallback: use member-matched issues if allClosedIssues not provided
             for (const issues of closedIssues.values()) {
                 for (const issue of issues) {
                     if (seenIssues.has(issue.number)) { continue; }

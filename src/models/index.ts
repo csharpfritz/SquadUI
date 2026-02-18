@@ -294,6 +294,12 @@ export interface IGitHubIssuesService {
     getClosedIssuesByMember(workspaceRoot: string): Promise<MemberIssueMap>;
 
     /**
+     * Fetches all recently closed issues (unfiltered by member).
+     * Used for velocity chart to count ALL closed work, not just member-matched.
+     */
+    getClosedIssues(workspaceRoot: string): Promise<GitHubIssue[]>;
+
+    /**
      * Fetches all issues (open + closed) for a specific milestone.
      * Used to build burndown charts.
      */

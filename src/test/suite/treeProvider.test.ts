@@ -160,6 +160,9 @@ suite('TeamTreeProvider Test Suite', () => {
                 async getClosedIssuesByMember(): Promise<MemberIssueMap> {
                     return new Map();
                 },
+                async getClosedIssues(): Promise<GitHubIssue[]> {
+                    return [];
+                },
                 async getMilestoneIssues(): Promise<GitHubIssue[]> {
                     return [];
                 },

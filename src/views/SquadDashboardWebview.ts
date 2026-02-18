@@ -107,11 +107,12 @@ export class SquadDashboardWebview {
 
             // Fetch GitHub issues if service is available
             const workspaceRoot = this.dataProvider.getWorkspaceRoot();
-            let openIssues, closedIssues;
+            let openIssues, closedIssues, allClosedIssues;
             if (this.issuesService) {
                 try {
                     openIssues = await this.issuesService.getIssuesByMember(workspaceRoot);
                     closedIssues = await this.issuesService.getClosedIssuesByMember(workspaceRoot);
+                    allClosedIssues = await this.issuesService.getClosedIssues(workspaceRoot);
                 } catch { /* issues optional */ }
             }
 
@@ -126,7 +127,8 @@ export class SquadDashboardWebview {
                 decisions,
                 openIssues,
                 closedIssues,
-                milestoneBurndowns
+                milestoneBurndowns,
+                allClosedIssues
             );
 
             // Render HTML
