@@ -195,3 +195,38 @@
 - **Why these tests matter:** The `## Coding Agent` section lets @copilot appear as a squad member for routing/display purposes. Without these tests, regressions could break @copilot visibility in the team roster or cause duplicate/missing entries when sections overlap.
 - Linus's implementation: `parseMembers()` now calls `extractSection('Coding Agent')` after parsing Members/Roster, uses same `parseMarkdownTable()` and `parseTableRow()` logic, no special handling needed.
 - All 6 tests passing (872 total passing); compilation clean with `npx tsc --noEmit`
+
+### Active-Work Marker Detection Tests (2026-02-18)
+- New test file: `src/test/suite/activeWorkMarkers.test.ts` — 13 test cases
+- Written test-first for Linus's `detectActiveMarkers()` method and `getSquadMembers()` integration
+- **Test cases:**
+  1. No active-work directory — backward compatible, members stay idle
+  2. Empty active-work directory — no status overrides
+  3. Active marker for known member — status overridden to 'working'
+  4. Marker overrides log-based idle — member idle from logs but marker makes them 'working'
+  5. Stale marker (mtime > 5 min) — ignored, member stays idle
+  6. Fresh marker (mtime < 5 min) — respected, member becomes 'working'
+  7. Non-.md files (.gitkeep, .txt, .yaml) — ignored by marker detection
+  8. Multiple markers — multiple members set to 'working' simultaneously
+  9. Marker for unknown member — doesn't crash, doesn't affect roster members
+  10. Case-insensitive slug matching — lowercase 'linus.md' matches 'Linus'
+  11. Boundary: marker just past 5-min threshold — treated as stale
+  12. Boundary: marker just under 5-min threshold — treated as fresh
+  13. Marker + log-based working — no conflict, member stays 'working'
+- Uses `fs.utimesSync()` to simulate stale markers without waiting
+- Temp dirs use `test-fixtures/temp-active-markers-${Date.now()}` with teardown cleanup
+- Tests compile clean (`npx tsc --noEmit`); execution deferred until Linus's implementation lands
+- Key pattern: `SquadDataProvider(dir, '.ai-team', 0)` with zero retry delay for test speed
+
+### Velocity allClosedIssues Tests (2026-02-18)
+- Added 5 tests to `src/test/suite/dashboardDataBuilder.test.ts` inside existing `'Velocity Timeline (via buildDashboardData)'` suite
+- Tests cover new 8th `allClosedIssues?: GitHubIssue[]` parameter on `buildDashboardData()`
+- **Test cases:**
+  1. Unmatched closed issues in allClosedIssues appear in velocity timeline
+  2. No double-counting when same issue in both closedIssues map and allClosedIssues array
+  3. allClosedIssues undefined falls back to member map (backward compat)
+  4. Empty allClosedIssues array produces all-zero closed-issue counts
+  5. Old issues (45 days ago) outside 30-day window excluded from allClosedIssues
+- Implementation note: `buildVelocityTimeline` uses `if (allClosedIssues) / else if (closedIssues)` pattern — when allClosedIssues is provided, closedIssues member map is entirely skipped (not merged). Dedup is via `seenIssues` Set on `issue.number`.
+- Uses existing `makeIssue()` helper, `MemberIssueMap` import added to test file
+- Compilation clean (`npx tsc --noEmit`); tests align with Linus's implementation already on disk

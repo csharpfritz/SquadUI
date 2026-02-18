@@ -21,6 +21,7 @@ import {
     DecisionEntry,
     DashboardData,
     GitHubIssue,
+    MemberIssueMap,
 } from '../../models';
 
 // ─── Test Helpers ────────────────────────────────────────────────────────────
@@ -251,6 +252,84 @@ suite('DashboardDataBuilder', () => {
             const total = result.velocity.timeline.reduce((sum, p) => sum + p.completedTasks, 0);
 
             assert.strictEqual(total, 2); // only t1 and t5
+        });
+
+        // ─── allClosedIssues (new 8th param) tests ──────────────────────
+
+        test('unmatched closed issues in allClosedIssues appear in velocity', () => {
+            // Issues not in any member map — should still count via allClosedIssues
+            const unmatchedIssue = makeIssue({
+                number: 100,
+                state: 'closed',
+                closedAt: daysAgo(0).toISOString(),
+            });
+            const result = builder.buildDashboardData(
+                [], [], [], [], undefined, undefined, [], [unmatchedIssue]
+            );
+            const today = result.velocity.timeline.find(p => p.date === todayStr());
+            assert.ok(today, 'Today should be in timeline');
+            assert.strictEqual(today.completedTasks, 1);
+        });
+
+        test('no double-counting when issue in both closedIssues and allClosedIssues', () => {
+            const sharedIssue = makeIssue({
+                number: 200,
+                state: 'closed',
+                closedAt: daysAgo(0).toISOString(),
+            });
+            const closedIssues: MemberIssueMap = new Map([
+                ['danny', [sharedIssue]],
+            ]);
+            // Same issue appears in both maps
+            const result = builder.buildDashboardData(
+                [], [], [], [], undefined, closedIssues, [], [sharedIssue]
+            );
+            const today = result.velocity.timeline.find(p => p.date === todayStr());
+            assert.ok(today, 'Today should be in timeline');
+            assert.strictEqual(today.completedTasks, 1, 'Issue counted once, not twice');
+        });
+
+        test('allClosedIssues undefined falls back to member map', () => {
+            const issue = makeIssue({
+                number: 300,
+                state: 'closed',
+                closedAt: daysAgo(2).toISOString(),
+            });
+            const closedIssues: MemberIssueMap = new Map([
+                ['rusty', [issue]],
+            ]);
+            // No 8th param — backward compat, uses member map
+            const result = builder.buildDashboardData(
+                [], [], [], [], undefined, closedIssues, []
+            );
+            const day2 = result.velocity.timeline.find(p => p.date === daysAgoStr(2));
+            assert.ok(day2, 'Day 2 should be in timeline');
+            assert.strictEqual(day2.completedTasks, 1, 'Member map issue still counted');
+        });
+
+        test('empty allClosedIssues produces zero closed-issue counts', () => {
+            const result = builder.buildDashboardData(
+                [], [], [], [], undefined, undefined, [], []
+            );
+            const total = result.velocity.timeline.reduce(
+                (sum, p) => sum + p.completedTasks, 0
+            );
+            assert.strictEqual(total, 0, 'No issues → all zeros');
+        });
+
+        test('old issues outside 30-day window excluded from allClosedIssues', () => {
+            const oldIssue = makeIssue({
+                number: 400,
+                state: 'closed',
+                closedAt: daysAgo(45).toISOString(),
+            });
+            const result = builder.buildDashboardData(
+                [], [], [], [], undefined, undefined, [], [oldIssue]
+            );
+            const total = result.velocity.timeline.reduce(
+                (sum, p) => sum + p.completedTasks, 0
+            );
+            assert.strictEqual(total, 0, 'Issue 45 days ago should be excluded');
         });
     });
 
