@@ -20,7 +20,7 @@
 | Virgil | VS Extension Dev (VS 2026) | `.ai-team/agents/virgil/charter.md` | ✅ Active |
 | Turk | VS Extension Dev (VS 2026 UI) | `.ai-team/agents/turk/charter.md` | ✅ Active |
 | Scribe | Session Logger | `.ai-team/agents/scribe/charter.md` | 📋 Silent |
-| Ralph | Work Monitor | — | 🔄 Monitor |
+| Ralph | Work Monitor | `.ai-team/agents/ralph/charter.md` | 🔄 Monitor |
 
 ## Coding Agent
 
