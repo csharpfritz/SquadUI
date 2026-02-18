@@ -2145,3 +2145,72 @@ The velocity/activity chart only counted tasks from `orchestration-log/` and clo
 
 Session logs contain issue references, outcomes, and participants that represent real work. Excluding them from velocity makes the chart misleading (e.g., zero activity for days that had 8+ session logs). The separation keeps member status correct (no false "working" indicators from old session logs) while giving velocity the full picture.
 
+
+# Dashboard & Decisions Loading — Code Review Findings
+
+**Author:** Danny (Lead)
+**Date:** 2026-02-19
+**Scope:** Dashboard loading pipeline, decisions panel content loading
+
+---
+
+## Decision: Fix Squad Folder Hardcoding Across Three Files
+
+Three files hardcode `.ai-team` instead of using the detected `squadFolder` parameter. This causes silent failures for any project using the `.squad/` folder structure:
+
+1. **DecisionsTreeProvider** (`SquadTreeProvider.ts:434`) — `new DecisionService()` defaults to `.ai-team`
+2. **SquadDataProvider.discoverMembersFromAgentsFolder()** (`SquadDataProvider.ts:271`) — hardcodes `.ai-team` path
+3. **SquadDashboardWebview.handleOpenLogEntry()** (`SquadDashboardWebview.ts:167`) — hardcodes `.ai-team` path
+
+**Fix approach:**
+- DecisionsTreeProvider should use `dataProvider.getDecisions()` instead of its own DecisionService instance (also eliminates cache bypass)
+- discoverMembersFromAgentsFolder should use `this.squadFolder` instead of literal `.ai-team`
+- handleOpenLogEntry needs access to the squad folder — either via the data provider or constructor injection
+
+## Decision: Add Panel Null Guard After Async Awaits
+
+`SquadDashboardWebview.updateContent()` checks `this.panel` at the top, then does 5+ sequential awaits. If the user closes the panel during data loading, `this.panel` becomes `undefined` and both the HTML assignment (line 137) and the error handler (line 140) will crash.
+
+**Fix:** Re-check `if (!this.panel) return;` before setting HTML, and add a null guard in the catch block.
+
+## Decision: Sanitize JSON Interpolation in HTML Template
+
+`htmlTemplate.ts` interpolates `JSON.stringify(data)` directly into a `<script>` tag. `JSON.stringify` does not escape `</`, so any decision content containing `</script>` will break the entire dashboard.
+
+**Fix:** Apply `JSON.stringify(data).replace(/</g, '\\u003c')` to all interpolated JSON values.
+
+---
+
+## Severity Summary
+
+| # | File | Issue | Severity |
+|---|------|-------|----------|
+| 1 | SquadTreeProvider.ts:434 | DecisionsTreeProvider uses default `.ai-team` folder | P1 |
+| 2 | SquadDataProvider.ts:271 | discoverMembersFromAgentsFolder hardcodes `.ai-team` | P1 |
+| 3 | SquadDashboardWebview.ts:167 | handleOpenLogEntry hardcodes `.ai-team` | P1 |
+| 4 | SquadDashboardWebview.ts:96-141 | Race: panel disposed during async fetch | P1 |
+| 5 | htmlTemplate.ts:9-13 | `</script>` in content breaks dashboard | P1 |
+| 6 | SquadTreeProvider.ts:434-455 | Bypasses dataProvider cache, redundant reads | P2 |
+| 7 | SquadTreeProvider.ts:453-476 | No error handling in getDecisionItems() | P2 |
+| 8 | DecisionService.ts:207 | No try/catch on readdirSync (TOCTOU) | P2 |
+
+# Decision: Always pass squadFolder through tree providers and webviews
+
+**Date:** 2026-02-18
+**Author:** Linus
+**By:** Linus (Backend Dev)
+
+## Context
+
+Deep investigation of the dashboard and decisions pipelines revealed four places where the configurable squad folder name (`.squad` vs `.ai-team`) was hardcoded to `.ai-team` instead of using the runtime-detected value. This caused silent failures for any workspace using `.squad`.
+
+## Decision
+
+All service constructors, tree providers, and webview classes that need to resolve paths under the squad folder MUST receive `squadFolder` as a parameter — never hardcode `.ai-team`. Added `getSquadFolder()` to `SquadDataProvider` so downstream consumers (like `SquadDashboardWebview`) can access it without constructor changes.
+
+## Rationale
+
+- The extension supports both `.squad` and `.ai-team` folder names via `detectSquadFolder()`
+- Four bugs silently broke features for `.squad` users: agent folder discovery, log entry opening, decisions tree, and team tree log parsing
+- A public getter on `SquadDataProvider` is the cleanest way to propagate the value without adding constructor parameters to every consumer
+

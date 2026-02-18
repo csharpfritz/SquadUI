@@ -246,3 +246,25 @@
 - Line 37 in DashboardDataBuilder.ts: `velocityTasks ?? tasks` feeds velocity; line 41: `tasks` feeds swimlanes (no velocityTasks involvement)
 - Compilation clean (`npx tsc --noEmit`); Linus's `velocityTasks` param and `getVelocityTasks()` already on disk
 
+### Error Handling Hardening Tests (2026-02-18)
+- New test file: `src/test/suite/decisionServiceEdgeCases.test.ts` — 9 tests total
+- **DecisionService — scanDirectory() error handling (1 test):**
+  1. Non-existent directory returns empty array, no throw — validates try/catch around `readdirSync`
+- **DecisionService — parseDecisionFile() error handling (2 tests):**
+  2. Non-existent file path returns null — validates outer try/catch
+  3. Directory path instead of file returns null — `readFileSync` on directory triggers catch
+- **DecisionService — getDecisions() missing resources (5 tests):**
+  4. decisions.md exists but decisions/ directory does not — only markdown decisions returned
+  5. Neither decisions.md nor decisions/ directory exists — returns empty array
+  6. `.ai-team/` does not exist at all — returns empty array
+  7. Empty decisions.md (file exists, no content) — returns empty array
+  8. Whitespace-only decisions.md — returns empty array
+- **DecisionsTreeProvider — error handling (1 test):**
+  9. `getDecisionItems()` returns empty array when `decisionService.getDecisions()` throws — stubs service with throwing mock, validates try/catch guard
+- Test patterns for error handling:
+  - Replace service internals via `(provider as any).decisionService = { getDecisions: () => { throw ... } }` for throw simulation
+  - Use `assert.doesNotThrow()` to verify graceful error handling in `scanDirectory()`
+  - Private method tests via `(service as any).methodName()` pattern (established convention)
+  - Temp dir cleanup in `finally` block for non-suite-scoped tests
+- Compilation clean (`npx tsc --noEmit`); all 959 tests passing (9 new + 950 existing)
+

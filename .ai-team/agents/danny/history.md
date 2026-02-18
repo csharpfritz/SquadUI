@@ -60,3 +60,10 @@
 - No view-layer changes needed (tree/status bar already react to cache invalidation)
 - Marker creation/deletion is the orchestrator's job — out of scope for SquadUI
 - Implementation assignment: Linus (SquadDataProvider changes + tests), Rusty (no changes needed)
+
+### Dashboard & Decisions Loading Review (2026-02-19)
+- **Anti-pattern found:** Three files hardcode `.ai-team` instead of using the detected `squadFolder` parameter — SquadTreeProvider.ts:434 (DecisionsTreeProvider), SquadDataProvider.ts:271 (discoverMembersFromAgentsFolder), SquadDashboardWebview.ts:167 (handleOpenLogEntry). This breaks all `.squad/` projects silently.
+- **Architecture issue:** DecisionsTreeProvider creates its own DecisionService bypassing SquadDataProvider's cache, causing data inconsistency between tree view and dashboard. Should use `dataProvider.getDecisions()` instead.
+- **Race condition:** `updateContent()` does initial panel null check, then 5+ sequential awaits. Panel dispose during loads crashes both the assignment and the error handler. All async webview methods need post-await null guards.
+- **HTML injection risk:** `JSON.stringify()` in htmlTemplate.ts doesn't escape `</` — decision content with `</script>` breaks the entire dashboard. Must sanitize interpolated JSON.
+- **Convention established:** All new code touching squad folder paths MUST use the injected `squadFolder` parameter, never hardcode `.ai-team` or `.squad` — this is the root cause of most "content not loading" bugs.
