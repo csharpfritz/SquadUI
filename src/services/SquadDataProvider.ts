@@ -17,6 +17,9 @@ import { TeamMdService } from './TeamMdService';
 import { DecisionService } from './DecisionService';
 import { normalizeEol } from '../utils/eol';
 
+/** Markers older than this are considered stale and ignored. */
+const STALENESS_THRESHOLD_MS = 300_000; // 5 minutes
+
 /**
  * Provides squad data to the UI layer.
  * Aggregates data from TeamMdService (primary) and OrchestrationLogService (overlay).
@@ -141,6 +144,15 @@ export class SquadDataProvider {
             }
         }
 
+        // Override status for members with active-work markers
+        const activeMarkers = await this.detectActiveMarkers();
+        for (const member of members) {
+            const slug = member.name.toLowerCase();
+            if (activeMarkers.has(slug)) {
+                member.status = 'working';
+            }
+        }
+
         this.cachedMembers = members;
         return members;
     }
@@ -217,6 +229,33 @@ export class SquadDataProvider {
         this.cachedMembers = null;
         this.cachedTasks = null;
         this.cachedDecisions = null;
+    }
+
+    /**
+     * Scans active-work/ for non-stale marker files.
+     * Returns a set of active agent slugs (lowercased).
+     */
+    private async detectActiveMarkers(): Promise<Set<string>> {
+        const markerDir = path.join(this.teamRoot, this.squadFolder, 'active-work');
+        const activeAgents = new Set<string>();
+
+        try {
+            const files = await fs.promises.readdir(markerDir);
+            for (const file of files) {
+                if (!file.endsWith('.md')) { continue; }
+                const slug = file.replace(/\.md$/, '');
+                const filePath = path.join(markerDir, file);
+                const stat = await fs.promises.stat(filePath);
+                const ageMs = Date.now() - stat.mtimeMs;
+                if (ageMs < STALENESS_THRESHOLD_MS) {
+                    activeAgents.add(slug.toLowerCase());
+                }
+            }
+        } catch {
+            // Directory doesn't exist yet — no markers
+        }
+
+        return activeAgents;
     }
 
     // ─── Public Data Access Methods ───────────────────────────────────────
