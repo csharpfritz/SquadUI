@@ -4,14 +4,7 @@
  */
 
 import { OrchestrationLogEntry, Task, SquadMember, DashboardData, VelocityDataPoint, ActivityHeatmapPoint, ActivitySwimlane, TimelineTask, DecisionEntry, TeamMemberOverview, TeamSummary, MemberIssueMap, GitHubIssue, MilestoneBurndown, BurndownDataPoint } from '../../models';
-
-/** Formats a Date as YYYY-MM-DD using local timezone (not UTC). */
-function toLocalDateKey(d: Date): string {
-    const year = d.getFullYear();
-    const month = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-}
+import { parseDateAsLocal, toLocalDateKey } from '../../utils/dateUtils';
 
 export class DashboardDataBuilder {
     /**
@@ -63,7 +56,7 @@ export class DashboardDataBuilder {
                 continue;
             }
 
-            const completedDate = task.completedAt instanceof Date ? task.completedAt : new Date(task.completedAt);
+            const completedDate = task.completedAt instanceof Date ? task.completedAt : parseDateAsLocal(String(task.completedAt));
             if (completedDate < thirtyDaysAgo) {
                 continue;
             }
@@ -129,7 +122,7 @@ export class DashboardDataBuilder {
         let maxParticipation = 0;
 
         for (const entry of logEntries) {
-            const entryDate = new Date(entry.date);
+            const entryDate = parseDateAsLocal(entry.date);
             if (entryDate < sevenDaysAgo) {
                 continue;
             }
@@ -182,11 +175,11 @@ export class DashboardDataBuilder {
      */
     private taskToTimelineTask(task: Task): TimelineTask {
         const startDate = task.startedAt 
-            ? (task.startedAt instanceof Date ? task.startedAt : new Date(task.startedAt))
+            ? (task.startedAt instanceof Date ? task.startedAt : parseDateAsLocal(String(task.startedAt)))
             : new Date();
 
         const endDate = task.completedAt
-            ? (task.completedAt instanceof Date ? task.completedAt : new Date(task.completedAt))
+            ? (task.completedAt instanceof Date ? task.completedAt : parseDateAsLocal(String(task.completedAt)))
             : null;
 
         return {
@@ -214,7 +207,7 @@ export class DashboardDataBuilder {
         // Count recent log participation per member
         const recentParticipation = new Map<string, number>();
         for (const entry of logEntries) {
-            const entryDate = new Date(entry.date);
+            const entryDate = parseDateAsLocal(entry.date);
             if (entryDate < sevenDaysAgo) { continue; }
             for (const p of entry.participants) {
                 recentParticipation.set(p, (recentParticipation.get(p) ?? 0) + 1);

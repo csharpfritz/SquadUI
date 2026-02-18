@@ -8,6 +8,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { OrchestrationLogEntry, Task, MemberStatus } from '../models';
 import { normalizeEol } from '../utils/eol';
+import { parseDateAsLocal, toLocalDateKey } from '../utils/dateUtils';
 
 /**
  * Service for discovering and parsing orchestration log files.
@@ -124,7 +125,7 @@ export class OrchestrationLogService {
 
         // Extract date and topic from filename: YYYY-MM-DD-topic.md or YYYY-MM-DDThhmm-topic.md
         const filenameMatch = filename.match(/^(\d{4}-\d{2}-\d{2})(?:T\d{4})?-(.+)\.md$/);
-        const date = filenameMatch?.[1] ?? this.extractDateFromContent(content) ?? new Date().toISOString().split('T')[0];
+        const date = filenameMatch?.[1] ?? this.extractDateFromContent(content) ?? toLocalDateKey(new Date());
         const topic = filenameMatch?.[2] ?? this.extractTitleFromContent(content) ?? 'unknown';
 
         return {
@@ -272,7 +273,7 @@ export class OrchestrationLogService {
                             description: entry.summary ?? undefined,
                             status: 'in_progress',
                             assignee,
-                            startedAt: new Date(entry.date),
+                            startedAt: parseDateAsLocal(entry.date),
                         });
                     }
                 }
@@ -298,8 +299,8 @@ export class OrchestrationLogService {
                                     description: outcome,
                                     status: isCompleted ? 'completed' : 'in_progress',
                                     assignee,
-                                    startedAt: new Date(entry.date),
-                                    completedAt: isCompleted ? new Date(entry.date) : undefined,
+                                    startedAt: parseDateAsLocal(entry.date),
+                                    completedAt: isCompleted ? parseDateAsLocal(entry.date) : undefined,
                                 });
                             }
                         }
@@ -333,8 +334,8 @@ export class OrchestrationLogService {
                         description: item.description,
                         status: 'completed',
                         assignee: item.agent,
-                        startedAt: new Date(entry.date),
-                        completedAt: new Date(entry.date),
+                        startedAt: parseDateAsLocal(entry.date),
+                        completedAt: parseDateAsLocal(entry.date),
                     });
                 }
             }
@@ -364,8 +365,8 @@ export class OrchestrationLogService {
                     description: entry.summary,
                     status: isCompleted ? 'completed' : 'in_progress',
                     assignee,
-                    startedAt: new Date(entry.date),
-                    completedAt: isCompleted ? new Date(entry.date) : undefined,
+                    startedAt: parseDateAsLocal(entry.date),
+                    completedAt: isCompleted ? parseDateAsLocal(entry.date) : undefined,
                 });
             }
         }
@@ -749,7 +750,7 @@ export class OrchestrationLogService {
      * Returns true if the given date string is older than 30 days from now.
      */
     private isStaleDate(dateStr: string): boolean {
-        const entryDate = new Date(dateStr);
+        const entryDate = parseDateAsLocal(dateStr);
         if (isNaN(entryDate.getTime())) { return false; }
         return (Date.now() - entryDate.getTime()) > OrchestrationLogService.STALE_THRESHOLD_MS;
     }
