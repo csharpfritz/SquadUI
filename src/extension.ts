@@ -129,7 +129,9 @@ export function activate(context: vscode.ExtensionContext): void {
     );
 
     context.subscriptions.push(
-        vscode.commands.registerCommand('squadui.refreshTree', (teamRoot?: string) => {
+        vscode.commands.registerCommand('squadui.refreshTree', (rawArg?: unknown) => {
+            // Tree view buttons pass the tree item as first arg — ignore non-string values
+            const teamRoot = typeof rawArg === 'string' ? rawArg : undefined;
             if (teamRoot && teamRoot !== currentRoot) {
                 switchToRoot(teamRoot);
             }
@@ -162,7 +164,8 @@ export function activate(context: vscode.ExtensionContext): void {
     );
 
     context.subscriptions.push(
-        vscode.commands.registerCommand('squadui.openDashboard', async (teamRoot?: string) => {
+        vscode.commands.registerCommand('squadui.openDashboard', async (rawArg?: unknown) => {
+            const teamRoot = typeof rawArg === 'string' ? rawArg : undefined;
             if (teamRoot && teamRoot !== currentRoot) {
                 switchToRoot(teamRoot);
             }
@@ -171,7 +174,15 @@ export function activate(context: vscode.ExtensionContext): void {
     );
 
     context.subscriptions.push(
-        vscode.commands.registerCommand('squadui.viewCharter', async (memberName: string, teamRoot?: string) => {
+        vscode.commands.registerCommand('squadui.viewCharter', async (rawName?: unknown, rawRoot?: unknown) => {
+            // Tree view buttons pass tree item as first arg — extract name if object
+            let memberName: string = '';
+            if (typeof rawName === 'string') {
+                memberName = rawName;
+            } else if (typeof rawName === 'object' && rawName !== null) {
+                memberName = String((rawName as any).label || (rawName as any).name || '');
+            }
+            const teamRoot = typeof rawRoot === 'string' ? rawRoot : undefined;
             if (!memberName) {
                 vscode.window.showWarningMessage('No member selected');
                 return;
