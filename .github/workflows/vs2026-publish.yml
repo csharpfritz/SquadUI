@@ -1,0 +1,58 @@
+name: VS 2026 Publish
+
+on:
+  push:
+    tags:
+      - 'vs2026-v*'
+  workflow_dispatch:
+
+concurrency:
+  group: vs2026-publish-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0'
+
+      - name: Restore dependencies
+        run: dotnet restore vs2026/SquadUI.VS2026.sln
+
+      - name: Build
+        run: dotnet build vs2026/SquadUI.VS2026.sln --configuration Release --no-restore
+
+      - name: Test
+        run: dotnet test vs2026/SquadUI.VS2026.sln --configuration Release --no-build --verbosity normal
+
+      - name: Determine pre-release status
+        id: prerelease
+        shell: pwsh
+        run: |
+          $tagVersion = "${{ github.ref_name }}" -replace '^vs2026-v', ''
+          $major = ($tagVersion -split '\.')[0]
+          if ([int]$major -lt 1) {
+            echo "is_prerelease=true" >> $env:GITHUB_OUTPUT
+          } else {
+            echo "is_prerelease=false" >> $env:GITHUB_OUTPUT
+          }
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: VS 2026 ${{ github.ref_name }}
+          generate_release_notes: true
+          prerelease: ${{ steps.prerelease.outputs.is_prerelease == 'true' }}
+          files: |
+            vs2026/src/SquadUI.VS2026/bin/Release/net8.0/*.dll
+            vs2026/src/SquadUI.VS2026/bin/Release/net8.0/*.vsix

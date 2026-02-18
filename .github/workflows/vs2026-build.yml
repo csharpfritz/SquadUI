@@ -1,0 +1,40 @@
+name: VS 2026 Build
+
+on:
+  push:
+    paths:
+      - 'vs2026/**'
+      - '.github/workflows/vs2026-build.yml'
+  pull_request:
+    paths:
+      - 'vs2026/**'
+      - '.github/workflows/vs2026-build.yml'
+
+concurrency:
+  group: vs2026-build-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-test:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0'
+
+      - name: Restore dependencies
+        run: dotnet restore vs2026/SquadUI.VS2026.sln
+
+      - name: Build
+        run: dotnet build vs2026/SquadUI.VS2026.sln --no-restore
+
+      - name: Test
+        run: dotnet test vs2026/SquadUI.VS2026.sln --no-build --verbosity normal

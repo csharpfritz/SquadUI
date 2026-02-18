@@ -17,6 +17,10 @@
     </PackageReference>
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\SquadUI.VS2026.Core\SquadUI.VS2026.Core.csproj" />
+  </ItemGroup>
+
   <!--
     ProjectReference to SquadUI.VS2026 intentionally omitted for now.
     The VS Extensibility SDK build tooling (VSEXT0004) requires an Extension class

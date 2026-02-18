@@ -9,4 +9,8 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.VisualStudio.Extensibility.Sdk" Version="17.*" />
   </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\SquadUI.VS2026.Core\SquadUI.VS2026.Core.csproj" />
+  </ItemGroup>
 </Project>
