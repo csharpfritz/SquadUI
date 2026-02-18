@@ -39,9 +39,11 @@ export class TeamTreeProvider implements vscode.TreeDataProvider<SquadTreeItem> 
     private _onDidChangeTreeData = new vscode.EventEmitter<SquadTreeItem | undefined | null | void>();
     readonly onDidChangeTreeData = this._onDidChangeTreeData.event;
     private issuesService: IGitHubIssuesService | undefined;
-    private orchestrationLogService = new OrchestrationLogService();
+    private orchestrationLogService: OrchestrationLogService;
 
-    constructor(private dataProvider: SquadDataProvider) {}
+    constructor(private dataProvider: SquadDataProvider, squadFolder: '.squad' | '.ai-team' = '.ai-team') {
+        this.orchestrationLogService = new OrchestrationLogService(squadFolder);
+    }
 
     setIssuesService(service: IGitHubIssuesService): void {
         this.issuesService = service;
@@ -431,9 +433,11 @@ export class SkillsTreeProvider implements vscode.TreeDataProvider<SquadTreeItem
 export class DecisionsTreeProvider implements vscode.TreeDataProvider<SquadTreeItem> {
     private _onDidChangeTreeData = new vscode.EventEmitter<SquadTreeItem | undefined | null | void>();
     readonly onDidChangeTreeData = this._onDidChangeTreeData.event;
-    private decisionService = new DecisionService();
+    private decisionService: DecisionService;
 
-    constructor(private dataProvider: SquadDataProvider) {}
+    constructor(private dataProvider: SquadDataProvider, squadFolder: '.squad' | '.ai-team' = '.ai-team') {
+        this.decisionService = new DecisionService(squadFolder);
+    }
 
     refresh(): void {
         this._onDidChangeTreeData.fire();

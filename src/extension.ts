@@ -54,9 +54,9 @@ export function activate(context: vscode.ExtensionContext): void {
     context.subscriptions.push(fileWatcher);
 
     // Create tree view providers
-    const teamProvider = new TeamTreeProvider(dataProvider);
+    const teamProvider = new TeamTreeProvider(dataProvider, squadFolderName);
     const skillsProvider = new SkillsTreeProvider(dataProvider, squadFolderName);
-    const decisionsProvider = new DecisionsTreeProvider(dataProvider);
+    const decisionsProvider = new DecisionsTreeProvider(dataProvider, squadFolderName);
 
     // Wire up GitHub Issues service
     const issuesService = new GitHubIssuesService();

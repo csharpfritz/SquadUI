@@ -55,6 +55,13 @@ export class SquadDataProvider {
     }
 
     /**
+     * Returns the squad folder name ('.squad' or '.ai-team').
+     */
+    getSquadFolder(): '.squad' | '.ai-team' {
+        return this.squadFolder;
+    }
+
+    /**
      * Returns all squad members with their current status.
      * Resolution order:
      * 1. team.md Members/Roster table (authoritative roster)
@@ -268,7 +275,7 @@ export class SquadDataProvider {
      * @returns Array of SquadMember with idle status (no log overlay applied)
      */
     private async discoverMembersFromAgentsFolder(): Promise<SquadMember[]> {
-        const agentsDir = path.join(this.teamRoot, '.ai-team', 'agents');
+        const agentsDir = path.join(this.teamRoot, this.squadFolder, 'agents');
         const skipFolders = new Set(['_alumni', 'scribe']);
 
         try {

@@ -164,7 +164,7 @@ export class SquadDashboardWebview {
 
     private async handleOpenLogEntry(date: string, topic: string): Promise<void> {
         const workspaceRoot = this.dataProvider.getWorkspaceRoot();
-        const aiTeamDir = path.join(workspaceRoot, '.ai-team');
+        const squadDir = path.join(workspaceRoot, this.dataProvider.getSquadFolder());
         
         // Try both log directory patterns
         const logDirs = ['orchestration-log', 'log'];
@@ -175,7 +175,7 @@ export class SquadDashboardWebview {
 
         for (const dir of logDirs) {
             for (const filename of possibleFilenames) {
-                const filePath = path.join(aiTeamDir, dir, filename);
+                const filePath = path.join(squadDir, dir, filename);
                 if (fs.existsSync(filePath)) {
                     await vscode.commands.executeCommand('squadui.openLogEntry', filePath);
                     return;
@@ -185,7 +185,7 @@ export class SquadDashboardWebview {
 
         // If not found, search all files in both directories
         for (const dir of logDirs) {
-            const logDir = path.join(aiTeamDir, dir);
+            const logDir = path.join(squadDir, dir);
             if (fs.existsSync(logDir)) {
                 const files = fs.readdirSync(logDir);
                 const match = files.find(f => f.includes(date) && f.includes(topic));

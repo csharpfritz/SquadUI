@@ -113,3 +113,13 @@
 - Activity swimlanes still use orchestration-only `tasks` — only velocity benefits from session logs
 - Architectural principle: velocity = all work signals; status = orchestration-only (prevents false "working" indicators from old session logs)
 
+### Dashboard & Decisions Pipeline Deep Dive (2026-02-18)
+- **Bug: Hardcoded `.ai-team` in `SquadDataProvider.discoverMembersFromAgentsFolder()`** — line 271 used `'.ai-team'` literal instead of `this.squadFolder`. Agent folder fallback broken for `.squad` users. Fixed.
+- **Bug: Hardcoded `.ai-team` in `SquadDashboardWebview.handleOpenLogEntry()`** — line 167 used `'.ai-team'` literal. Clicking "Recent Sessions" log cards failed for `.squad` users. Fixed by adding `getSquadFolder()` to `SquadDataProvider`.
+- **Bug: `DecisionsTreeProvider` created `DecisionService()` without `squadFolder`** — line 434 used default `.ai-team`. Decisions tree was empty for `.squad` workspaces. Fixed: constructor now accepts and passes `squadFolder`.
+- **Bug: `TeamTreeProvider` created `OrchestrationLogService()` without `squadFolder`** — line 42. Member log entries in tree view broken for `.squad` users. Fixed: constructor now accepts and passes `squadFolder`.
+- Key files: `src/services/SquadDataProvider.ts` (data aggregation, caching, member resolution chain), `src/views/SquadDashboardWebview.ts` (webview panel, data fetch orchestration), `src/views/dashboard/DashboardDataBuilder.ts` (data transformation for charts), `src/views/dashboard/htmlTemplate.ts` (HTML + JS rendering, ~1226 lines)
+- HTML template has good null guards: all `render*()` functions check for empty/undefined arrays before iterating. Canvas charts check `offsetWidth === 0` to skip hidden tabs. Empty states shown for missing data.
+- `DashboardDataBuilder.buildDashboardData()` always returns fully-populated `DashboardData` — no null fields in the structure.
+- `DecisionService` handles missing file (returns early), empty file (no headings found), and inbox subdirectories (recursive `scanDirectory`). Graceful: never throws.
+
