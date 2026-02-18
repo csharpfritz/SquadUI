@@ -1,0 +1,9 @@
+{
+  "profiles": {
+    "SquadUI.VS2026": {
+      "commandName": "DebugTarget",
+      "commandLineArgs": "/rootSuffix Exp /commandLineSwitches \"/log\"",
+      "executablePath": "devenv.exe"
+    }
+  }
+}
