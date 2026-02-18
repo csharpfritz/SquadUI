@@ -141,3 +141,5 @@
 
  Team update (2026-02-18): Active-work marker protocol adopted; tree view reacts to marker files via cache invalidation  decided by Danny
 
+📌 Team update (2026-02-18): Velocity chart uses all logs; status stays orchestration-only — DashboardDataBuilder now accepts optional `velocityTasks` parameter (9th arg). Velocity timeline uses `velocityTasks ?? tasks` (all logs or fallback). Activity swimlanes still use orchestration-only `tasks`. Architectural principle: velocity = all work signals; status = orchestration-only to prevent false "working" indicators from old session logs. — decided by Linus
+
