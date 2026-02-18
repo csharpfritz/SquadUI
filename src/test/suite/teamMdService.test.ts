@@ -486,6 +486,116 @@ suite('TeamMdService', () => {
         });
     });
 
+    suite('parseContent() — Coding Agent section', () => {
+        test('parses @copilot from Coding Agent section', () => {
+            const content = [
+                '## Members',
+                '',
+                '| Name | Role | Status |',
+                '|------|------|--------|',
+                '| Alice | Engineer | ✅ Active |',
+                '',
+                '## Coding Agent',
+                '',
+                '| Name | Role | Status |',
+                '|------|------|--------|',
+                '| @copilot | Coding Agent | 🤖 Coding Agent |',
+            ].join('\n');
+
+            const roster = service.parseContent(content);
+            
+            const copilotMember = roster.members.find(m => m.name === '@copilot');
+            assert.ok(copilotMember, '@copilot should be in members array');
+            assert.strictEqual(copilotMember?.role, 'Coding Agent');
+            assert.strictEqual(copilotMember?.status, 'idle');
+        });
+
+        test('includes both Members table and Coding Agent entries', () => {
+            const content = [
+                '## Members',
+                '',
+                '| Name | Role | Status |',
+                '|------|------|--------|',
+                '| Alice | Engineer | ✅ Active |',
+                '| Bob | Designer | ✅ Active |',
+                '',
+                '## Coding Agent',
+                '',
+                '| Name | Role | Status |',
+                '|------|------|--------|',
+                '| @copilot | Coding Agent | 🤖 Coding Agent |',
+            ].join('\n');
+
+            const roster = service.parseContent(content);
+            
+            assert.strictEqual(roster.members.length, 3);
+            assert.ok(roster.members.some(m => m.name === 'Alice'));
+            assert.ok(roster.members.some(m => m.name === 'Bob'));
+            assert.ok(roster.members.some(m => m.name === '@copilot'));
+        });
+
+        test('handles Coding Agent section without Members section', () => {
+            const content = [
+                '# Team',
+                '',
+                '## Coding Agent',
+                '',
+                '| Name | Role | Status |',
+                '|------|------|--------|',
+                '| @copilot | Coding Agent | 🤖 Coding Agent |',
+            ].join('\n');
+
+            const roster = service.parseContent(content);
+            
+            assert.strictEqual(roster.members.length, 1);
+            assert.strictEqual(roster.members[0].name, '@copilot');
+            assert.strictEqual(roster.members[0].role, 'Coding Agent');
+        });
+
+        test('handles empty Coding Agent table', () => {
+            const content = [
+                '## Members',
+                '',
+                '| Name | Role | Status |',
+                '|------|------|--------|',
+                '| Alice | Engineer | ✅ Active |',
+                '',
+                '## Coding Agent',
+                '',
+                '| Name | Role | Status |',
+                '|------|------|--------|',
+            ].join('\n');
+
+            const roster = service.parseContent(content);
+            
+            // Should only have Alice, no extra entries from empty Coding Agent table
+            assert.strictEqual(roster.members.length, 1);
+            assert.strictEqual(roster.members[0].name, 'Alice');
+        });
+
+        test('does not duplicate members if in both sections', () => {
+            const content = [
+                '## Members',
+                '',
+                '| Name | Role | Status |',
+                '|------|------|--------|',
+                '| @copilot | Coding Agent | 🤖 Coding Agent |',
+                '',
+                '## Coding Agent',
+                '',
+                '| Name | Role | Status |',
+                '|------|------|--------|',
+                '| @copilot | Coding Agent | 🤖 Coding Agent |',
+            ].join('\n');
+
+            const roster = service.parseContent(content);
+            
+            // Service doesn't dedup — both should appear
+            const copilotMembers = roster.members.filter(m => m.name === '@copilot');
+            assert.strictEqual(copilotMembers.length, 2, 'Both @copilot entries should be returned');
+        });
+    });
+
     suite('parseContent() — edge cases', () => {
         test('handles team.md with only a title', () => {
             const roster = service.parseContent('# My Team');
@@ -545,6 +655,23 @@ suite('TeamMdService', () => {
             const roster = service.parseContent(content);
 
             assert.strictEqual(roster.members.length, 50);
+        });
+
+        test('parses Ralph with Monitor status from Members table', () => {
+            const content = [
+                '## Members',
+                '',
+                '| Name | Role | Status |',
+                '|------|------|--------|',
+                '| Ralph | Infrastructure | 🔄 Monitor |',
+            ].join('\n');
+
+            const roster = service.parseContent(content);
+            
+            assert.strictEqual(roster.members.length, 1);
+            assert.strictEqual(roster.members[0].name, 'Ralph');
+            assert.strictEqual(roster.members[0].role, 'Infrastructure');
+            assert.strictEqual(roster.members[0].status, 'idle', '🔄 Monitor should map to idle status');
         });
     });
 

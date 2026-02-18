@@ -74,3 +74,10 @@
 - Method is self-contained and handles missing/unreadable agents directory gracefully (returns empty array)
 - Pre-existing test suite at `agentsFolderDiscovery.test.ts` validates all edge cases
 📌 Team update (2026-02-17): Always use normalizeEol() for markdown parsing to ensure cross-platform compatibility — decided by Copilot (Jeffrey T. Fritz)
+
+### Coding Agent Section Parsing (2026-02-18)
+- Extended `TeamMdService.parseMembers()` to parse the `## Coding Agent` section in addition to `## Members`/`## Roster`
+- Bug fix: @copilot was missing from member list because it lives in its own table under `## Coding Agent`
+- The `extractSection()` and `parseMarkdownTable()` methods already handle this format — just needed to add the second extraction pass
+- Both sections now contribute to the unified member array returned by `parseMembers()`
+- No changes needed to `parseTableRow()` — it already handles the Name/Role/Charter/Status columns correctly regardless of which section they come from

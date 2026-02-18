@@ -183,3 +183,15 @@
 
 
 📌 Team update (2026-02-17): Always use normalizeEol() for markdown parsing to ensure cross-platform compatibility — decided by Copilot (Jeffrey T. Fritz)
+### Coding Agent Section Parsing Tests (2026-02-17)
+- New test suite: `parseContent() — Coding Agent section` with 5 tests for Linus's `## Coding Agent` section parsing
+- **Test scenarios:**
+  1. `@copilot` parsed from Coding Agent table with 🤖 status → idle
+  2. Member count includes entries from both `## Members` AND `## Coding Agent` sections
+  3. Coding Agent section works standalone (no Members section needed)
+  4. Empty Coding Agent table (header only) doesn't add phantom entries
+  5. No deduplication — if member appears in both sections, both entries returned
+- Added 6th test in edge cases suite: Ralph with 🔄 Monitor status maps to idle (validates status badge logic)
+- **Why these tests matter:** The `## Coding Agent` section lets @copilot appear as a squad member for routing/display purposes. Without these tests, regressions could break @copilot visibility in the team roster or cause duplicate/missing entries when sections overlap.
+- Linus's implementation: `parseMembers()` now calls `extractSection('Coding Agent')` after parsing Members/Roster, uses same `parseMarkdownTable()` and `parseTableRow()` logic, no special handling needed.
+- All 6 tests passing (872 total passing); compilation clean with `npx tsc --noEmit`

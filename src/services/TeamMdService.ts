@@ -118,17 +118,27 @@ export class TeamMdService {
 
         // Find the Members section, falling back to Roster
         const membersSection = this.extractSection(content, 'Members') ?? this.extractSection(content, 'Roster');
-        if (!membersSection) {
-            return members;
+        if (membersSection) {
+            // Parse markdown table
+            const tableRows = this.parseMarkdownTable(membersSection);
+            
+            for (const row of tableRows) {
+                const member = this.parseTableRow(row);
+                if (member) {
+                    members.push(member);
+                }
+            }
         }
 
-        // Parse markdown table
-        const tableRows = this.parseMarkdownTable(membersSection);
-        
-        for (const row of tableRows) {
-            const member = this.parseTableRow(row);
-            if (member) {
-                members.push(member);
+        // Also parse the Coding Agent section for @copilot entries
+        const codingAgentSection = this.extractSection(content, 'Coding Agent');
+        if (codingAgentSection) {
+            const codingAgentRows = this.parseMarkdownTable(codingAgentSection);
+            for (const row of codingAgentRows) {
+                const member = this.parseTableRow(row);
+                if (member) {
+                    members.push(member);
+                }
             }
         }
 
