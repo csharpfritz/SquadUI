@@ -208,22 +208,27 @@ export class OrchestrationLogService {
             return states;
         }
 
-        // Get all unique participants across all entries
-        const allParticipants = new Set<string>();
+        // Get all unique participants across all entries (case-insensitive dedup, preserve original casing)
+        const allParticipants = new Map<string, string>(); // lowercase → original
         for (const entry of entries) {
             for (const participant of entry.participants) {
-                allParticipants.add(participant);
+                const key = participant.toLowerCase();
+                if (!allParticipants.has(key)) {
+                    allParticipants.set(key, participant);
+                }
             }
         }
 
         // Find the most recent entry
         const sortedEntries = [...entries].sort((a, b) => b.date.localeCompare(a.date));
         const mostRecentEntry = sortedEntries[0];
-        const mostRecentParticipants = new Set(mostRecentEntry.participants);
+        const mostRecentParticipants = new Set(
+            mostRecentEntry.participants.map(p => p.toLowerCase())
+        );
 
         // Members in the most recent log are 'working', others are 'idle'
-        for (const participant of allParticipants) {
-            states.set(participant, mostRecentParticipants.has(participant) ? 'working' : 'idle');
+        for (const [key, name] of allParticipants) {
+            states.set(name, mostRecentParticipants.has(key) ? 'working' : 'idle');
         }
 
         return states;
@@ -258,13 +263,13 @@ export class OrchestrationLogService {
                         seenTaskIds.add(taskId);
                         entryProducedIssueTasks = true;
 
-                        // Determine assignee from participants (first participant for now)
+                        // Assign to first participant from the log entry
                         const assignee = entry.participants[0] ?? 'unknown';
 
                         tasks.push({
                             id: taskId,
                             title: `Issue #${taskId}`,
-                            description: entry.summary,
+                            description: entry.summary ?? undefined,
                             status: 'in_progress',
                             assignee,
                             startedAt: new Date(entry.date),
@@ -285,9 +290,7 @@ export class OrchestrationLogService {
                                 entryProducedIssueTasks = true;
 
                                 const assignee = entry.participants[0] ?? 'unknown';
-                                const isCompleted = outcome.toLowerCase().includes('completed') || 
-                                                   outcome.toLowerCase().includes('done') ||
-                                                   outcome.toLowerCase().includes('✅');
+                                const isCompleted = this.isCompletionSignal(outcome);
 
                                 tasks.push({
                                     id: taskId,
@@ -346,8 +349,8 @@ export class OrchestrationLogService {
                 continue;
             }
 
-            const assignee = entry.participants[0];
-            const taskId = this.generateProseTaskId(entry.date, assignee);
+            const assignee = entry.participants[0] ?? 'unknown';
+            const taskId = this.generateProseTaskId(entry.date, entry.participants[0] ?? 'unknown');
             if (!seenTaskIds.has(taskId)) {
                 seenTaskIds.add(taskId);
 
@@ -367,7 +370,13 @@ export class OrchestrationLogService {
             }
         }
 
-        return tasks;
+        // Filter out stale tasks (>30 days old and still in_progress)
+        return tasks.filter(task => {
+            if (task.status !== 'in_progress' || !task.startedAt) {
+                return true;
+            }
+            return !this.isStaleDate(task.startedAt.toISOString());
+        });
     }
 
     // ─── Private Helper Methods ────────────────────────────────────────────
@@ -721,12 +730,28 @@ export class OrchestrationLogService {
      * Checks if outcome text signals completion.
      */
     private isCompletionSignal(text: string): boolean {
+        if (!text) { return false; }
         const lower = text.toLowerCase();
         return lower.includes('completed') ||
                lower.includes('done') ||
+               lower.includes('merged') ||
+               lower.includes('closed') ||
+               lower.includes('resolved') ||
                lower.includes('✅') ||
                lower.includes('pass') ||
                lower.includes('succeeds');
+    }
+
+    /** Staleness threshold in milliseconds (30 days). */
+    private static readonly STALE_THRESHOLD_MS = 30 * 24 * 60 * 60 * 1000;
+
+    /**
+     * Returns true if the given date string is older than 30 days from now.
+     */
+    private isStaleDate(dateStr: string): boolean {
+        const entryDate = new Date(dateStr);
+        if (isNaN(entryDate.getTime())) { return false; }
+        return (Date.now() - entryDate.getTime()) > OrchestrationLogService.STALE_THRESHOLD_MS;
     }
 
     /**

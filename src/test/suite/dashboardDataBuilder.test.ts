@@ -33,14 +33,22 @@ function daysAgo(n: number): Date {
     return d;
 }
 
-/** Returns today's date as YYYY-MM-DD string. */
+/** Returns today's date as YYYY-MM-DD string (local timezone). */
 function todayStr(): string {
-    return new Date().toISOString().split('T')[0];
+    const d = new Date();
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
 }
 
-/** Returns YYYY-MM-DD string for n days ago. */
+/** Returns YYYY-MM-DD string for n days ago (local timezone). */
 function daysAgoStr(n: number): string {
-    return daysAgo(n).toISOString().split('T')[0];
+    const d = daysAgo(n);
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
 }
 
 /** Creates a minimal Task with sensible defaults. */
@@ -454,7 +462,7 @@ suite('DashboardDataBuilder', () => {
             const result = builder.buildDashboardData([], members, tasks, []);
             const task = result.activity.swimlanes[0].tasks[0];
 
-            assert.strictEqual(task.endDate, completed.toISOString().split('T')[0]);
+            assert.strictEqual(task.endDate, daysAgoStr(1));
         });
 
         test('tasks without completedAt → endDate is null', () => {

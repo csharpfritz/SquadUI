@@ -17,6 +17,19 @@ const DEFAULT_CACHE_TTL_MS = 5 * 60 * 1000;
 /** Squad label prefix used to assign issues to members */
 const SQUAD_LABEL_PREFIX = 'squad:';
 
+/** Maximum pages to fetch for closed issues to avoid runaway requests */
+const MAX_CLOSED_PAGES = 5;
+
+/**
+ * Custom error for GitHub API failures, includes HTTP status code.
+ */
+class GitHubApiError extends Error {
+    constructor(public readonly statusCode: number, message: string) {
+        super(message);
+        this.name = 'GitHubApiError';
+    }
+}
+
 /**
  * Cached issue data with expiry tracking.
  */
@@ -112,9 +125,17 @@ export class GitHubIssuesService {
             return [];
         }
 
-        const issues = await this.fetchIssuesFromApi(config);
-        this.cache = { issues, fetchedAt: Date.now() };
-        return issues;
+        try {
+            const issues = await this.fetchIssuesFromApi(config);
+            this.cache = { issues, fetchedAt: Date.now() };
+            return issues;
+        } catch (error) {
+            if (error instanceof GitHubApiError && error.statusCode === 403) {
+                console.warn('GitHub API rate limit hit, returning cached data');
+                return this.cache?.issues ?? [];
+            }
+            throw error;
+        }
     }
 
     /**
@@ -127,8 +148,8 @@ export class GitHubIssuesService {
         const issues = await this.getIssues(workspaceRoot);
         const normalizedName = memberName.toLowerCase();
         return issues.filter(issue =>
-            issue.labels.some(label =>
-                label.name.startsWith(SQUAD_LABEL_PREFIX) &&
+            (issue.labels ?? []).some(label =>
+                label.name.toLowerCase().startsWith(SQUAD_LABEL_PREFIX) &&
                 label.name.substring(SQUAD_LABEL_PREFIX.length).toLowerCase() === normalizedName
             )
         );
@@ -160,8 +181,8 @@ export class GitHubIssuesService {
         for (const issue of issues) {
             // Strategy: squad:{member} labels
             if (strategies.includes('labels')) {
-                for (const label of issue.labels) {
-                    if (label.name.startsWith(SQUAD_LABEL_PREFIX)) {
+                for (const label of (issue.labels ?? [])) {
+                    if (label.name.toLowerCase().startsWith(SQUAD_LABEL_PREFIX)) {
                         const member = label.name.substring(SQUAD_LABEL_PREFIX.length).toLowerCase();
                         this.addIssueToBucket(byMember, seen, member, issue);
                     }
@@ -179,7 +200,7 @@ export class GitHubIssuesService {
 
             // Strategy: any label matching a member name (case-insensitive)
             if (strategies.includes('any-label')) {
-                for (const label of issue.labels) {
+                for (const label of (issue.labels ?? [])) {
                     const labelLower = label.name.toLowerCase();
                     // Skip squad: prefixed labels — those are handled by the labels strategy
                     if (!labelLower.startsWith(SQUAD_LABEL_PREFIX)) {
@@ -211,9 +232,17 @@ export class GitHubIssuesService {
             return [];
         }
 
-        const issues = await this.fetchClosedIssuesFromApi(config);
-        this.closedCache = { issues, fetchedAt: Date.now() };
-        return issues;
+        try {
+            const issues = await this.fetchClosedIssuesFromApi(config);
+            this.closedCache = { issues, fetchedAt: Date.now() };
+            return issues;
+        } catch (error) {
+            if (error instanceof GitHubApiError && error.statusCode === 403) {
+                console.warn('GitHub API rate limit hit, returning cached closed data');
+                return this.closedCache?.issues ?? [];
+            }
+            throw error;
+        }
     }
 
     /**
@@ -239,8 +268,8 @@ export class GitHubIssuesService {
 
         for (const issue of issues) {
             if (strategies.includes('labels')) {
-                for (const label of issue.labels) {
-                    if (label.name.startsWith(SQUAD_LABEL_PREFIX)) {
+                for (const label of (issue.labels ?? [])) {
+                    if (label.name.toLowerCase().startsWith(SQUAD_LABEL_PREFIX)) {
                         const member = label.name.substring(SQUAD_LABEL_PREFIX.length).toLowerCase();
                         this.addIssueToBucket(byMember, seen, member, issue);
                     }
@@ -256,7 +285,7 @@ export class GitHubIssuesService {
             }
 
             if (strategies.includes('any-label')) {
-                for (const label of issue.labels) {
+                for (const label of (issue.labels ?? [])) {
                     const labelLower = label.name.toLowerCase();
                     if (!labelLower.startsWith(SQUAD_LABEL_PREFIX)) {
                         this.addIssueToBucket(byMember, seen, labelLower, issue);
@@ -456,23 +485,42 @@ export class GitHubIssuesService {
 
     /**
      * Fetches recently closed issues from the GitHub REST API.
-     * Returns at most 50 issues, sorted by most recently updated.
+     * Paginates up to MAX_CLOSED_PAGES pages (500 issues) sorted by most recently updated.
      */
     private async fetchClosedIssuesFromApi(config: IssueSourceConfig): Promise<GitHubIssue[]> {
-        const perPage = 50;
-        const path = `/repos/${config.owner}/${config.repo}/issues?state=closed&sort=updated&direction=desc&per_page=${perPage}&page=1`;
+        const allIssues: GitHubIssue[] = [];
+        let page = 1;
+        const perPage = 100;
 
-        const raw = await this.apiGet<GitHubApiIssue[]>(path);
+        // eslint-disable-next-line no-constant-condition
+        while (true) {
+            const path = `/repos/${config.owner}/${config.repo}/issues?state=closed&sort=updated&direction=desc&per_page=${perPage}&page=${page}`;
+            let raw: GitHubApiIssue[];
 
-        const issues: GitHubIssue[] = [];
-        for (const item of raw) {
-            if (item.pull_request) {
-                continue;
+            try {
+                raw = await this.apiGet<GitHubApiIssue[]>(path);
+            } catch (error) {
+                if (allIssues.length > 0) {
+                    console.warn(`GitHub API error on closed issues page ${page}, returning ${allIssues.length} issues fetched so far:`, error);
+                    break;
+                }
+                throw error;
             }
-            issues.push(this.mapApiIssue(item));
+
+            for (const item of raw) {
+                if (item.pull_request) {
+                    continue;
+                }
+                allIssues.push(this.mapApiIssue(item));
+            }
+
+            if (raw.length < perPage || page >= MAX_CLOSED_PAGES) {
+                break;
+            }
+            page++;
         }
 
-        return issues;
+        return allIssues;
     }
 
     /**
@@ -544,7 +592,8 @@ export class GitHubIssuesService {
                             reject(new Error(`Failed to parse GitHub API response: ${parseError}`));
                         }
                     } else {
-                        reject(new Error(
+                        reject(new GitHubApiError(
+                            res.statusCode ?? 0,
                             `GitHub API returned ${res.statusCode}: ${body.substring(0, 200)}`
                         ));
                     }
