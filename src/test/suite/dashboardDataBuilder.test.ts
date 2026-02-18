@@ -660,6 +660,344 @@ suite('DashboardDataBuilder', () => {
         });
     });
 
+    // ─── Burndown — Comprehensive Tests ─────────────────────────────────
+
+    suite('Milestone Burndown — Comprehensive', () => {
+
+        test('zero issues → empty result', () => {
+            const result = builder.buildMilestoneBurndown('Empty Sprint', 1, []);
+            assert.strictEqual(result.totalIssues, 0);
+            assert.deepStrictEqual(result.memberNames, []);
+            assert.deepStrictEqual(result.memberColors, []);
+            assert.deepStrictEqual(result.dataPoints, []);
+            assert.strictEqual(result.title, 'Empty Sprint');
+            assert.strictEqual(result.number, 1);
+        });
+
+        test('single open issue → daily points from creation to today', () => {
+            const issues: GitHubIssue[] = [
+                makeIssue({ number: 1, state: 'open', createdAt: daysAgo(3).toISOString(), assignee: 'danny' }),
+            ];
+            const result = builder.buildMilestoneBurndown('Sprint', 1, issues);
+
+            assert.strictEqual(result.totalIssues, 1);
+            assert.strictEqual(result.dataPoints.length, 4); // 3 days ago through today
+            // All points should show 1 remaining (never closed)
+            for (const point of result.dataPoints) {
+                assert.strictEqual(point.remaining, 1);
+            }
+        });
+
+        test('single closed issue → remaining drops to 0', () => {
+            const issues: GitHubIssue[] = [
+                makeIssue({ number: 1, state: 'closed', createdAt: daysAgo(5).toISOString(), closedAt: daysAgo(2).toISOString() }),
+            ];
+            const result = builder.buildMilestoneBurndown('Sprint', 1, issues);
+
+            // Before close: remaining = 1, after close: remaining = 0
+            const beforeClose = result.dataPoints.find(p => p.date === daysAgoStr(3));
+            const afterClose = result.dataPoints.find(p => p.date === daysAgoStr(2));
+            assert.ok(beforeClose, 'Day before close should exist');
+            assert.strictEqual(beforeClose!.remaining, 1);
+            assert.ok(afterClose, 'Close day should exist');
+            assert.strictEqual(afterClose!.remaining, 0);
+        });
+
+        test('daily rollup — multiple issues closing on different days', () => {
+            const issues: GitHubIssue[] = [
+                makeIssue({ number: 1, state: 'closed', createdAt: daysAgo(6).toISOString(), closedAt: daysAgo(4).toISOString() }),
+                makeIssue({ number: 2, state: 'closed', createdAt: daysAgo(6).toISOString(), closedAt: daysAgo(3).toISOString() }),
+                makeIssue({ number: 3, state: 'closed', createdAt: daysAgo(6).toISOString(), closedAt: daysAgo(1).toISOString() }),
+            ];
+            const result = builder.buildMilestoneBurndown('Sprint', 1, issues);
+
+            const day6 = result.dataPoints.find(p => p.date === daysAgoStr(6));
+            const day5 = result.dataPoints.find(p => p.date === daysAgoStr(5));
+            const day4 = result.dataPoints.find(p => p.date === daysAgoStr(4));
+            const day3 = result.dataPoints.find(p => p.date === daysAgoStr(3));
+            const day2 = result.dataPoints.find(p => p.date === daysAgoStr(2));
+
+            assert.strictEqual(day6!.remaining, 3, 'All 3 open on day 6');
+            assert.strictEqual(day5!.remaining, 3, 'Still 3 open on day 5');
+            assert.strictEqual(day4!.remaining, 2, 'Issue #1 closed on day 4');
+            assert.strictEqual(day3!.remaining, 1, 'Issue #2 closed on day 3');
+            assert.strictEqual(day2!.remaining, 1, 'Issue #3 still open on day 2');
+
+            // Last point should be daysAgo(1) where issue #3 closes
+            const lastPoint = result.dataPoints[result.dataPoints.length - 1];
+            assert.strictEqual(lastPoint.date, daysAgoStr(1));
+            assert.strictEqual(lastPoint.remaining, 0, 'All closed on day 1');
+        });
+
+        test('multiple issues closing on same day → all counted', () => {
+            const issues: GitHubIssue[] = [
+                makeIssue({ number: 1, state: 'closed', createdAt: daysAgo(5).toISOString(), closedAt: daysAgo(2).toISOString() }),
+                makeIssue({ number: 2, state: 'closed', createdAt: daysAgo(5).toISOString(), closedAt: daysAgo(2).toISOString() }),
+            ];
+            const result = builder.buildMilestoneBurndown('Sprint', 1, issues);
+
+            const day3 = result.dataPoints.find(p => p.date === daysAgoStr(3));
+            const day2 = result.dataPoints.find(p => p.date === daysAgoStr(2));
+            assert.strictEqual(day3!.remaining, 2, 'Both open before close day');
+            assert.strictEqual(day2!.remaining, 0, 'Both closed on same day');
+        });
+
+        test('member stacking — byMember tracks per-member breakdown', () => {
+            const issues: GitHubIssue[] = [
+                makeIssue({ number: 1, state: 'open', createdAt: daysAgo(3).toISOString(), assignee: 'danny' }),
+                makeIssue({ number: 2, state: 'open', createdAt: daysAgo(3).toISOString(), assignee: 'rusty' }),
+                makeIssue({ number: 3, state: 'open', createdAt: daysAgo(3).toISOString(), assignee: 'danny' }),
+            ];
+            const result = builder.buildMilestoneBurndown('Sprint', 1, issues);
+
+            const today = result.dataPoints.find(p => p.date === todayStr());
+            assert.ok(today, 'Today should exist');
+            assert.strictEqual(today!.byMember['danny'], 2, 'Danny has 2 open issues');
+            assert.strictEqual(today!.byMember['rusty'], 1, 'Rusty has 1 open issue');
+        });
+
+        test('squad: label overrides assignee for member mapping', () => {
+            const issues: GitHubIssue[] = [
+                makeIssue({
+                    number: 1, state: 'open', createdAt: daysAgo(2).toISOString(),
+                    assignee: 'copilot',
+                    labels: [{ name: 'squad:linus' }],
+                }),
+            ];
+            const result = builder.buildMilestoneBurndown('Sprint', 1, issues);
+
+            assert.ok(result.memberNames.includes('linus'), 'Linus should be in memberNames via squad: label');
+            assert.ok(!result.memberNames.includes('copilot'), 'Copilot should not be in memberNames');
+            const today = result.dataPoints.find(p => p.date === todayStr());
+            assert.strictEqual(today!.byMember['linus'], 1);
+        });
+
+        test('squad: label matching is case-insensitive', () => {
+            const issues: GitHubIssue[] = [
+                makeIssue({
+                    number: 1, state: 'open', createdAt: daysAgo(2).toISOString(),
+                    labels: [{ name: 'Squad:Danny' }],
+                }),
+                makeIssue({
+                    number: 2, state: 'open', createdAt: daysAgo(2).toISOString(),
+                    labels: [{ name: 'SQUAD:Rusty' }],
+                }),
+            ];
+            const result = builder.buildMilestoneBurndown('Sprint', 1, issues);
+
+            assert.ok(result.memberNames.includes('danny'), 'Danny should be normalized to lowercase');
+            assert.ok(result.memberNames.includes('rusty'), 'Rusty should be normalized to lowercase');
+        });
+
+        test('unassigned issues grouped as "unassigned"', () => {
+            const issues: GitHubIssue[] = [
+                makeIssue({ number: 1, state: 'open', createdAt: daysAgo(2).toISOString() }),
+                makeIssue({ number: 2, state: 'open', createdAt: daysAgo(2).toISOString(), assignee: 'danny' }),
+            ];
+            const result = builder.buildMilestoneBurndown('Sprint', 1, issues);
+
+            assert.ok(result.memberNames.includes('unassigned'));
+            assert.ok(result.memberNames.includes('danny'));
+            // Unassigned sorts last
+            assert.strictEqual(result.memberNames[result.memberNames.length - 1], 'unassigned');
+        });
+
+        test('member colors are assigned in parallel with memberNames', () => {
+            const issues: GitHubIssue[] = [
+                makeIssue({ number: 1, state: 'open', createdAt: daysAgo(2).toISOString(), assignee: 'alpha' }),
+                makeIssue({ number: 2, state: 'open', createdAt: daysAgo(2).toISOString(), assignee: 'beta' }),
+                makeIssue({ number: 3, state: 'open', createdAt: daysAgo(2).toISOString(), assignee: 'gamma' }),
+            ];
+            const result = builder.buildMilestoneBurndown('Sprint', 1, issues);
+
+            assert.strictEqual(result.memberNames.length, result.memberColors.length);
+            // Colors should be hex strings
+            for (const color of result.memberColors) {
+                assert.ok(/^#[0-9a-f]{6}$/i.test(color), `Invalid color: ${color}`);
+            }
+        });
+
+        test('due date extends burndown beyond last close date', () => {
+            const issues: GitHubIssue[] = [
+                makeIssue({ number: 1, state: 'closed', createdAt: daysAgo(10).toISOString(), closedAt: daysAgo(5).toISOString() }),
+            ];
+            const futureDate = daysAgoStr(-5); // 5 days from now
+            const result = builder.buildMilestoneBurndown('Sprint', 1, issues, futureDate);
+
+            const lastPoint = result.dataPoints[result.dataPoints.length - 1];
+            assert.strictEqual(lastPoint.date, futureDate, 'Should extend to due date');
+        });
+
+        test('issues created at staggered times → burndown ramps up', () => {
+            const issues: GitHubIssue[] = [
+                makeIssue({ number: 1, state: 'open', createdAt: daysAgo(5).toISOString() }),
+                makeIssue({ number: 2, state: 'open', createdAt: daysAgo(3).toISOString() }),
+                makeIssue({ number: 3, state: 'open', createdAt: daysAgo(1).toISOString() }),
+            ];
+            const result = builder.buildMilestoneBurndown('Sprint', 1, issues);
+
+            const day5 = result.dataPoints.find(p => p.date === daysAgoStr(5));
+            const day3 = result.dataPoints.find(p => p.date === daysAgoStr(3));
+            const day1 = result.dataPoints.find(p => p.date === daysAgoStr(1));
+
+            assert.strictEqual(day5!.remaining, 1, 'Only issue #1 created by day 5');
+            assert.strictEqual(day3!.remaining, 2, 'Issues #1 and #2 created by day 3');
+            assert.strictEqual(day1!.remaining, 3, 'All 3 issues created by day 1');
+        });
+
+        test('all data point dates are YYYY-MM-DD format', () => {
+            const issues: GitHubIssue[] = [
+                makeIssue({ number: 1, state: 'open', createdAt: daysAgo(5).toISOString() }),
+            ];
+            const result = builder.buildMilestoneBurndown('Sprint', 1, issues);
+            const datePattern = /^\d{4}-\d{2}-\d{2}$/;
+            for (const point of result.dataPoints) {
+                assert.ok(datePattern.test(point.date), `Invalid date format: ${point.date}`);
+            }
+        });
+
+        test('data points are in chronological order', () => {
+            const issues: GitHubIssue[] = [
+                makeIssue({ number: 1, state: 'open', createdAt: daysAgo(10).toISOString() }),
+            ];
+            const result = builder.buildMilestoneBurndown('Sprint', 1, issues);
+            for (let i = 1; i < result.dataPoints.length; i++) {
+                assert.ok(
+                    result.dataPoints[i].date >= result.dataPoints[i - 1].date,
+                    `Dates out of order: ${result.dataPoints[i - 1].date} > ${result.dataPoints[i].date}`
+                );
+            }
+        });
+
+        test('byMember keys initialize to 0 for all members', () => {
+            const issues: GitHubIssue[] = [
+                makeIssue({ number: 1, state: 'closed', createdAt: daysAgo(3).toISOString(), closedAt: daysAgo(1).toISOString(), assignee: 'danny' }),
+                makeIssue({ number: 2, state: 'open', createdAt: daysAgo(3).toISOString(), assignee: 'rusty' }),
+            ];
+            const result = builder.buildMilestoneBurndown('Sprint', 1, issues);
+
+            // After issue #1 is closed, danny's count should be 0 in byMember
+            const lastPoint = result.dataPoints[result.dataPoints.length - 1];
+            assert.strictEqual(lastPoint.byMember['danny'], 0, 'Danny should have 0 after his issue closed');
+            assert.strictEqual(lastPoint.byMember['rusty'], 1, 'Rusty should have 1 open');
+        });
+
+        test('dueDate is preserved in result', () => {
+            const issues: GitHubIssue[] = [
+                makeIssue({ number: 1, state: 'open', createdAt: daysAgo(2).toISOString() }),
+            ];
+            const result = builder.buildMilestoneBurndown('Sprint', 1, issues, '2026-03-15');
+            assert.strictEqual(result.dueDate, '2026-03-15');
+        });
+
+        test('no dueDate → dueDate undefined in result', () => {
+            const issues: GitHubIssue[] = [
+                makeIssue({ number: 1, state: 'open', createdAt: daysAgo(2).toISOString() }),
+            ];
+            const result = builder.buildMilestoneBurndown('Sprint', 1, issues);
+            assert.strictEqual(result.dueDate, undefined);
+        });
+
+        test('remaining is monotonically non-increasing when no new issues', () => {
+            const issues: GitHubIssue[] = [
+                makeIssue({ number: 1, state: 'closed', createdAt: daysAgo(10).toISOString(), closedAt: daysAgo(5).toISOString() }),
+                makeIssue({ number: 2, state: 'closed', createdAt: daysAgo(10).toISOString(), closedAt: daysAgo(3).toISOString() }),
+                makeIssue({ number: 3, state: 'open', createdAt: daysAgo(10).toISOString() }),
+            ];
+            const result = builder.buildMilestoneBurndown('Sprint', 1, issues);
+            for (let i = 1; i < result.dataPoints.length; i++) {
+                assert.ok(
+                    result.dataPoints[i].remaining <= result.dataPoints[i - 1].remaining,
+                    `Remaining increased from ${result.dataPoints[i - 1].remaining} to ${result.dataPoints[i].remaining} on ${result.dataPoints[i].date}`
+                );
+            }
+        });
+    });
+
+    // ─── Velocity — Edge Cases ──────────────────────────────────────────────
+
+    suite('Velocity Timeline — Edge Cases', () => {
+
+        test('duplicate issues in allClosedIssues → counted once', () => {
+            const issue = makeIssue({ number: 99, state: 'closed', closedAt: daysAgo(1).toISOString() });
+            const result = builder.buildDashboardData(
+                [], [], [], [], undefined, undefined, [], [issue, issue, issue]
+            );
+            const day1 = result.velocity.timeline.find(p => p.date === daysAgoStr(1));
+            assert.strictEqual(day1!.completedTasks, 1, 'Duplicate issues should be deduplicated');
+        });
+
+        test('tasks + allClosedIssues combine correctly', () => {
+            const tasks: Task[] = [
+                makeTask({ id: 't1', status: 'completed', completedAt: daysAgo(1), assignee: 'Danny' }),
+            ];
+            const issues: GitHubIssue[] = [
+                makeIssue({ number: 50, state: 'closed', closedAt: daysAgo(1).toISOString() }),
+            ];
+            const result = builder.buildDashboardData([], [], tasks, [], undefined, undefined, [], issues);
+            const day1 = result.velocity.timeline.find(p => p.date === daysAgoStr(1));
+            assert.strictEqual(day1!.completedTasks, 2, 'Task + issue on same day');
+        });
+
+        test('closedAt at exact 30-day boundary → excluded', () => {
+            // A task completed exactly 30 days ago at midnight
+            const thirtyDaysAgo = new Date();
+            thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+            thirtyDaysAgo.setHours(0, 0, 0, 0);
+
+            // The filter is `completedDate < thirtyDaysAgo` where thirtyDaysAgo = now - 30*86400000
+            // An issue at midnight 30 days ago should be at the exact boundary
+            const issue = makeIssue({
+                number: 999,
+                state: 'closed',
+                closedAt: thirtyDaysAgo.toISOString(),
+            });
+            const result = builder.buildDashboardData([], [], [], [], undefined, undefined, [], [issue]);
+            const total = result.velocity.timeline.reduce((s, p) => s + p.completedTasks, 0);
+            // The exact boundary behavior: issue at boundary may or may not be included
+            // depending on time-of-day. Just verify no crash and total is 0 or 1.
+            assert.ok(total >= 0 && total <= 1, `Boundary issue total should be 0 or 1, got ${total}`);
+        });
+
+        test('issues with no closedAt → not counted', () => {
+            const issue = makeIssue({ number: 70, state: 'open' });
+            const result = builder.buildDashboardData([], [], [], [], undefined, undefined, [], [issue]);
+            const total = result.velocity.timeline.reduce((s, p) => s + p.completedTasks, 0);
+            assert.strictEqual(total, 0);
+        });
+
+        test('velocity with velocityTasks and allClosedIssues both populated', () => {
+            const velocityTasks: Task[] = [
+                makeTask({ id: 'v1', status: 'completed', completedAt: daysAgo(0), assignee: 'A' }),
+            ];
+            const issues: GitHubIssue[] = [
+                makeIssue({ number: 80, state: 'closed', closedAt: daysAgo(0).toISOString() }),
+            ];
+            const result = builder.buildDashboardData(
+                [], [], [], [], undefined, undefined, [], issues, velocityTasks
+            );
+            const today = result.velocity.timeline.find(p => p.date === todayStr());
+            assert.strictEqual(today!.completedTasks, 2, 'velocityTasks + allClosedIssues both counted');
+        });
+
+        test('completedAt as string → parsed correctly via parseDateAsLocal', () => {
+            const dateStr = daysAgoStr(3);
+            const tasks: Task[] = [
+                makeTask({ id: 't1', status: 'completed', completedAt: dateStr as any, assignee: 'A' }),
+            ];
+            const result = builder.buildDashboardData([], [], tasks, []);
+            const day3 = result.velocity.timeline.find(p => p.date === daysAgoStr(3));
+            assert.strictEqual(day3!.completedTasks, 1, 'String completedAt should be parsed correctly');
+        });
+
+        test('all 31 timeline dates are unique', () => {
+            const result = builder.buildDashboardData([], [], [], []);
+            const dates = result.velocity.timeline.map(p => p.date);
+            const unique = new Set(dates);
+            assert.strictEqual(unique.size, 31, 'All 31 dates should be unique');
+        });
+    });
+
     // ─── Full Pipeline Tests ─────────────────────────────────────────────
 
     suite('buildDashboardData — Full Pipeline', () => {

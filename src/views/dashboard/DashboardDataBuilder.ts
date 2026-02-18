@@ -290,7 +290,7 @@ export class DashboardDataBuilder {
         const memberSet = new Set<string>();
 
         for (const issue of issues) {
-            const squadLabel = issue.labels.find(l => l.name.startsWith(SQUAD_PREFIX));
+            const squadLabel = issue.labels.find(l => l.name.toLowerCase().startsWith(SQUAD_PREFIX));
             const member = squadLabel
                 ? squadLabel.name.substring(SQUAD_PREFIX.length).toLowerCase()
                 : (issue.assignee?.toLowerCase() ?? 'unassigned');
@@ -322,12 +322,14 @@ export class DashboardDataBuilder {
         if (allClosed) {
             const lastClose = new Date(Math.max(...issues.map(i => new Date(i.closedAt!).getTime())));
             lastClose.setHours(0, 0, 0, 0);
-            effectiveEnd = dueDate
-                ? new Date(Math.max(lastClose.getTime(), new Date(dueDate).getTime()))
+            const dueDateObj = dueDate ? parseDateAsLocal(dueDate) : undefined;
+            effectiveEnd = dueDateObj
+                ? new Date(Math.max(lastClose.getTime(), dueDateObj.getTime()))
                 : lastClose;
         } else {
-            effectiveEnd = dueDate
-                ? new Date(Math.max(today.getTime(), new Date(dueDate).getTime()))
+            const dueDateObj = dueDate ? parseDateAsLocal(dueDate) : undefined;
+            effectiveEnd = dueDateObj
+                ? new Date(Math.max(today.getTime(), dueDateObj.getTime()))
                 : today;
         }
         const endDateObj = effectiveEnd;

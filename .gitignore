@@ -2,3 +2,7 @@ out/
 node_modules/
 .vscode-test/
 *.vsix
+
+# .NET build artifacts (VS 2026 extension)
+vs2026/**/bin/
+vs2026/**/obj/
