@@ -232,6 +232,124 @@ suite('Deep-Link: Backward Compatibility', () => {
     });
 });
 
+// ─── Tree Item Object Arg Handling ──────────────────────────────────────────
+// VS Code passes tree item objects (not strings) as the first arg when commands
+// are invoked from tree view buttons. Commands must ignore non-string args.
+
+suite('Deep-Link: Tree Item Object Arg Handling', () => {
+
+    test('refreshTree ignores tree item object arg', async function () {
+        const commands = await vscode.commands.getCommands(true);
+        if (!commands.includes('squadui.refreshTree')) {
+            this.skip();
+            return;
+        }
+
+        if (!vscode.workspace.workspaceFolders?.length) {
+            this.skip();
+            return;
+        }
+
+        const origInfo = vscode.window.showInformationMessage;
+        let infoShown = false;
+
+        try {
+            (vscode.window as any).showInformationMessage = async (msg: string, ..._items: any[]) => {
+                if (msg.includes('refreshed')) {
+                    infoShown = true;
+                }
+                return undefined;
+            };
+
+            // Simulate VS Code passing a tree item object
+            await vscode.commands.executeCommand('squadui.refreshTree', { label: 'Team', contextValue: 'member' });
+
+            assert.ok(infoShown, 'refreshTree should still refresh when passed a tree item object');
+        } finally {
+            (vscode.window as any).showInformationMessage = origInfo;
+        }
+    });
+
+    test('openDashboard ignores tree item object arg', async function () {
+        const commands = await vscode.commands.getCommands(true);
+        if (!commands.includes('squadui.openDashboard')) {
+            this.skip();
+            return;
+        }
+
+        if (!vscode.workspace.workspaceFolders?.length) {
+            this.skip();
+            return;
+        }
+
+        // Should not throw — the object should be ignored, falling back to workspace root
+        try {
+            await vscode.commands.executeCommand('squadui.openDashboard', { label: 'Dashboard', contextValue: 'squad' });
+            assert.ok(true, 'openDashboard should not throw when passed a tree item object');
+        } catch (err) {
+            assert.fail(`openDashboard should not throw with tree item arg: ${err}`);
+        }
+    });
+
+    test('refreshTree accepts valid string path', async function () {
+        const commands = await vscode.commands.getCommands(true);
+        if (!commands.includes('squadui.refreshTree')) {
+            this.skip();
+            return;
+        }
+
+        if (!vscode.workspace.workspaceFolders?.length) {
+            this.skip();
+            return;
+        }
+
+        const origWarn = vscode.window.showWarningMessage;
+        let warningShown = false;
+
+        try {
+            (vscode.window as any).showWarningMessage = async (_msg: string, ..._items: any[]) => {
+                warningShown = true;
+                return undefined;
+            };
+
+            // Pass a non-existent but valid string — triggers switchToRoot warning
+            await vscode.commands.executeCommand('squadui.refreshTree', '/nonexistent/string/path');
+            assert.ok(warningShown, 'refreshTree should try to switch root when given a string path');
+        } finally {
+            (vscode.window as any).showWarningMessage = origWarn;
+        }
+    });
+
+    test('openDashboard accepts valid string path', async function () {
+        const commands = await vscode.commands.getCommands(true);
+        if (!commands.includes('squadui.openDashboard')) {
+            this.skip();
+            return;
+        }
+
+        if (!vscode.workspace.workspaceFolders?.length) {
+            this.skip();
+            return;
+        }
+
+        const origWarn = vscode.window.showWarningMessage;
+        let warningShown = false;
+
+        try {
+            (vscode.window as any).showWarningMessage = async (_msg: string, ..._items: any[]) => {
+                warningShown = true;
+                return undefined;
+            };
+
+            // Pass a non-existent but valid string — triggers switchToRoot warning
+            await vscode.commands.executeCommand('squadui.openDashboard', '/nonexistent/string/path');
+            assert.ok(warningShown, 'openDashboard should try to switch root when given a string path');
+        } finally {
+            (vscode.window as any).showWarningMessage = origWarn;
+        }
+    });
+});
+
 // ─── SquadDataProvider.setRoot ───────────────────────────────────────────────
 // setRoot switches the provider to a new team root and squad folder,
 // recreates internal services, and clears cached data.
