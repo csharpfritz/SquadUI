@@ -6,6 +6,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { DecisionEntry } from '../models';
 import { normalizeEol } from '../utils/eol';
+import { toLocalDateKey } from '../utils/dateUtils';
 
 export class DecisionService {
     private squadFolder: '.squad' | '.ai-team';
@@ -204,7 +205,12 @@ export class DecisionService {
     }
 
     private scanDirectory(dir: string, decisions: DecisionEntry[]): void {
-        const entries = fs.readdirSync(dir, { withFileTypes: true });
+        let entries: fs.Dirent[];
+        try {
+            entries = fs.readdirSync(dir, { withFileTypes: true });
+        } catch {
+            return;
+        }
 
         for (const entry of entries) {
             const fullPath = path.join(dir, entry.name);
@@ -256,7 +262,7 @@ export class DecisionService {
 
             if (!date) {
                 const stats = fs.statSync(filePath);
-                date = stats.birthtime.toISOString().split('T')[0];
+                date = toLocalDateKey(stats.birthtime);
             }
 
             return { title, author, date, content, filePath, lineNumber: 0 };

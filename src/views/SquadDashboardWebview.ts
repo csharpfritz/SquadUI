@@ -120,6 +120,9 @@ export class SquadDashboardWebview {
             // Build milestone burndown data
             const milestoneBurndowns = await this.buildBurndowns(workspaceRoot);
 
+            // Panel may have been closed during async data fetching
+            if (!this.panel) { return; }
+
             // Build dashboard data
             const dashboardData: DashboardData = this.dataBuilder.buildDashboardData(
                 logEntries,
@@ -137,7 +140,9 @@ export class SquadDashboardWebview {
             this.panel.webview.html = getDashboardHtml(dashboardData);
         } catch (error) {
             const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-            this.panel.webview.html = this.getErrorHtml(errorMessage);
+            if (this.panel) {
+                this.panel.webview.html = this.getErrorHtml(errorMessage);
+            }
         }
     }
 

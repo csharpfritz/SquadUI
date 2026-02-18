@@ -456,7 +456,12 @@ export class DecisionsTreeProvider implements vscode.TreeDataProvider<SquadTreeI
 
     private getDecisionItems(): SquadTreeItem[] {
         const workspaceRoot = this.dataProvider.getWorkspaceRoot();
-        const decisions = this.decisionService.getDecisions(workspaceRoot);
+        let decisions: DecisionEntry[];
+        try {
+            decisions = this.decisionService.getDecisions(workspaceRoot);
+        } catch {
+            return [];
+        }
 
         return decisions.map(decision => {
             const item = new SquadTreeItem(
