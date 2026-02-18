@@ -73,3 +73,4 @@
 - Folder names are capitalized for display (e.g., `danny` → `Danny`)
 - Method is self-contained and handles missing/unreadable agents directory gracefully (returns empty array)
 - Pre-existing test suite at `agentsFolderDiscovery.test.ts` validates all edge cases
+📌 Team update (2026-02-17): Always use normalizeEol() for markdown parsing to ensure cross-platform compatibility — decided by Copilot (Jeffrey T. Fritz)

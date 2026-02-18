@@ -1903,3 +1903,9 @@ The orchestration-log/ directory contains **orchestration entries** — structur
 **Why:** Release v0.7.2 failed because engines.vscode was ^1.85.0 but @types/vscode was ^1.109.0. VSCE refuses to package when types exceed engine version.
 
 ---
+
+### 2026-02-17: Always use normalizeEol() for markdown parsing
+**By:** Jeffrey T. Fritz (via Copilot)
+**What:** All parsing of markdown files that inspects line endings MUST use `normalizeEol()` from `src/utils/eol.ts` at the file-read boundary. Use the `EOL` constant from the same module when writing files. This ensures cross-platform compatibility across Mac, Linux, and Windows. Never use inline `\r\n` regex replacements — always go through the utility.
+**Why:** User request — captured for team memory. Windows CRLF line endings broke team.md parsing in v0.7.2 and this pattern must be enforced going forward.
+

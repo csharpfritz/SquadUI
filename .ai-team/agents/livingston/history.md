@@ -85,3 +85,5 @@
 - Keep branches that have open/unmerged PRs or no PR yet
 - Delete branches whose PRs are merged or closed
 - Verify with `git ls-remote --tags` after pushing tags
+
+📌 Team update (2026-02-17): Always use normalizeEol() for markdown parsing to ensure cross-platform compatibility — decided by Copilot (Jeffrey T. Fritz)

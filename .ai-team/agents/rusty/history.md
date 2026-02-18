@@ -136,3 +136,5 @@
 - **Key insight:** The `log/` directory contains session logs — Scribe's narrative records of past work. These reference issues in historical context ("Assigned to issue #22", "PR #28 opened"), but they are NOT orchestration entries. Task status and member working state must ONLY derive from `orchestration-log/` files.
 - **Files changed:** `src/services/OrchestrationLogService.ts` (new methods), `src/services/SquadDataProvider.ts` (internal log-reading call)
 📌 Team update (2026-02-17): Orchestration Log Scope — Task status and member working state now derive ONLY from orchestration-log/ files. Session logs (log/) are historical records and should never affect active status. — decided by Rusty
+
+📌 Team update (2026-02-17): Always use normalizeEol() for markdown parsing to ensure cross-platform compatibility — decided by Copilot (Jeffrey T. Fritz)

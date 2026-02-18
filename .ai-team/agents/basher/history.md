@@ -181,3 +181,5 @@
 - Tests compile clean (`npx tsc --noEmit`); all 881 tests passing
 - Validates the fix for the bug where session logs were being read for task/member status derivation
 
+
+📌 Team update (2026-02-17): Always use normalizeEol() for markdown parsing to ensure cross-platform compatibility — decided by Copilot (Jeffrey T. Fritz)
