@@ -50,3 +50,13 @@
 
 📌 Team update (2026-02-17): Branch cleanup convention established — after releases, delete stale remote branches: (1) whose PRs merged/closed, (2) pointing to main HEAD. Use `git push origin --delete {branch}` for batch deletion. Keep branches with open PRs or active work. Reduces remote clutter and avoids contributor confusion — decided by Livingston
 📌 Team update (2026-02-17): Always use normalizeEol() for markdown parsing to ensure cross-platform compatibility — decided by Copilot (Jeffrey T. Fritz)
+
+### Active-Work Markers Architecture (2026-02-18, Issue #59)
+- Designed active-work marker protocol to fix idle status during VS Code Copilot Chat sessions
+- Markers live in `{squadFolder}/active-work/{agent-slug}.md` — `.md` extension means FileWatcherService already covers them with zero changes
+- SquadUI is read-only: `SquadDataProvider.detectActiveMarkers()` scans the directory, checks mtime for staleness (5min threshold), overrides member status to 'working'
+- Active marker takes highest precedence — overrides log-based status AND the "working but no task → idle" demotion
+- No model changes needed (`MemberStatus` already has 'working' | 'idle')
+- No view-layer changes needed (tree/status bar already react to cache invalidation)
+- Marker creation/deletion is the orchestrator's job — out of scope for SquadUI
+- Implementation assignment: Linus (SquadDataProvider changes + tests), Rusty (no changes needed)

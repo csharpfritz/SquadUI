@@ -81,3 +81,26 @@
 - The `extractSection()` and `parseMarkdownTable()` methods already handle this format — just needed to add the second extraction pass
 - Both sections now contribute to the unified member array returned by `parseMembers()`
 - No changes needed to `parseTableRow()` — it already handles the Name/Role/Charter/Status columns correctly regardless of which section they come from
+
+### Active-Work Marker Detection (2026-02-18)
+- Implemented `detectActiveMarkers()` in SquadDataProvider — scans `{squadFolder}/active-work/` for `.md` marker files
+- Detection is mtime-based with `STALENESS_THRESHOLD_MS = 300_000` (5 minutes); stale markers are ignored
+- Integrated into `getSquadMembers()` after existing status resolution (roster + log + task demotion) but before caching
+- Slug matching uses `member.name.toLowerCase()` since agent folder names are already lowercase
+- Handles missing directory gracefully via try/catch (returns empty set)
+- SquadUI is read-only — it never creates or deletes marker files, only reads presence + mtime
+- No model changes needed — `MemberStatus` already includes `'working'`
+- No watcher changes needed — existing `**/{.squad,.ai-team}/**/*.md` glob covers `active-work/*.md`
+
+### Velocity Chart: All Closed Issues (2026-02-18)
+- `buildVelocityTimeline()` previously only counted closed issues from `MemberIssueMap` (member-matched subset)
+- Issues without `squad:*` labels or matching assignee aliases were silently dropped from velocity
+- Fix: added `allClosedIssues?: GitHubIssue[]` parameter to both `buildDashboardData()` and `buildVelocityTimeline()`
+- `allClosedIssues` is the unfiltered array from `getClosedIssues()` — every closed issue in the repo
+- Deduplication via `Set<number>` on issue number prevents double-counting
+- Fallback: if `allClosedIssues` not provided, falls back to iterating `closedIssues` MemberIssueMap (backward compat)
+- `closedIssues` MemberIssueMap still used for Team Overview per-member breakdown — that data is correct per-member
+- `IGitHubIssuesService` interface extended with `getClosedIssues()` — already existed on GitHubIssuesService, just not in the contract
+- Key files: `DashboardDataBuilder.ts` (velocity logic), `SquadDashboardWebview.ts` (data fetch), `models/index.ts` (interface)
+ Team update (2026-02-18): Active-work marker protocol for detecting agent status during subagent turns  decided by Danny
+

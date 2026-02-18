@@ -1909,3 +1909,216 @@ The orchestration-log/ directory contains **orchestration entries** — structur
 **What:** All parsing of markdown files that inspects line endings MUST use `normalizeEol()` from `src/utils/eol.ts` at the file-read boundary. Use the `EOL` constant from the same module when writing files. This ensures cross-platform compatibility across Mac, Linux, and Windows. Never use inline `\r\n` regex replacements — always go through the utility.
 **Why:** User request — captured for team memory. Windows CRLF line endings broke team.md parsing in v0.7.2 and this pattern must be enforced going forward.
 
+
+
+---
+
+# Active-Work Markers — Architectural Design
+
+**Author:** Danny (Lead)
+**Date:** 2026-02-18
+**Issue:** #59 — Subagent progress shows as Idle during VS Code Copilot Chat sessions
+
+---
+
+## Problem
+
+In VS Code Copilot Chat, subagents run concurrently within a single turn. The orchestration log isn't written until the turn completes. During the 30–60+ seconds of active work, `SquadDataProvider.getSquadMembers()` sees only stale log entries, so every agent appears idle. The CLI doesn't have this problem because logs are written before the session ends.
+
+## Solution: Active-Work Marker Files
+
+Lightweight sentinel files whose **presence** signals an agent is currently working. SquadUI watches for them and overrides status to `'working'` — independent of the orchestration log lifecycle.
+
+---
+
+## 1. Marker File Format and Location
+
+**Directory:** `{squadFolder}/active-work/`
+- e.g., `.ai-team/active-work/`
+
+**File naming:** `{agent-slug}.md`
+- Slug matches the agent's folder name under `agents/` (lowercase, kebab-case)
+- Examples: `linus.md`, `rusty.md`, `danny.md`
+
+**Why `.md` extension?** The `FileWatcherService` glob is `**/{.squad,.ai-team}/**/*.md`. Marker files are automatically watched. Zero watcher changes.
+
+**Content (minimal, for debugging and staleness):**
+```
+agent: Linus
+started: 2026-02-18T14:32:00Z
+task: Working on issue #59
+```
+
+Plain key-value lines. Not parsed structurally — SquadUI only needs the file's **existence** and **mtime** for status. The content is human-readable context.
+
+## 2. Marker Lifecycle
+
+| Event | Action | Who |
+|---|---|---|
+| Orchestrator dispatches work to agent | Create `active-work/{slug}.md` | Orchestrator |
+| Agent completes work | Delete `active-work/{slug}.md` | Orchestrator |
+| Turn completes (all agents done) | Delete all markers in `active-work/` | Orchestrator |
+| Crash / abandoned session | Marker left behind → staleness handles it | SquadUI (reader) |
+
+**SquadUI is read-only.** It never creates or deletes marker files. It only detects and interprets them.
+
+## 3. Detection Mechanism
+
+Modify `SquadDataProvider.getSquadMembers()` — after resolving the roster and before caching:
+
+```
+1. Scan {squadFolder}/active-work/ for *.md files
+2. For each marker file:
+   a. Extract slug from filename (strip .md)
+   b. Check file mtime — if older than STALENESS_THRESHOLD, skip (stale)
+   c. Match slug to a roster member (case-insensitive name match)
+   d. Override that member's status to 'working'
+```
+
+New private method on `SquadDataProvider`:
+
+```typescript
+private async detectActiveMarkers(): Promise<Set<string>> {
+    const markerDir = path.join(this.teamRoot, this.squadFolder, 'active-work');
+    const activeAgents = new Set<string>();
+    
+    try {
+        const files = await fs.promises.readdir(markerDir);
+        for (const file of files) {
+            if (!file.endsWith('.md')) continue;
+            const slug = file.replace(/\.md$/, '');
+            const filePath = path.join(markerDir, file);
+            const stat = await fs.promises.stat(filePath);
+            const ageMs = Date.now() - stat.mtimeMs;
+            if (ageMs < STALENESS_THRESHOLD_MS) {
+                activeAgents.add(slug.toLowerCase());
+            }
+        }
+    } catch {
+        // Directory doesn't exist yet — no markers, no problem
+    }
+    
+    return activeAgents;
+}
+```
+
+In `getSquadMembers()`, after existing status resolution:
+
+```typescript
+const activeMarkers = await this.detectActiveMarkers();
+for (const member of members) {
+    const slug = member.name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+    if (activeMarkers.has(slug)) {
+        member.status = 'working';
+    }
+}
+```
+
+**Linus** implements the `detectActiveMarkers()` method and the integration into `getSquadMembers()`.
+
+## 4. FileWatcherService Integration
+
+**No changes needed.** The existing glob `**/{.squad,.ai-team}/**/*.md` already covers `active-work/*.md`.
+
+When a marker is created → watcher fires → `CacheInvalidator.invalidate()` → `SquadDataProvider.refresh()` → tree re-renders with updated status. Same for deletion.
+
+**Rusty** has no watcher work. The tree view already re-renders on cache invalidation.
+
+## 5. Priority / Precedence
+
+```
+Active marker (not stale)  →  status = 'working'     (HIGHEST — overrides everything)
+No marker                  →  existing log + task logic (unchanged)
+```
+
+The marker is a "definitely working right now" signal. It overrides:
+- The log-based `getMemberStates()` result
+- The "working but no in-progress task → idle" demotion
+
+Rationale: if the orchestrator says an agent is working, it is. The task/log hasn't been written yet — that's the whole problem we're solving.
+
+## 6. Cleanup / Staleness
+
+**Staleness threshold:** 5 minutes (`300_000` ms).
+
+Detection is mtime-based — no content parsing required. If a marker file's `mtime` is older than 5 minutes, `detectActiveMarkers()` ignores it.
+
+**Why 5 minutes?** Most subagent tasks complete in 30–120 seconds. 5 minutes gives generous headroom for complex tasks while ensuring crashed sessions don't show "working" indefinitely.
+
+**Optional future enhancement:** SquadUI could garbage-collect stale markers (delete files older than threshold). Not in v1 — keep it read-only for now.
+
+## 7. Scope Boundary
+
+### In scope (SquadUI changes) — Linus
+
+| Component | Change |
+|---|---|
+| `SquadDataProvider` | Add `detectActiveMarkers()` private method |
+| `SquadDataProvider` | Modify `getSquadMembers()` to check markers after roster resolution |
+| Constants | Add `STALENESS_THRESHOLD_MS = 300_000` |
+| Tests | Unit tests for marker detection (dir missing, stale markers, active markers) |
+
+### In scope (SquadUI changes) — Rusty
+
+None. Tree view and status bar already react to `SquadDataProvider.refresh()` via cache invalidation. No view-layer changes needed.
+
+### Out of scope
+
+- **Marker creation/deletion** — orchestrator's responsibility, not SquadUI
+- **Changes to Squad CLI** — we define the contract; CLI team implements
+- **Changes to orchestration log format** — untouched
+- **Model changes** — `MemberStatus` already has `'working'` | `'idle'`; no new types needed
+- **Stale marker cleanup** — deferred; read-only detection is sufficient for v1
+
+## Implementation Notes
+
+- The `active-work/` directory may not exist until the first marker is written. `detectActiveMarkers()` must handle `ENOENT` gracefully (return empty set).
+- Marker detection adds one directory read + N stat calls per refresh cycle. With typical team sizes (3–8 agents), this is negligible.
+- The 300ms debounce in `FileWatcherService` naturally coalesces rapid marker create/delete events during turn transitions.
+
+## Decision
+
+Adopt the active-work marker protocol as described. Linus implements the `SquadDataProvider` changes. No orchestrator changes are made in SquadUI — we publish the marker contract for the Squad CLI/Chat team to implement on their side.
+
+
+
+---
+
+# Decision: Parse Coding Agent Section for @copilot
+
+**Date:** 2026-02-18  
+**Author:** Linus (Backend Dev)  
+**Issue:** Member parsing bug — @copilot missing from team member list
+
+## Context
+
+The `team.md` file has TWO member tables:
+1. `## Members` (or `## Roster`) — human squad members
+2. `## Coding Agent` — the @copilot autonomous coding agent
+
+The `TeamMdService.parseMembers()` method only parsed the first section, causing @copilot to be excluded from the unified member list displayed in the tree view.
+
+## Decision
+
+Extended `TeamMdService.parseMembers()` to parse BOTH sections:
+1. First, parse `## Members` / `## Roster` (existing behavior)
+2. Then, parse `## Coding Agent` and append those members to the array
+
+Both sections use the same table format (Name | Role | Charter | Status), so the existing `parseMarkdownTable()` and `parseTableRow()` methods handle both without modification.
+
+## Rationale
+
+- **Minimal change:** Leverages existing table parsing infrastructure — just needed a second call to `extractSection()`
+- **Unified roster:** All members (human + bot) now appear in the same list for consistent UI rendering
+- **Backward compatible:** Repos without a Coding Agent section continue to work (no section = no extra members)
+- **Edge case safe:** The `parseTableRow()` method already filters out invalid entries, so malformed tables won't crash the parser
+
+
+
+---
+
+### 2026-02-18: Velocity chart counts ALL closed issues, not just member-matched
+**By:** Linus
+**What:** The velocity timeline in `buildVelocityTimeline()` now uses an unfiltered `allClosedIssues` array from `getClosedIssues()` instead of iterating the `MemberIssueMap` from `getClosedIssuesByMember()`. The per-member Team Overview still uses the member-matched `closedIssues` map — only velocity changed.
+**Why:** Issues closed in the repo that lack a `squad:*` label and have no matching assignee alias were silently dropped from the velocity chart. This made the graph undercount actual team throughput. The velocity chart should reflect all repo activity, not just the subset that matches a member routing strategy.
+

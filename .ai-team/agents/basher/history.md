@@ -230,3 +230,6 @@
 - Implementation note: `buildVelocityTimeline` uses `if (allClosedIssues) / else if (closedIssues)` pattern — when allClosedIssues is provided, closedIssues member map is entirely skipped (not merged). Dedup is via `seenIssues` Set on `issue.number`.
 - Uses existing `makeIssue()` helper, `MemberIssueMap` import added to test file
 - Compilation clean (`npx tsc --noEmit`); tests align with Linus's implementation already on disk
+
+ Team update (2026-02-18): Velocity chart now counts ALL closed GitHub issues, not just member-matched  decided by Linus
+

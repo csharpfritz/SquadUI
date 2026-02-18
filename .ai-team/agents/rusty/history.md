@@ -138,3 +138,6 @@
 📌 Team update (2026-02-17): Orchestration Log Scope — Task status and member working state now derive ONLY from orchestration-log/ files. Session logs (log/) are historical records and should never affect active status. — decided by Rusty
 
 📌 Team update (2026-02-17): Always use normalizeEol() for markdown parsing to ensure cross-platform compatibility — decided by Copilot (Jeffrey T. Fritz)
+
+ Team update (2026-02-18): Active-work marker protocol adopted; tree view reacts to marker files via cache invalidation  decided by Danny
+
