@@ -228,6 +228,19 @@ export class SquadDataProvider {
     }
 
     /**
+     * Switches the provider to a new team root and squad folder.
+     * Used by the deep-link API to point SquadUI at a different workspace.
+     */
+    setRoot(teamRoot: string, squadFolder: '.squad' | '.ai-team'): void {
+        this.teamRoot = teamRoot;
+        this.squadFolder = squadFolder;
+        this.orchestrationService = new OrchestrationLogService(squadFolder);
+        this.teamMdService = new TeamMdService(squadFolder);
+        this.decisionService = new DecisionService(squadFolder);
+        this.refresh();
+    }
+
+    /**
      * Invalidates all cached data.
      * FileWatcherService should call this when underlying files change.
      */

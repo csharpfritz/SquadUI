@@ -30,6 +30,9 @@ export function activate(context: vscode.ExtensionContext): void {
     // Detect squad folder once at initialization
     squadFolderName = detectSquadFolder(workspaceRoot);
 
+    // Track the currently active root (may be changed via deep-link API)
+    let currentRoot = workspaceRoot;
+
     // Set initial hasTeam context based on team.md existence
     const hasTeam = hasSquadTeam(workspaceRoot, squadFolderName);
     vscode.commands.executeCommand('setContext', 'squadui.hasTeam', hasTeam);
@@ -44,6 +47,24 @@ export function activate(context: vscode.ExtensionContext): void {
 
     // Create services
     const dataProvider = new SquadDataProvider(workspaceRoot, squadFolderName);
+
+    // Helper: switch all providers to a new team root (deep-link API)
+    function switchToRoot(newRoot: string): void {
+        if (!fs.existsSync(newRoot)) {
+            vscode.window.showWarningMessage(`SquadUI: Path does not exist: ${newRoot}`);
+            return;
+        }
+        const newFolder = detectSquadFolder(newRoot);
+        dataProvider.setRoot(newRoot, newFolder);
+        currentRoot = newRoot;
+        squadFolderName = newFolder;
+        teamProvider.refresh();
+        skillsProvider.refresh();
+        decisionsProvider.refresh();
+        statusBar?.update();
+        const teamExists = hasSquadTeam(currentRoot, squadFolderName);
+        vscode.commands.executeCommand('setContext', 'squadui.hasTeam', teamExists);
+    }
 
     // Create file watcher and connect to data provider
     fileWatcher = new FileWatcherService();
@@ -108,7 +129,10 @@ export function activate(context: vscode.ExtensionContext): void {
     );
 
     context.subscriptions.push(
-        vscode.commands.registerCommand('squadui.refreshTree', () => {
+        vscode.commands.registerCommand('squadui.refreshTree', (teamRoot?: string) => {
+            if (teamRoot && teamRoot !== currentRoot) {
+                switchToRoot(teamRoot);
+            }
             teamProvider.refresh();
             skillsProvider.refresh();
             decisionsProvider.refresh();
@@ -138,19 +162,24 @@ export function activate(context: vscode.ExtensionContext): void {
     );
 
     context.subscriptions.push(
-        vscode.commands.registerCommand('squadui.openDashboard', async () => {
+        vscode.commands.registerCommand('squadui.openDashboard', async (teamRoot?: string) => {
+            if (teamRoot && teamRoot !== currentRoot) {
+                switchToRoot(teamRoot);
+            }
             await dashboardWebview?.show();
         })
     );
 
     context.subscriptions.push(
-        vscode.commands.registerCommand('squadui.viewCharter', async (memberName: string) => {
+        vscode.commands.registerCommand('squadui.viewCharter', async (memberName: string, teamRoot?: string) => {
             if (!memberName) {
                 vscode.window.showWarningMessage('No member selected');
                 return;
             }
+            const root = teamRoot || currentRoot;
+            const folder = teamRoot ? detectSquadFolder(root) : squadFolderName;
             const slug = memberName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-            const charterPath = path.join(workspaceRoot, squadFolderName, 'agents', slug, 'charter.md');
+            const charterPath = path.join(root, folder, 'agents', slug, 'charter.md');
             if (!fs.existsSync(charterPath)) {
                 vscode.window.showWarningMessage(`Charter not found for ${memberName}`);
                 return;
@@ -450,6 +479,27 @@ export function activate(context: vscode.ExtensionContext): void {
             teamView.message = undefined;
         }
     });
+
+    // Register URI handler for deep-link API (vscode://csharpfritz.squadui/...)
+    const uriHandler: vscode.UriHandler = {
+        handleUri(uri: vscode.Uri): vscode.ProviderResult<void> {
+            const params = new URLSearchParams(uri.query);
+            const teamRoot = params.get('path');
+            switch (uri.path) {
+                case '/dashboard':
+                    vscode.commands.executeCommand('squadui.openDashboard', teamRoot || undefined);
+                    break;
+                case '/charter': {
+                    const member = params.get('member');
+                    if (member) {
+                        vscode.commands.executeCommand('squadui.viewCharter', member, teamRoot || undefined);
+                    }
+                    break;
+                }
+            }
+        }
+    };
+    context.subscriptions.push(vscode.window.registerUriHandler(uriHandler));
 }
 
 export function deactivate(): void {
