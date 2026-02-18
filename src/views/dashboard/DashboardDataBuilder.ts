@@ -5,6 +5,14 @@
 
 import { OrchestrationLogEntry, Task, SquadMember, DashboardData, VelocityDataPoint, ActivityHeatmapPoint, ActivitySwimlane, TimelineTask, DecisionEntry, TeamMemberOverview, TeamSummary, MemberIssueMap, GitHubIssue, MilestoneBurndown, BurndownDataPoint } from '../../models';
 
+/** Formats a Date as YYYY-MM-DD using local timezone (not UTC). */
+function toLocalDateKey(d: Date): string {
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
+
 export class DashboardDataBuilder {
     /**
      * Builds complete dashboard data from logs and member roster.
@@ -58,7 +66,7 @@ export class DashboardDataBuilder {
                 continue;
             }
 
-            const dateKey = completedDate.toISOString().split('T')[0];
+            const dateKey = toLocalDateKey(completedDate);
             tasksByDate.set(dateKey, (tasksByDate.get(dateKey) ?? 0) + 1);
         }
 
@@ -72,7 +80,7 @@ export class DashboardDataBuilder {
                     if (issue.closedAt) {
                         const closedDate = new Date(issue.closedAt);
                         if (closedDate >= thirtyDaysAgo) {
-                            const dateKey = closedDate.toISOString().split('T')[0];
+                            const dateKey = toLocalDateKey(closedDate);
                             tasksByDate.set(dateKey, (tasksByDate.get(dateKey) ?? 0) + 1);
                         }
                     }
@@ -82,8 +90,8 @@ export class DashboardDataBuilder {
 
         // Fill in missing dates with 0 counts
         const timeline: VelocityDataPoint[] = [];
-        for (let d = new Date(thirtyDaysAgo); d <= now; d.setDate(d.getDate() + 1)) {
-            const dateKey = d.toISOString().split('T')[0];
+        for (let d = new Date(thirtyDaysAgo); d <= now; d = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1)) {
+            const dateKey = toLocalDateKey(d);
             timeline.push({
                 date: dateKey,
                 completedTasks: tasksByDate.get(dateKey) ?? 0,
@@ -169,8 +177,8 @@ export class DashboardDataBuilder {
         return {
             id: task.id,
             title: task.title,
-            startDate: startDate.toISOString().split('T')[0],
-            endDate: endDate ? endDate.toISOString().split('T')[0] : null,
+            startDate: toLocalDateKey(startDate),
+            endDate: endDate ? toLocalDateKey(endDate) : null,
             status: task.status,
         };
     }
@@ -320,7 +328,7 @@ export class DashboardDataBuilder {
         const closeEvents = new Map<string, Set<number>>();
         for (const issue of issues) {
             if (issue.closedAt) {
-                const closedDate = new Date(issue.closedAt).toISOString().split('T')[0];
+                const closedDate = toLocalDateKey(new Date(issue.closedAt));
                 const existing = closeEvents.get(closedDate) ?? new Set<number>();
                 existing.add(issue.number);
                 closeEvents.set(closedDate, existing);
@@ -331,8 +339,8 @@ export class DashboardDataBuilder {
         const dataPoints: BurndownDataPoint[] = [];
         const closedSoFar = new Set<number>();
 
-        for (let d = new Date(startDate); d <= endDateObj; d.setDate(d.getDate() + 1)) {
-            const dateKey = d.toISOString().split('T')[0];
+        for (let d = new Date(startDate); d <= endDateObj; d = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1)) {
+            const dateKey = toLocalDateKey(d);
 
             // Apply any closes on this date
             const todayCloses = closeEvents.get(dateKey);
@@ -347,7 +355,7 @@ export class DashboardDataBuilder {
             let remaining = 0;
             for (const issue of issues) {
                 // Only count issues that were created on or before this date
-                const createdDate = new Date(issue.createdAt).toISOString().split('T')[0];
+                const createdDate = toLocalDateKey(new Date(issue.createdAt));
                 if (createdDate > dateKey) { continue; }
 
                 if (!closedSoFar.has(issue.number)) {
