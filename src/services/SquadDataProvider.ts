@@ -20,9 +20,6 @@ import { normalizeEol } from '../utils/eol';
 /** Markers older than this are considered stale and ignored. */
 const STALENESS_THRESHOLD_MS = 300_000; // 5 minutes
 
-/** Orchestration activity within this window indicates active work (Copilot Chat fallback). */
-const ORCHESTRATION_ACTIVITY_WINDOW_MS = 600_000; // 10 minutes
-
 /**
  * Provides squad data to the UI layer.
  * Aggregates data from TeamMdService (primary) and OrchestrationLogService (overlay).
@@ -104,9 +101,12 @@ export class SquadDataProvider {
             members = roster.members.map(member => {
                 const logStatus = memberStates.get(member.name) ?? 'idle';
                 const currentTask = tasks.find(t => t.assignee === member.name && t.status === 'in_progress');
-                // Override 'working' to 'idle' if the member has no in-progress tasks
-                // (all their work is completed — they shouldn't show as spinning)
-                const status = (logStatus === 'working' && !currentTask) ? 'idle' : logStatus;
+                const memberTasks = tasks.filter(t => t.assignee === member.name);
+                // Override 'working' to 'idle' ONLY if the member has tasks but none are in-progress
+                // (all their work is completed — they shouldn't show as spinning).
+                // If they have NO tasks at all, trust the log status (Copilot Chat scenario).
+                const hasTasksButNoneActive = memberTasks.length > 0 && !currentTask;
+                const status = (logStatus === 'working' && hasTasksButNoneActive) ? 'idle' : logStatus;
                 return {
                     name: member.name,
                     role: member.role,
@@ -122,7 +122,10 @@ export class SquadDataProvider {
                 members = agentMembers.map(member => {
                     const logStatus = memberStates.get(member.name) ?? 'idle';
                     const currentTask = tasks.find(t => t.assignee === member.name && t.status === 'in_progress');
-                    const status = (logStatus === 'working' && !currentTask) ? 'idle' : logStatus;
+                    const memberTasks = tasks.filter(t => t.assignee === member.name);
+                    // Override 'working' to 'idle' ONLY if the member has tasks but none are in-progress
+                    const hasTasksButNoneActive = memberTasks.length > 0 && !currentTask;
+                    const status = (logStatus === 'working' && hasTasksButNoneActive) ? 'idle' : logStatus;
                     return {
                         name: member.name,
                         role: member.role,
@@ -143,7 +146,10 @@ export class SquadDataProvider {
                 for (const name of memberNames) {
                     const logStatus = memberStates.get(name) ?? 'idle';
                     const currentTask = tasks.find(t => t.assignee === name && t.status === 'in_progress');
-                    const status = (logStatus === 'working' && !currentTask) ? 'idle' : logStatus;
+                    const memberTasks = tasks.filter(t => t.assignee === name);
+                    // Override 'working' to 'idle' ONLY if the member has tasks but none are in-progress
+                    const hasTasksButNoneActive = memberTasks.length > 0 && !currentTask;
+                    const status = (logStatus === 'working' && hasTasksButNoneActive) ? 'idle' : logStatus;
                     members.push({
                         name,
                         role: 'Squad Member',
@@ -160,17 +166,6 @@ export class SquadDataProvider {
             const slug = member.name.toLowerCase();
             if (activeMarkers.has(slug)) {
                 member.status = 'working';
-            }
-        }
-
-        // Fallback: If no active markers but recent orchestration activity detected,
-        // mark all members who appear in logs as working (Copilot Chat scenario)
-        if (activeMarkers.size === 0 && await this.hasRecentOrchestrationActivity()) {
-            for (const member of members) {
-                const logStatus = memberStates.get(member.name);
-                if (logStatus === 'working') {
-                    member.status = 'working';
-                }
             }
         }
 
@@ -290,39 +285,6 @@ export class SquadDataProvider {
         }
 
         return activeAgents;
-    }
-
-    /**
-     * Checks if ANY orchestration log file has been modified recently.
-     * Fallback indicator for active work when Squad orchestrator doesn't create markers.
-     * Used in Copilot Chat scenarios where orchestration logs may update before markers.
-     * @returns true if any orchestration log file was modified in the last 10 minutes
-     */
-    private async hasRecentOrchestrationActivity(): Promise<boolean> {
-        const logDirs = [
-            path.join(this.teamRoot, this.squadFolder, 'orchestration-log'),
-            path.join(this.teamRoot, this.squadFolder, 'log')
-        ];
-
-        for (const logDir of logDirs) {
-            try {
-                const files = await fs.promises.readdir(logDir);
-                for (const file of files) {
-                    if (!file.endsWith('.md')) { continue; }
-                    const filePath = path.join(logDir, file);
-                    const stat = await fs.promises.stat(filePath);
-                    const ageMs = Date.now() - stat.mtimeMs;
-                    if (ageMs < ORCHESTRATION_ACTIVITY_WINDOW_MS) {
-                        return true;
-                    }
-                }
-            } catch {
-                // Directory doesn't exist — try next
-                continue;
-            }
-        }
-
-        return false;
     }
 
     // ─── Public Data Access Methods ───────────────────────────────────────

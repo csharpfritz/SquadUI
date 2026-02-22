@@ -267,13 +267,25 @@ export class OrchestrationLogService {
                         // Assign to first participant from the log entry
                         const assignee = entry.participants[0] ?? 'unknown';
 
+                        // Check if any outcome mentions this issue with a completion signal
+                        let isCompleted = false;
+                        if (entry.outcomes) {
+                            for (const outcome of entry.outcomes) {
+                                if (outcome.includes(`#${taskId}`) && this.isCompletionSignal(outcome)) {
+                                    isCompleted = true;
+                                    break;
+                                }
+                            }
+                        }
+
                         tasks.push({
                             id: taskId,
                             title: `Issue #${taskId}`,
                             description: entry.summary ?? undefined,
-                            status: 'in_progress',
+                            status: isCompleted ? 'completed' : 'in_progress',
                             assignee,
                             startedAt: parseDateAsLocal(entry.date),
+                            completedAt: isCompleted ? parseDateAsLocal(entry.date) : undefined,
                         });
                     }
                 }

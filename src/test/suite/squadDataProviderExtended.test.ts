@@ -167,13 +167,16 @@ suite('SquadDataProvider — Extended Coverage', () => {
             ].join('\n'));
 
             // Create log that marks Alice as participant (most recent = working)
-            // but with completed tasks only
+            // but with completed tasks only (issue reference with completion signal)
             const logDir = path.join(tempDir, '.ai-team', 'orchestration-log');
             fs.mkdirSync(logDir, { recursive: true });
             fs.writeFileSync(path.join(logDir, '2026-03-01-completed.md'), [
                 '# Completed Work',
                 '',
                 '**Participants:** Alice',
+                '',
+                '## Outcomes',
+                '- Closed #42 — fixed the bug',
                 '',
                 '## Summary',
                 'All tasks completed.',
