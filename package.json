@@ -16,7 +16,8 @@
     "Other"
   ],
   "activationEvents": [
-    "onView:squadTeam"
+    "onView:squadTeam",
+    "onUri"
   ],
   "main": "./out/extension.js",
   "contributes": {

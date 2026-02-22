@@ -32,13 +32,14 @@ function toQuickPickItems(skills: Skill[]): SkillQuickPickItem[] {
 export function registerAddSkillCommand(
     _context: vscode.ExtensionContext,
     onSkillAdded: () => void,
-    squadFolder: '.squad' | '.ai-team' = '.ai-team'
+    squadFolder: '.squad' | '.ai-team' = '.ai-team',
+    getCurrentRoot?: () => string
 ): vscode.Disposable {
     const catalogService = new SkillCatalogService();
 
     return vscode.commands.registerCommand('squadui.addSkill', async () => {
-        const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
-        if (!workspaceFolder) {
+        const teamRoot = getCurrentRoot?.() ?? vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+        if (!teamRoot) {
             vscode.window.showErrorMessage('Squad: No workspace folder open. Open a folder first.');
             return;
         }
@@ -122,7 +123,6 @@ export function registerAddSkillCommand(
         }
 
         // Download with progress
-        const teamRoot = workspaceFolder.uri.fsPath;
         try {
             await vscode.window.withProgress(
                 { location: vscode.ProgressLocation.Notification, title: `Installing ${skill.name}...` },

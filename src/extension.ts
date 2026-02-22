@@ -30,6 +30,9 @@ export function activate(context: vscode.ExtensionContext): void {
     // Detect squad folder once at initialization
     squadFolderName = detectSquadFolder(workspaceRoot);
 
+    // Track the currently active root (may be changed via deep-link API)
+    let currentRoot = workspaceRoot;
+
     // Set initial hasTeam context based on team.md existence
     const hasTeam = hasSquadTeam(workspaceRoot, squadFolderName);
     vscode.commands.executeCommand('setContext', 'squadui.hasTeam', hasTeam);
@@ -44,6 +47,24 @@ export function activate(context: vscode.ExtensionContext): void {
 
     // Create services
     const dataProvider = new SquadDataProvider(workspaceRoot, squadFolderName);
+
+    // Helper: switch all providers to a new team root (deep-link API)
+    function switchToRoot(newRoot: string): void {
+        if (!fs.existsSync(newRoot)) {
+            vscode.window.showWarningMessage(`SquadUI: Path does not exist: ${newRoot}`);
+            return;
+        }
+        const newFolder = detectSquadFolder(newRoot);
+        dataProvider.setRoot(newRoot, newFolder);
+        currentRoot = newRoot;
+        squadFolderName = newFolder;
+        teamProvider.refresh();
+        skillsProvider.refresh();
+        decisionsProvider.refresh();
+        statusBar?.update();
+        const teamExists = hasSquadTeam(currentRoot, squadFolderName);
+        vscode.commands.executeCommand('setContext', 'squadui.hasTeam', teamExists);
+    }
 
     // Create file watcher and connect to data provider
     fileWatcher = new FileWatcherService();
@@ -108,7 +129,12 @@ export function activate(context: vscode.ExtensionContext): void {
     );
 
     context.subscriptions.push(
-        vscode.commands.registerCommand('squadui.refreshTree', () => {
+        vscode.commands.registerCommand('squadui.refreshTree', (rawArg?: unknown) => {
+            // Tree view buttons pass the tree item as first arg — ignore non-string values
+            const teamRoot = typeof rawArg === 'string' ? rawArg : undefined;
+            if (teamRoot && teamRoot !== currentRoot) {
+                switchToRoot(teamRoot);
+            }
             teamProvider.refresh();
             skillsProvider.refresh();
             decisionsProvider.refresh();
@@ -138,19 +164,33 @@ export function activate(context: vscode.ExtensionContext): void {
     );
 
     context.subscriptions.push(
-        vscode.commands.registerCommand('squadui.openDashboard', async () => {
+        vscode.commands.registerCommand('squadui.openDashboard', async (rawArg?: unknown) => {
+            const teamRoot = typeof rawArg === 'string' ? rawArg : undefined;
+            if (teamRoot && teamRoot !== currentRoot) {
+                switchToRoot(teamRoot);
+            }
             await dashboardWebview?.show();
         })
     );
 
     context.subscriptions.push(
-        vscode.commands.registerCommand('squadui.viewCharter', async (memberName: string) => {
+        vscode.commands.registerCommand('squadui.viewCharter', async (rawName?: unknown, rawRoot?: unknown) => {
+            // Tree view buttons pass tree item as first arg — extract name if object
+            let memberName: string = '';
+            if (typeof rawName === 'string') {
+                memberName = rawName;
+            } else if (typeof rawName === 'object' && rawName !== null) {
+                memberName = String((rawName as any).label || (rawName as any).name || '');
+            }
+            const teamRoot = typeof rawRoot === 'string' ? rawRoot : undefined;
             if (!memberName) {
                 vscode.window.showWarningMessage('No member selected');
                 return;
             }
+            const root = teamRoot || currentRoot;
+            const folder = teamRoot ? detectSquadFolder(root) : squadFolderName;
             const slug = memberName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-            const charterPath = path.join(workspaceRoot, squadFolderName, 'agents', slug, 'charter.md');
+            const charterPath = path.join(root, folder, 'agents', slug, 'charter.md');
             if (!fs.existsSync(charterPath)) {
                 vscode.window.showWarningMessage(`Charter not found for ${memberName}`);
                 return;
@@ -173,7 +213,7 @@ export function activate(context: vscode.ExtensionContext): void {
         if (!initInProgress) { return; }
         if (!initTerminalClosed) { return; }
         // Check for agent directories on disk — not just team.md entries
-        const agentsDir = path.join(workspaceRoot, squadFolderName, 'agents');
+        const agentsDir = path.join(currentRoot, squadFolderName, 'agents');
         const agentFoldersExist = fs.existsSync(agentsDir) && 
             fs.readdirSync(agentsDir).some(entry => {
                 const entryPath = path.join(agentsDir, entry);
@@ -249,7 +289,7 @@ export function activate(context: vscode.ExtensionContext): void {
                 // Always stop the progress bar when terminal closes
                 stopAllocationProgress();
                 // Update hasTeam based on what's actually on disk now
-                const teamExists = hasSquadTeam(workspaceRoot, squadFolderName);
+                const teamExists = hasSquadTeam(currentRoot, squadFolderName);
                 vscode.commands.executeCommand('setContext', 'squadui.hasTeam', teamExists);
                 if (teamExists) {
                     vscode.window.showInformationMessage('Squad team allocated successfully!');
@@ -316,14 +356,14 @@ export function activate(context: vscode.ExtensionContext): void {
             dataProvider.refresh();
             teamProvider.refresh();
             statusBar?.update();
-        }, squadFolderName)
+        }, squadFolderName, () => currentRoot)
     );
 
     // Register add skill command
     context.subscriptions.push(
         registerAddSkillCommand(context, () => {
             skillsProvider.refresh();
-        }, squadFolderName)
+        }, squadFolderName, () => currentRoot)
     );
 
     // Register view skill command — opens SKILL.md in editor
@@ -334,7 +374,7 @@ export function activate(context: vscode.ExtensionContext): void {
                 return;
             }
             // skillSlug is the directory name, used directly for lookup
-            const skillPath = path.join(workspaceRoot, squadFolderName, 'skills', skillSlug, 'SKILL.md');
+            const skillPath = path.join(currentRoot, squadFolderName, 'skills', skillSlug, 'SKILL.md');
             if (!fs.existsSync(skillPath)) {
                 vscode.window.showWarningMessage(`Skill file not found for ${skillSlug}`);
                 return;
@@ -378,7 +418,7 @@ export function activate(context: vscode.ExtensionContext): void {
 
             // If topic is provided, this is a (date, topic) call from the tree view — resolve the file
             if (topic) {
-                const squadDir = path.join(workspaceRoot, squadFolderName);
+                const squadDir = path.join(currentRoot, squadFolderName);
                 const logDirs = ['orchestration-log', 'log'];
                 let found = false;
 
@@ -423,7 +463,7 @@ export function activate(context: vscode.ExtensionContext): void {
                 return;
             }
             // skillSlug is the directory name, used directly
-            const skillDir = path.join(workspaceRoot, squadFolderName, 'skills', skillSlug);
+            const skillDir = path.join(currentRoot, squadFolderName, 'skills', skillSlug);
             if (fs.existsSync(skillDir)) {
                 fs.rmSync(skillDir, { recursive: true });
                 vscode.window.showInformationMessage(`Removed skill: ${skillSlug}`);
@@ -438,7 +478,7 @@ export function activate(context: vscode.ExtensionContext): void {
         skillsProvider.refresh();
         decisionsProvider.refresh();
         statusBar?.update();
-        const teamExists = hasSquadTeam(workspaceRoot, squadFolderName);
+        const teamExists = hasSquadTeam(currentRoot, squadFolderName);
         // During init, never reset hasTeam to false — the init wizard already set it true
         if (!initInProgress) {
             vscode.commands.executeCommand('setContext', 'squadui.hasTeam', teamExists);
@@ -450,6 +490,27 @@ export function activate(context: vscode.ExtensionContext): void {
             teamView.message = undefined;
         }
     });
+
+    // Register URI handler for deep-link API (vscode://csharpfritz.squadui/...)
+    const uriHandler: vscode.UriHandler = {
+        handleUri(uri: vscode.Uri): vscode.ProviderResult<void> {
+            const params = new URLSearchParams(uri.query);
+            const teamRoot = params.get('path');
+            switch (uri.path) {
+                case '/dashboard':
+                    vscode.commands.executeCommand('squadui.openDashboard', teamRoot || undefined);
+                    break;
+                case '/charter': {
+                    const member = params.get('member');
+                    if (member) {
+                        vscode.commands.executeCommand('squadui.viewCharter', member, teamRoot || undefined);
+                    }
+                    break;
+                }
+            }
+        }
+    };
+    context.subscriptions.push(vscode.window.registerUriHandler(uriHandler));
 }
 
 export function deactivate(): void {

@@ -60,16 +60,16 @@ function parseMemberRows(teamMdPath: string): MemberRow[] {
 export function registerRemoveMemberCommand(
     _context: vscode.ExtensionContext,
     onMemberRemoved: () => void,
-    squadFolder: '.squad' | '.ai-team' = '.ai-team'
+    squadFolder: '.squad' | '.ai-team' = '.ai-team',
+    getCurrentRoot?: () => string
 ): vscode.Disposable {
     return vscode.commands.registerCommand('squadui.removeMember', async (item?: any) => {
-        const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
-        if (!workspaceFolder) {
+        const teamRoot = getCurrentRoot?.() ?? vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+        if (!teamRoot) {
             vscode.window.showErrorMessage('Squad: No workspace folder open. Open a folder first.');
             return;
         }
 
-        const teamRoot = workspaceFolder.uri.fsPath;
         const teamMdPath = path.join(teamRoot, squadFolder, 'team.md');
 
         if (!fs.existsSync(teamMdPath)) {
