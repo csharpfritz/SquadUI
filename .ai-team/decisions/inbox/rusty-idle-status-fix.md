@@ -1,0 +1,4 @@
+### 2026-02-18: Copilot Chat Idle Status Fallback
+**By:** Rusty  
+**What:** Added fallback status detection when Squad runs in VS Code Copilot Chat without creating active-work marker files. SquadUI now checks if ANY orchestration log file was modified in the last 10 minutes — if so, members who appear in logs are marked as working.  
+**Why:** Issue #63 reported that subagents show "Idle" during Copilot Chat sessions because the Squad orchestrator doesn't write active-work marker files. This fallback detects orchestration activity via log file timestamps, providing a signal that work is happening even when the formal marker protocol isn't used. The 10-minute window (vs. 5-minute marker staleness) accounts for delayed log writes. Active-work markers remain the primary status indicator when present.
