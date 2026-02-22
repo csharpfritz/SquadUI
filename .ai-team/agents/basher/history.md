@@ -268,3 +268,28 @@
   - Temp dir cleanup in `finally` block for non-suite-scoped tests
 - Compilation clean (`npx tsc --noEmit`); all 959 tests passing (9 new + 950 existing)
 
+### Issue #63 Working-to-Idle and Completion Signal Tests (2026-02-22)
+- Added 8 new tests across 2 test suites to validate issue #63 fix
+- **SquadDataProvider working-to-idle tests (4 tests in `squadDataProviderExtended.test.ts`):**
+  1. Member with completed tasks only shows as idle (not working) — validates new `hasTasksButNoneActive` logic
+  2. Member with NO tasks at all stays working (Copilot Chat scenario) — ensures log status preserved when tasks array is empty
+  3. Member with in-progress tasks stays working — baseline behavior preserved
+  4. Member not in logs shows as idle — default state when absent from orchestration logs
+- **OrchestrationLogService completion signal tests (4 tests in `orchestrationLogService.test.ts`):**
+  1. relatedIssues with "Closed #NN" outcome → task status = 'completed' with completedAt timestamp
+  2. relatedIssues with "Resolved #NN" outcome → task status = 'completed' (validates isCompletionSignal patterns)
+  3. relatedIssues with "Working on #NN" outcome → task status = 'in_progress' without completedAt
+  4. relatedIssues without matching outcomes → task status = 'in_progress' by default
+- Test patterns used:
+  - Synthetic `OrchestrationLogEntry` objects for unit testing (avoids temp files/disk I/O)
+  - Import `OrchestrationLogEntry` type from `../../models` for type safety
+  - Temp dirs with `fs.mkdirSync` + `fs.writeFileSync` for integration tests
+  - SquadDataProvider tests verify status calculation at member-level (lines 108-109 of SquadDataProvider.ts)
+  - OrchestrationLogService tests verify completion detection at task extraction level (lines 270-279 of OrchestrationLogService.ts)
+- Key file locations:
+  - `src/test/suite/squadDataProviderExtended.test.ts` — getSquadMembers() status override suite
+  - `src/test/suite/orchestrationLogService.test.ts` — getActiveTasks() completion signal suite
+  - `src/services/SquadDataProvider.ts:108` — hasTasksButNoneActive logic
+  - `src/services/OrchestrationLogService.ts:270-279` — isCompletionSignal() integration
+- Compilation clean (`npx tsc --noEmit`); all 1003 tests passing (8 new + 995 existing)
+
