@@ -5,6 +5,14 @@ All notable changes to the SquadUI extension will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.3] - 2026-02-22
+
+### Fixed
+- **Idle status in VS Code Copilot Chat** (#63): Squad members now correctly show "working" status when actively working in Copilot Chat sessions
+  - Fixed task completion detection: Outcomes like "Closed #42" now properly mark tasks as completed
+  - Fixed working-to-idle override: Members with no parsed tasks (common in Copilot Chat) stay "working" instead of incorrectly showing "idle"
+  - Added 8 new tests covering member status scenarios and completion signal detection
+
 ## [0.7.2] - 2026-02-17
 
 ### Fixed
