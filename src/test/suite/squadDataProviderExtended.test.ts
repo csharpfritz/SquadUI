@@ -282,4 +282,228 @@ suite('SquadDataProvider — Extended Coverage', () => {
             assert.strictEqual(dave!.status, 'idle', 'Should be idle when not in logs');
         });
     });
+
+    // ─── GitHub-aware status (Issue #50) ────────────────────────────────
+
+    suite('GitHub-aware status (setOpenIssues)', () => {
+        test('idle member with open issues becomes working', async () => {
+            fs.writeFileSync(path.join(tempDir, '.ai-team', 'team.md'), [
+                '# Team',
+                '',
+                '## Members',
+                '',
+                '| Name | Role | Charter | Status |',
+                '|------|------|---------|--------|',
+                '| Eve | Dev | `.ai-team/agents/eve/charter.md` | ✅ Active |',
+            ].join('\n'));
+
+            const provider = new SquadDataProvider(tempDir, '.ai-team');
+            
+            // Eve has no log activity, starts idle
+            let members = await provider.getSquadMembers();
+            let eve = members.find(m => m.name === 'Eve');
+            assert.strictEqual(eve!.status, 'idle', 'Eve starts idle without issues');
+
+            // Now set open issues for Eve
+            provider.refresh();
+            provider.setOpenIssues(new Map([
+                ['eve', [
+                    {
+                        number: 42,
+                        title: 'Fix the widget',
+                        state: 'open',
+                        labels: [{ name: 'squad:eve' }],
+                        htmlUrl: 'https://github.com/test/test/issues/42',
+                        createdAt: '2026-02-01T10:00:00Z',
+                        updatedAt: '2026-02-20T14:30:00Z',
+                    }
+                ]]
+            ]));
+
+            members = await provider.getSquadMembers();
+            eve = members.find(m => m.name === 'Eve');
+            assert.strictEqual(eve!.status, 'working', 'Eve becomes working with open issues');
+            assert.ok(eve!.currentTask, 'Eve should have currentTask from issue');
+            assert.strictEqual(eve!.currentTask!.id, '#42');
+            assert.strictEqual(eve!.currentTask!.title, 'Fix the widget');
+        });
+
+        test('working member stays working (not downgraded by issues)', async () => {
+            fs.writeFileSync(path.join(tempDir, '.ai-team', 'team.md'), [
+                '# Team',
+                '',
+                '## Members',
+                '',
+                '| Name | Role | Charter | Status |',
+                '|------|------|---------|--------|',
+                '| Frank | Dev | `.ai-team/agents/frank/charter.md` | ✅ Active |',
+            ].join('\n'));
+
+            // Create log that marks Frank as working
+            const logDir = path.join(tempDir, '.ai-team', 'orchestration-log');
+            fs.mkdirSync(logDir, { recursive: true });
+            fs.writeFileSync(path.join(logDir, '2026-03-01-working.md'), [
+                '# Session',
+                '',
+                '**Participants:** Frank',
+                '',
+                '## Summary',
+                'Frank is coding.',
+            ].join('\n'));
+
+            const provider = new SquadDataProvider(tempDir, '.ai-team');
+            
+            // Frank is working from logs
+            let members = await provider.getSquadMembers();
+            let frank = members.find(m => m.name === 'Frank');
+            assert.strictEqual(frank!.status, 'working', 'Frank is working from logs');
+
+            // Setting empty issues should NOT change Frank to idle
+            provider.refresh();
+            provider.setOpenIssues(new Map()); // No issues for anyone
+
+            members = await provider.getSquadMembers();
+            frank = members.find(m => m.name === 'Frank');
+            assert.strictEqual(frank!.status, 'working', 'Frank stays working even without issues');
+        });
+
+        test('most recent issue is used as currentTask', async () => {
+            fs.writeFileSync(path.join(tempDir, '.ai-team', 'team.md'), [
+                '# Team',
+                '',
+                '## Members',
+                '',
+                '| Name | Role | Charter | Status |',
+                '|------|------|---------|--------|',
+                '| Grace | Dev | `.ai-team/agents/grace/charter.md` | ✅ Active |',
+            ].join('\n'));
+
+            const provider = new SquadDataProvider(tempDir, '.ai-team');
+            
+            provider.setOpenIssues(new Map([
+                ['grace', [
+                    {
+                        number: 10,
+                        title: 'Old issue',
+                        state: 'open',
+                        labels: [{ name: 'squad:grace' }],
+                        htmlUrl: 'https://github.com/test/test/issues/10',
+                        createdAt: '2026-01-01T10:00:00Z',
+                        updatedAt: '2026-01-15T14:30:00Z',
+                    },
+                    {
+                        number: 20,
+                        title: 'Recent issue',
+                        state: 'open',
+                        labels: [{ name: 'squad:grace' }],
+                        htmlUrl: 'https://github.com/test/test/issues/20',
+                        createdAt: '2026-02-01T10:00:00Z',
+                        updatedAt: '2026-02-20T14:30:00Z',
+                    },
+                    {
+                        number: 15,
+                        title: 'Middle issue',
+                        state: 'open',
+                        labels: [{ name: 'squad:grace' }],
+                        htmlUrl: 'https://github.com/test/test/issues/15',
+                        createdAt: '2026-01-20T10:00:00Z',
+                        updatedAt: '2026-02-10T14:30:00Z',
+                    }
+                ]]
+            ]));
+
+            const members = await provider.getSquadMembers();
+            const grace = members.find(m => m.name === 'Grace');
+            
+            assert.strictEqual(grace!.status, 'working');
+            assert.strictEqual(grace!.currentTask!.id, '#20', 'Should pick most recent issue (#20)');
+            assert.strictEqual(grace!.currentTask!.title, 'Recent issue');
+        });
+
+        test('member with log task keeps log task instead of issue', async () => {
+            fs.writeFileSync(path.join(tempDir, '.ai-team', 'team.md'), [
+                '# Team',
+                '',
+                '## Members',
+                '',
+                '| Name | Role | Charter | Status |',
+                '|------|------|---------|--------|',
+                '| Henry | Dev | `.ai-team/agents/henry/charter.md` | ✅ Active |',
+            ].join('\n'));
+
+            // Create log with in-progress task for Henry
+            const logDir = path.join(tempDir, '.ai-team', 'orchestration-log');
+            fs.mkdirSync(logDir, { recursive: true });
+            fs.writeFileSync(path.join(logDir, '2026-03-01-henry.md'), [
+                '# Session',
+                '',
+                '**Participants:** Henry',
+                '',
+                '## Related Issues',
+                '- #99 - Working on the big feature',
+                '',
+                '## Summary',
+                'Implementing the feature.',
+            ].join('\n'));
+
+            const provider = new SquadDataProvider(tempDir, '.ai-team');
+            
+            // Set open issues - different issue than what's in the log
+            provider.setOpenIssues(new Map([
+                ['henry', [
+                    {
+                        number: 50,
+                        title: 'Different issue',
+                        state: 'open',
+                        labels: [{ name: 'squad:henry' }],
+                        htmlUrl: 'https://github.com/test/test/issues/50',
+                        createdAt: '2026-02-01T10:00:00Z',
+                        updatedAt: '2026-02-20T14:30:00Z',
+                    }
+                ]]
+            ]));
+
+            const members = await provider.getSquadMembers();
+            const henry = members.find(m => m.name === 'Henry');
+            
+            assert.strictEqual(henry!.status, 'working');
+            // Should keep the log-derived task, not the GitHub issue
+            // Log-derived task IDs don't have # prefix
+            assert.strictEqual(henry!.currentTask!.id, '99', 'Should keep log task, not GitHub issue');
+        });
+
+        test('case-insensitive member name matching for issues', async () => {
+            fs.writeFileSync(path.join(tempDir, '.ai-team', 'team.md'), [
+                '# Team',
+                '',
+                '## Members',
+                '',
+                '| Name | Role | Charter | Status |',
+                '|------|------|---------|--------|',
+                '| Isabella | Dev | `.ai-team/agents/isabella/charter.md` | ✅ Active |',
+            ].join('\n'));
+
+            const provider = new SquadDataProvider(tempDir, '.ai-team');
+            
+            // Issues are keyed by lowercase name
+            provider.setOpenIssues(new Map([
+                ['isabella', [
+                    {
+                        number: 77,
+                        title: 'Case test issue',
+                        state: 'open',
+                        labels: [{ name: 'squad:Isabella' }],
+                        htmlUrl: 'https://github.com/test/test/issues/77',
+                        createdAt: '2026-02-01T10:00:00Z',
+                        updatedAt: '2026-02-20T14:30:00Z',
+                    }
+                ]]
+            ]));
+
+            const members = await provider.getSquadMembers();
+            const isabella = members.find(m => m.name === 'Isabella');
+            
+            assert.strictEqual(isabella!.status, 'working', 'Should match case-insensitively');
+        });
+    });
 });

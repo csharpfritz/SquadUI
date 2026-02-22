@@ -11,7 +11,7 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
-import { SquadMember, Task, WorkDetails, OrchestrationLogEntry, DecisionEntry } from '../models';
+import { SquadMember, Task, WorkDetails, OrchestrationLogEntry, DecisionEntry, MemberIssueMap, GitHubIssue } from '../models';
 import { OrchestrationLogService } from './OrchestrationLogService';
 import { TeamMdService } from './TeamMdService';
 import { DecisionService } from './DecisionService';
@@ -38,6 +38,9 @@ export class SquadDataProvider {
     private cachedDecisions: DecisionEntry[] | null = null;
     private retryDelayMs: number;
 
+    // GitHub issues for status computation (set externally)
+    private openIssuesByMember: MemberIssueMap | null = null;
+
     constructor(teamRoot: string, squadFolder: '.squad' | '.ai-team', retryDelayMs: number = 1500) {
         this.teamRoot = teamRoot;
         this.squadFolder = squadFolder;
@@ -62,11 +65,27 @@ export class SquadDataProvider {
     }
 
     /**
+     * Sets the open issues map for GitHub-aware status computation.
+     * When set, members with open squad:{member} issues will show as 'working'
+     * even without orchestration log activity. Call this before getSquadMembers().
+     */
+    setOpenIssues(issues: MemberIssueMap | null): void {
+        this.openIssuesByMember = issues;
+        // Invalidate cached members so next call recomputes with issues
+        this.cachedMembers = null;
+    }
+
+    /**
      * Returns all squad members with their current status.
      * Resolution order:
      * 1. team.md Members/Roster table (authoritative roster)
      * 2. Agents folder scan (.ai-team/agents/ subdirectories)
      * 3. Orchestration log participants (legacy fallback)
+     *
+     * Status signals (checked in order, first match wins):
+     * 1. Orchestration logs (most recent activity)
+     * 2. GitHub issues (open squad:{member} issues indicate working)
+     * 3. Active-work markers (.ai-team/agents/{name}/ACTIVE_WORK.md)
      *
      * All paths overlay status and tasks from orchestration logs.
      * Data is cached after first call until refresh() is invoked.
@@ -166,6 +185,30 @@ export class SquadDataProvider {
             const slug = member.name.toLowerCase();
             if (activeMarkers.has(slug)) {
                 member.status = 'working';
+            }
+        }
+
+        // GitHub-aware status: members with open squad:{member} issues show as working
+        // This is the fallback for "cold start" and between-session scenarios
+        if (this.openIssuesByMember) {
+            for (const member of members) {
+                // Only upgrade idle members — don't downgrade working members
+                if (member.status === 'idle') {
+                    const memberIssues = this.openIssuesByMember.get(member.name.toLowerCase());
+                    if (memberIssues && memberIssues.length > 0) {
+                        member.status = 'working';
+                        // If no currentTask from logs, use most recent issue
+                        if (!member.currentTask) {
+                            const mostRecent = this.getMostRecentIssue(memberIssues);
+                            member.currentTask = {
+                                id: `#${mostRecent.number}`,
+                                title: mostRecent.title,
+                                status: 'in_progress',
+                                assignee: member.name,
+                            };
+                        }
+                    }
+                }
             }
         }
 
@@ -386,5 +429,17 @@ export class SquadDataProvider {
         const entries = await this.getOrchestrationLogEntries();
         this.cachedTasks = this.orchestrationService.getActiveTasks(entries);
         return this.cachedTasks;
+    }
+
+    /**
+     * Returns the most recently updated issue from a list.
+     * Falls back to most recently created if updatedAt is not available.
+     */
+    private getMostRecentIssue(issues: GitHubIssue[]): GitHubIssue {
+        return issues.reduce((most, issue) => {
+            const mostDate = new Date(most.updatedAt ?? most.createdAt);
+            const issueDate = new Date(issue.updatedAt ?? issue.createdAt);
+            return issueDate > mostDate ? issue : most;
+        }, issues[0]);
     }
 }

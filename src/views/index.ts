@@ -7,3 +7,4 @@ export { WorkDetailsWebview } from './WorkDetailsWebview';
 export { IssueDetailWebview } from './IssueDetailWebview';
 export { SquadStatusBar } from './SquadStatusBar';
 export { SquadDashboardWebview } from './SquadDashboardWebview';
+export { StandupReportWebview } from './StandupReportWebview';

@@ -5,6 +5,33 @@ All notable changes to the SquadUI extension will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.0] - 2026-02-22
+
+### Added
+- **GitHub-aware status indicators** (#50): Members with open `squad:{member}` issues now show as "working" even without orchestration log activity
+  - Solves the "cold start" problem — new teams see accurate status immediately
+  - Members appear active between sessions when they have assigned issues
+  - Most recent issue is shown as `currentTask` when no log-derived task exists
+  - 5 new tests covering GitHub-aware status scenarios
+
+- **Standup Report** (#60): New command `Squad: Generate Standup Report` with daily/weekly period selector
+  - Shows closed issues, newly opened issues, blockers, and suggested next steps
+  - Aggregates recent decisions and orchestration log activity
+  - Priority-sorted suggestions (P0 → P3) exclude blocked items
+  - Interactive webview with issue links and period switching
+  - StandupReportService with markdown export capability
+  - 11 new tests for report generation
+
+- **Enhanced Init Wizard** (#41): Native VS Code init now includes post-setup options
+  - Connect PRD: Specify a Product Requirements Document path
+  - Connect GitHub: Link to a repository for issue tracking
+  - Enable @copilot: Add the Copilot coding agent to your team
+  - All options flow into the Copilot prompt for automated setup
+
+### Changed
+- Tree view and dashboard now feed GitHub issues into SquadDataProvider for accurate member status
+- Dashboard fetches issues before computing member data to ensure status reflects GitHub state
+
 ## [0.7.3] - 2026-02-22
 
 ### Fixed

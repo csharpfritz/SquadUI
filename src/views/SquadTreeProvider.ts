@@ -79,6 +79,17 @@ export class TeamTreeProvider implements vscode.TreeDataProvider<SquadTreeItem> 
     }
 
     private async getSquadMemberItems(): Promise<SquadTreeItem[]> {
+        // Feed GitHub issues into data provider for status computation
+        if (this.issuesService) {
+            try {
+                const workspaceRoot = this.dataProvider.getWorkspaceRoot();
+                const openIssues = await this.issuesService.getIssuesByMember(workspaceRoot);
+                this.dataProvider.setOpenIssues(openIssues);
+            } catch {
+                // Issues service unavailable — proceed without GitHub-aware status
+            }
+        }
+
         const members = await this.dataProvider.getSquadMembers();
         
         // Sort: regular members first, then @copilot, then infra (scribe/ralph)

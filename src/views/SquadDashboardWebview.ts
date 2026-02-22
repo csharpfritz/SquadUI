@@ -99,14 +99,7 @@ export class SquadDashboardWebview {
         }
 
         try {
-            // Fetch data from services
-            const members = await this.dataProvider.getSquadMembers();
-            const tasks = await this.dataProvider.getTasks();
-            const velocityTasks = await this.dataProvider.getVelocityTasks();
-            const logEntries = await this.dataProvider.getLogEntries();
-            const decisions = await this.dataProvider.getDecisions();
-
-            // Fetch GitHub issues if service is available
+            // Fetch GitHub issues first so they can inform member status
             const workspaceRoot = this.dataProvider.getWorkspaceRoot();
             let openIssues, closedIssues, allClosedIssues;
             if (this.issuesService) {
@@ -114,8 +107,17 @@ export class SquadDashboardWebview {
                     openIssues = await this.issuesService.getIssuesByMember(workspaceRoot);
                     closedIssues = await this.issuesService.getClosedIssuesByMember(workspaceRoot);
                     allClosedIssues = await this.issuesService.getClosedIssues(workspaceRoot);
+                    // Feed issues into data provider for status computation
+                    this.dataProvider.setOpenIssues(openIssues);
                 } catch { /* issues optional */ }
             }
+
+            // Fetch data from services (members now use GitHub issues for status)
+            const members = await this.dataProvider.getSquadMembers();
+            const tasks = await this.dataProvider.getTasks();
+            const velocityTasks = await this.dataProvider.getVelocityTasks();
+            const logEntries = await this.dataProvider.getLogEntries();
+            const decisions = await this.dataProvider.getDecisions();
 
             // Build milestone burndown data
             const milestoneBurndowns = await this.buildBurndowns(workspaceRoot);

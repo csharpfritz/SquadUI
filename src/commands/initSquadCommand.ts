@@ -5,6 +5,10 @@ interface UniverseOption extends vscode.QuickPickItem {
     capacity: number;
 }
 
+interface PostSetupChoice extends vscode.QuickPickItem {
+    id: 'prd' | 'github' | 'copilot' | 'skip';
+}
+
 const UNIVERSES: UniverseOption[] = [
     { label: "Ocean's Eleven", description: '14 characters available', universe: "Ocean's Eleven", capacity: 14 },
     { label: 'Marvel Cinematic Universe', description: '14 characters available', universe: 'Marvel Cinematic Universe', capacity: 14 },
@@ -23,9 +27,17 @@ const UNIVERSES: UniverseOption[] = [
     { label: 'Doctor Who', description: '14 characters available', universe: 'Doctor Who', capacity: 14 },
 ];
 
+const POST_SETUP_CHOICES: PostSetupChoice[] = [
+    { label: '📋 Connect PRD', description: 'Specify a Product Requirements Document', id: 'prd' },
+    { label: '🔗 Connect GitHub Issues', description: 'Link to a GitHub repository for issue tracking', id: 'github' },
+    { label: '🤖 Enable @copilot', description: 'Add the GitHub Copilot coding agent to your team', id: 'copilot' },
+    { label: '✓ Skip additional setup', description: 'Finish and start working', id: 'skip' },
+];
+
 /**
  * Native VS Code init wizard: universe QuickPick → mission InputBox → terminal.
  * Absorbs issue #26 (universe selector) into the init flow.
+ * Enhanced with post-setup options per issue #41.
  */
 export function registerInitSquadCommand(
     context: vscode.ExtensionContext,
@@ -64,17 +76,74 @@ export function registerInitSquadCommand(
             return; // user cancelled
         }
 
+        // Step 3 — Post-setup options (optional, can skip)
+        let enableCopilot = false;
+        let githubRepo: string | undefined;
+        let prdPath: string | undefined;
+
+        let continueSetup = true;
+        while (continueSetup) {
+            const choice = await vscode.window.showQuickPick(POST_SETUP_CHOICES, {
+                placeHolder: 'Configure additional options (or skip to finish)',
+                title: 'Form your Squad — Additional Setup',
+            });
+            
+            if (!choice || choice.id === 'skip') {
+                continueSetup = false;
+            } else if (choice.id === 'copilot') {
+                enableCopilot = true;
+                vscode.window.showInformationMessage('✓ @copilot will be added to your team');
+            } else if (choice.id === 'github') {
+                const repo = await vscode.window.showInputBox({
+                    prompt: 'Enter GitHub repository (owner/repo)',
+                    placeHolder: 'e.g., csharpfritz/SquadUI',
+                    title: 'Connect GitHub Issues',
+                    validateInput: (value) => {
+                        if (value && !value.match(/^[a-zA-Z0-9_-]+\/[a-zA-Z0-9_.-]+$/)) {
+                            return 'Format should be owner/repo';
+                        }
+                        return undefined;
+                    },
+                });
+                if (repo) {
+                    githubRepo = repo;
+                    vscode.window.showInformationMessage(`✓ Will connect to ${repo}`);
+                }
+            } else if (choice.id === 'prd') {
+                const prd = await vscode.window.showInputBox({
+                    prompt: 'Enter path to PRD file (relative to workspace)',
+                    placeHolder: 'e.g., docs/PRD.md',
+                    title: 'Connect PRD',
+                });
+                if (prd) {
+                    prdPath = prd;
+                    vscode.window.showInformationMessage(`✓ PRD path set to ${prd}`);
+                }
+            }
+        }
+
         // Start spinner immediately so user sees progress
         onInitStart();
 
-        // Step 3 — Launch terminal with flags, then invoke copilot agent to set up charters
+        // Build copilot prompt with all collected info
+        let copilotPrompt = `Set up the team for this project. The universe is ${selectedUniverse.universe}. The mission is: ${mission}`;
+        if (enableCopilot) {
+            copilotPrompt += `. Add @copilot to the team roster as the Coding Agent.`;
+        }
+        if (githubRepo) {
+            copilotPrompt += `. Connect to GitHub repository ${githubRepo} for issue tracking.`;
+        }
+        if (prdPath) {
+            copilotPrompt += `. Read the PRD at ${prdPath} and decompose into work items.`;
+        }
+
+        // Step 4 — Launch terminal with flags, then invoke copilot agent to set up charters
         const terminal = vscode.window.createTerminal({
             name: 'Squad Init',
             cwd: workspaceFolder.uri,
         });
         terminal.show();
         const initCmd = `npx github:bradygaster/squad init --universe "${selectedUniverse.universe}" --mission "${mission}"`;
-        const copilotPrompt = `Set up the team for this project. The universe is ${selectedUniverse.universe}. The mission is: ${mission}`;
         const copilotCmd = `copilot --agent squad -p "${copilotPrompt}" --allow-all-tools`;
         terminal.sendText(`${initCmd} && ${copilotCmd}`);
 

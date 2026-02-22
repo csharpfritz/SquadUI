@@ -3,7 +3,7 @@ import * as path from 'path';
 import * as fs from 'fs';
 import { GitHubIssue } from './models';
 import { SquadDataProvider, FileWatcherService, GitHubIssuesService, SquadVersionService } from './services';
-import { TeamTreeProvider, SkillsTreeProvider, DecisionsTreeProvider, WorkDetailsWebview, IssueDetailWebview, SquadStatusBar, SquadDashboardWebview } from './views';
+import { TeamTreeProvider, SkillsTreeProvider, DecisionsTreeProvider, WorkDetailsWebview, IssueDetailWebview, SquadStatusBar, SquadDashboardWebview, StandupReportWebview } from './views';
 import { registerInitSquadCommand, registerUpgradeSquadCommand, registerAddMemberCommand, registerRemoveMemberCommand, registerAddSkillCommand } from './commands';
 import { detectSquadFolder, hasSquadTeam } from './utils/squadFolderDetection';
 
@@ -11,6 +11,7 @@ let fileWatcher: FileWatcherService | undefined;
 let webview: WorkDetailsWebview | undefined;
 let issueWebview: IssueDetailWebview | undefined;
 let dashboardWebview: SquadDashboardWebview | undefined;
+let standupWebview: StandupReportWebview | undefined;
 let statusBar: SquadStatusBar | undefined;
 let versionService: SquadVersionService | undefined;
 
@@ -112,6 +113,11 @@ export function activate(context: vscode.ExtensionContext): void {
     issueWebview = new IssueDetailWebview(context.extensionUri);
     context.subscriptions.push({ dispose: () => issueWebview?.dispose() });
 
+    // Create webview for standup reports
+    standupWebview = new StandupReportWebview(context.extensionUri, dataProvider);
+    standupWebview.setIssuesService(issuesService);
+    context.subscriptions.push({ dispose: () => standupWebview?.dispose() });
+
     // Register commands
     context.subscriptions.push(
         vscode.commands.registerCommand('squadui.showWorkDetails', async (taskId: string) => {
@@ -170,6 +176,21 @@ export function activate(context: vscode.ExtensionContext): void {
                 switchToRoot(teamRoot);
             }
             await dashboardWebview?.show();
+        })
+    );
+
+    context.subscriptions.push(
+        vscode.commands.registerCommand('squadui.generateStandup', async () => {
+            // Show period picker
+            const period = await vscode.window.showQuickPick(
+                [
+                    { label: '📅 Daily', description: 'Last 24 hours', value: 'day' as const },
+                    { label: '📆 Weekly', description: 'Last 7 days', value: 'week' as const },
+                ],
+                { placeHolder: 'Select standup report period' }
+            );
+            if (!period) { return; }
+            await standupWebview?.show(period.value);
         })
     );
 
@@ -518,5 +539,6 @@ export function deactivate(): void {
     webview?.dispose();
     issueWebview?.dispose();
     dashboardWebview?.dispose();
+    standupWebview?.dispose();
     statusBar?.dispose();
 }

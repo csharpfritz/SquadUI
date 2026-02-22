@@ -23,3 +23,9 @@ export {
 export { SkillCatalogService } from './SkillCatalogService';
 export { DecisionService } from './DecisionService';
 export { SquadVersionService, type UpgradeCheckResult } from './SquadVersionService';
+export {
+    StandupReportService,
+    type StandupReport,
+    type StandupSummary,
+    type StandupPeriod
+} from './StandupReportService';

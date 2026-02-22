@@ -2,7 +2,7 @@
   "name": "squadui",
   "displayName": "SquadUI",
   "description": "Visualize Squad team members and their tasks",
-  "version": "0.7.3",
+  "version": "0.8.0",
   "publisher": "csharpfritz",
   "icon": "images/icon.png",
   "repository": {
@@ -128,6 +128,12 @@
         "command": "squadui.checkForUpdates",
         "title": "Check for Updates",
         "category": "Squad"
+      },
+      {
+        "command": "squadui.generateStandup",
+        "title": "Generate Standup Report",
+        "category": "Squad",
+        "icon": "$(report)"
       }
     ],
     "viewsWelcome": [
