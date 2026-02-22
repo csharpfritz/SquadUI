@@ -143,3 +143,11 @@
 
 📌 Team update (2026-02-18): Velocity chart uses all logs; status stays orchestration-only — DashboardDataBuilder now accepts optional `velocityTasks` parameter (9th arg). Velocity timeline uses `velocityTasks ?? tasks` (all logs or fallback). Activity swimlanes still use orchestration-only `tasks`. Architectural principle: velocity = all work signals; status = orchestration-only to prevent false "working" indicators from old session logs. — decided by Linus
 
+### Copilot Chat Idle Status Fallback (2026-02-18)
+- **Issue #63:** Squad subagents showed "Idle" in VS Code Copilot Chat even when actively working because Squad orchestrator doesn't create active-work marker files during chat sessions
+- **Root cause:** SquadUI reads active-work markers (primary) and orchestration logs (secondary) for status. When Squad runs in Copilot Chat, marker files aren't created, and orchestration logs may not exist or update immediately
+- **Solution:** Added `hasRecentOrchestrationActivity()` fallback detection in `SquadDataProvider` — scans both `orchestration-log/` and `log/` directories for ANY `.md` file modified in the last 10 minutes (controlled by `ORCHESTRATION_ACTIVITY_WINDOW_MS` constant)
+- **Status precedence:** Active-work markers remain highest priority (5-min staleness). Fallback only activates when `activeMarkers.size === 0` AND recent orchestration activity detected. Members with log status 'working' are then marked as working (bypassing the task demotion rule)
+- **Key insight:** This handles the Copilot Chat scenario where Squad is actively orchestrating work (evidenced by recent log writes) but hasn't created the formal marker protocol files. The 10-min window is wider than marker staleness to catch delayed log writes
+- **Files changed:** `src/services/SquadDataProvider.ts` — added `ORCHESTRATION_ACTIVITY_WINDOW_MS` constant, `hasRecentOrchestrationActivity()` method, fallback logic in `getSquadMembers()` after marker detection
+
