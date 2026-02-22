@@ -153,7 +153,7 @@ suite('SquadDataProvider — Extended Coverage', () => {
 
     // ─── getSquadMembers() — Status Override Logic ──────────────────────
 
-    suite('getSquadMembers() — working-to-idle override', () => {
+    suite('getSquadMembers() — working-to-idle override (issue #63)', () => {
         test('member shown as idle when log says working but no in-progress tasks', async () => {
             // Create team.md
             fs.writeFileSync(path.join(tempDir, '.ai-team', 'team.md'), [
@@ -167,13 +167,16 @@ suite('SquadDataProvider — Extended Coverage', () => {
             ].join('\n'));
 
             // Create log that marks Alice as participant (most recent = working)
-            // but with completed tasks only
+            // but with completed tasks only (issue reference with completion signal)
             const logDir = path.join(tempDir, '.ai-team', 'orchestration-log');
             fs.mkdirSync(logDir, { recursive: true });
             fs.writeFileSync(path.join(logDir, '2026-03-01-completed.md'), [
                 '# Completed Work',
                 '',
                 '**Participants:** Alice',
+                '',
+                '## Outcomes',
+                '- Closed #42 — fixed the bug',
                 '',
                 '## Summary',
                 'All tasks completed.',
@@ -186,6 +189,97 @@ suite('SquadDataProvider — Extended Coverage', () => {
             assert.ok(alice, 'Should find Alice');
             // Alice should be idle because no in-progress tasks exist
             assert.strictEqual(alice!.status, 'idle', 'Should be idle when no in-progress tasks');
+        });
+
+        test('member stays working when log says working and has no tasks at all (Copilot Chat)', async () => {
+            fs.writeFileSync(path.join(tempDir, '.ai-team', 'team.md'), [
+                '# Team',
+                '',
+                '## Members',
+                '',
+                '| Name | Role | Charter | Status |',
+                '|------|------|---------|--------|',
+                '| Bob | Dev | `.ai-team/agents/bob/charter.md` | ✅ Active |',
+            ].join('\n'));
+
+            // Create log that marks Bob as participant but NO tasks or issue refs at all
+            const logDir = path.join(tempDir, '.ai-team', 'orchestration-log');
+            fs.mkdirSync(logDir, { recursive: true });
+            fs.writeFileSync(path.join(logDir, '2026-03-01-chat.md'), [
+                '# Copilot Chat Session',
+                '',
+                '**Participants:** Bob',
+                '',
+                '## Summary',
+                'Answered questions about the codebase.',
+            ].join('\n'));
+
+            const provider = new SquadDataProvider(tempDir, '.ai-team');
+            const members = await provider.getSquadMembers();
+
+            const bob = members.find(m => m.name === 'Bob');
+            assert.ok(bob, 'Should find Bob');
+            // Bob has no tasks at all, so should stay "working" (Copilot Chat scenario)
+            assert.strictEqual(bob!.status, 'working', 'Should stay working when no tasks exist');
+        });
+
+        test('member stays working when log says working and has in-progress tasks', async () => {
+            fs.writeFileSync(path.join(tempDir, '.ai-team', 'team.md'), [
+                '# Team',
+                '',
+                '## Members',
+                '',
+                '| Name | Role | Charter | Status |',
+                '|------|------|---------|--------|',
+                '| Carol | Dev | `.ai-team/agents/carol/charter.md` | ✅ Active |',
+            ].join('\n'));
+
+            // Create log that marks Carol as participant with in-progress task
+            const logDir = path.join(tempDir, '.ai-team', 'orchestration-log');
+            fs.mkdirSync(logDir, { recursive: true });
+            fs.writeFileSync(path.join(logDir, '2026-03-01-in-progress.md'), [
+                '# Active Work',
+                '',
+                '**Participants:** Carol',
+                '',
+                '## Related Issues',
+                '- #99',
+                '',
+                '## Summary',
+                'Working on new feature.',
+            ].join('\n'));
+
+            const provider = new SquadDataProvider(tempDir, '.ai-team');
+            const members = await provider.getSquadMembers();
+
+            const carol = members.find(m => m.name === 'Carol');
+            assert.ok(carol, 'Should find Carol');
+            // Carol has an in-progress task, should stay "working"
+            assert.strictEqual(carol!.status, 'working', 'Should stay working with in-progress tasks');
+        });
+
+        test('member not in logs shows as idle', async () => {
+            fs.writeFileSync(path.join(tempDir, '.ai-team', 'team.md'), [
+                '# Team',
+                '',
+                '## Members',
+                '',
+                '| Name | Role | Charter | Status |',
+                '|------|------|---------|--------|',
+                '| Dave | Dev | `.ai-team/agents/dave/charter.md` | ✅ Active |',
+            ].join('\n'));
+
+            // Create log directory but no entries for Dave
+            const logDir = path.join(tempDir, '.ai-team', 'orchestration-log');
+            fs.mkdirSync(logDir, { recursive: true });
+
+            const provider = new SquadDataProvider(tempDir, '.ai-team');
+            const members = await provider.getSquadMembers();
+
+            const dave = members.find(m => m.name === 'Dave');
+            assert.ok(dave, 'Should find Dave');
+            // Dave not in any logs, should be "idle"
+            assert.strictEqual(dave!.status, 'idle', 'Should be idle when not in logs');
         });
     });
 });

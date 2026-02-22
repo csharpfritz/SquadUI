@@ -8,6 +8,7 @@ import * as assert from 'assert';
 import * as path from 'path';
 import * as fs from 'fs';
 import { OrchestrationLogService } from '../../services/OrchestrationLogService';
+import { OrchestrationLogEntry } from '../../models';
 
 const TEST_FIXTURES_ROOT = path.resolve(__dirname, '../../../test-fixtures');
 
@@ -128,6 +129,90 @@ suite('OrchestrationLogService — Table Format Extraction', () => {
 
             const result = (service as any).extractSummaryFallback(content);
             assert.strictEqual(result, 'This is actual summary text.');
+        });
+    });
+
+    suite('getActiveTasks() — relatedIssues completion signal detection (issue #63)', () => {
+        test('relatedIssues with "Closed #NN" outcome → task status = completed', () => {
+            const entries: OrchestrationLogEntry[] = [
+                {
+                    timestamp: '2026-03-01T00:00:00Z',
+                    date: '2026-03-01',
+                    topic: 'fixed-bug',
+                    participants: ['Alice'],
+                    summary: 'Fixed authentication bug',
+                    relatedIssues: ['#42'],
+                    outcomes: ['Closed #42 — fixed the authentication bug'],
+                },
+            ];
+
+            const tasks = service.getActiveTasks(entries);
+
+            const task42 = tasks.find(t => t.id === '42');
+            assert.ok(task42, 'Should find task #42');
+            assert.strictEqual(task42!.status, 'completed', 'Task should be completed due to "Closed #42" signal');
+            assert.ok(task42!.completedAt, 'Task should have completedAt timestamp');
+        });
+
+        test('relatedIssues with "Fixed #NN" outcome → task status = completed', () => {
+            const entries: OrchestrationLogEntry[] = [
+                {
+                    timestamp: '2026-03-02T00:00:00Z',
+                    date: '2026-03-02',
+                    topic: 'bug-fix',
+                    participants: ['Bob'],
+                    summary: 'Bug fix',
+                    relatedIssues: ['#99'],
+                    outcomes: ['Resolved #99 in latest commit'],
+                },
+            ];
+
+            const tasks = service.getActiveTasks(entries);
+
+            const task99 = tasks.find(t => t.id === '99');
+            assert.ok(task99, 'Should find task #99');
+            assert.strictEqual(task99!.status, 'completed', 'Task should be completed due to "Resolved" signal');
+        });
+
+        test('relatedIssues with "Working on #NN" outcome → task status = in_progress', () => {
+            const entries: OrchestrationLogEntry[] = [
+                {
+                    timestamp: '2026-03-03T00:00:00Z',
+                    date: '2026-03-03',
+                    topic: 'active-work',
+                    participants: ['Carol'],
+                    summary: 'Active work',
+                    relatedIssues: ['#77'],
+                    outcomes: ['Working on #77 — implementing new feature'],
+                },
+            ];
+
+            const tasks = service.getActiveTasks(entries);
+
+            const task77 = tasks.find(t => t.id === '77');
+            assert.ok(task77, 'Should find task #77');
+            assert.strictEqual(task77!.status, 'in_progress', 'Task should be in_progress without completion signal');
+            assert.strictEqual(task77!.completedAt, undefined, 'Task should not have completedAt timestamp');
+        });
+
+        test('relatedIssues without matching outcomes → task status = in_progress', () => {
+            const entries: OrchestrationLogEntry[] = [
+                {
+                    timestamp: '2026-03-04T00:00:00Z',
+                    date: '2026-03-04',
+                    topic: 'start-feature',
+                    participants: ['Dave'],
+                    summary: 'Started investigating the issue',
+                    relatedIssues: ['#55'],
+                },
+            ];
+
+            const tasks = service.getActiveTasks(entries);
+
+            const task55 = tasks.find(t => t.id === '55');
+            assert.ok(task55, 'Should find task #55');
+            assert.strictEqual(task55!.status, 'in_progress', 'Task should be in_progress by default');
+            assert.strictEqual(task55!.completedAt, undefined, 'Task should not have completedAt timestamp');
         });
     });
 

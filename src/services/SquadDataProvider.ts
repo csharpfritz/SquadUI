@@ -101,9 +101,12 @@ export class SquadDataProvider {
             members = roster.members.map(member => {
                 const logStatus = memberStates.get(member.name) ?? 'idle';
                 const currentTask = tasks.find(t => t.assignee === member.name && t.status === 'in_progress');
-                // Override 'working' to 'idle' if the member has no in-progress tasks
-                // (all their work is completed — they shouldn't show as spinning)
-                const status = (logStatus === 'working' && !currentTask) ? 'idle' : logStatus;
+                const memberTasks = tasks.filter(t => t.assignee === member.name);
+                // Override 'working' to 'idle' ONLY if the member has tasks but none are in-progress
+                // (all their work is completed — they shouldn't show as spinning).
+                // If they have NO tasks at all, trust the log status (Copilot Chat scenario).
+                const hasTasksButNoneActive = memberTasks.length > 0 && !currentTask;
+                const status = (logStatus === 'working' && hasTasksButNoneActive) ? 'idle' : logStatus;
                 return {
                     name: member.name,
                     role: member.role,
@@ -119,7 +122,10 @@ export class SquadDataProvider {
                 members = agentMembers.map(member => {
                     const logStatus = memberStates.get(member.name) ?? 'idle';
                     const currentTask = tasks.find(t => t.assignee === member.name && t.status === 'in_progress');
-                    const status = (logStatus === 'working' && !currentTask) ? 'idle' : logStatus;
+                    const memberTasks = tasks.filter(t => t.assignee === member.name);
+                    // Override 'working' to 'idle' ONLY if the member has tasks but none are in-progress
+                    const hasTasksButNoneActive = memberTasks.length > 0 && !currentTask;
+                    const status = (logStatus === 'working' && hasTasksButNoneActive) ? 'idle' : logStatus;
                     return {
                         name: member.name,
                         role: member.role,
@@ -140,7 +146,10 @@ export class SquadDataProvider {
                 for (const name of memberNames) {
                     const logStatus = memberStates.get(name) ?? 'idle';
                     const currentTask = tasks.find(t => t.assignee === name && t.status === 'in_progress');
-                    const status = (logStatus === 'working' && !currentTask) ? 'idle' : logStatus;
+                    const memberTasks = tasks.filter(t => t.assignee === name);
+                    // Override 'working' to 'idle' ONLY if the member has tasks but none are in-progress
+                    const hasTasksButNoneActive = memberTasks.length > 0 && !currentTask;
+                    const status = (logStatus === 'working' && hasTasksButNoneActive) ? 'idle' : logStatus;
                     members.push({
                         name,
                         role: 'Squad Member',
