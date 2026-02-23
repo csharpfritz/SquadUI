@@ -571,10 +571,6 @@ export function getDashboardHtml(data: DashboardData): string {
                     <span class="label">Members</span>
                 </div>
                 <div class="summary-card">
-                    <span class="value" style="color: var(--vscode-charts-green);">\${summary.activeMembers}</span>
-                    <span class="label">Working</span>
-                </div>
-                <div class="summary-card">
                     <span class="value" style="color: var(--vscode-charts-blue);">\${summary.totalOpenIssues}</span>
                     <span class="label">Open Issues</span>
                 </div>
@@ -598,10 +594,7 @@ export function getDashboardHtml(data: DashboardData): string {
                 const icon = m.iconType === 'scribe' ? '✏️'
                     : m.iconType === 'ralph' ? '👁️'
                     : m.iconType === 'copilot' ? '🤖'
-                    : (m.status === 'working' ? '⚡' : '👤');
-                const statusBadge = m.status === 'working'
-                    ? '<span style="color: var(--vscode-charts-green);">⚡ Working</span>'
-                    : '<span style="color: var(--vscode-descriptionForeground);">💤 Idle</span>';
+                    : '👤';
                 const displayName = stripMarkdownLinks(m.name);
 
                 return \`
@@ -613,7 +606,6 @@ export function getDashboardHtml(data: DashboardData): string {
                                 <div class="member-card-role">\${escapeHtml(m.role)}</div>
                             </div>
                         </div>
-                        <div>\${statusBadge}</div>
                         <div class="member-card-stats">
                             <span class="member-stat">📋 \${m.openIssueCount} open</span>
                             <span class="member-stat">✅ \${m.closedIssueCount} closed</span>

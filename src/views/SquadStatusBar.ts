@@ -37,32 +37,18 @@ export class SquadStatusBar {
                 return;
             }
 
-            const activeCount = members.filter(m => m.status === 'working').length;
             const totalCount = members.length;
-
-            // Determine overall health status
-            const statusIcon = this.getHealthIcon(activeCount, totalCount);
             
-            // Format display text
-            this.statusBarItem.text = `$(organization) Squad: ${activeCount}/${totalCount} Active ${statusIcon}`;
+            // Simple member count — no active/idle status
+            this.statusBarItem.text = `$(organization) Squad: ${totalCount} member${totalCount !== 1 ? 's' : ''}`;
             
-            // Build tooltip with member details
+            // Build tooltip with member list
             const tooltip = new vscode.MarkdownString();
-            tooltip.appendMarkdown(`**Squad Status**\n\n`);
-            tooltip.appendMarkdown(`Active: ${activeCount} / ${totalCount}\n\n`);
+            tooltip.appendMarkdown(`**Squad**\n\n`);
+            tooltip.appendMarkdown(`Members: ${totalCount}\n\n`);
             
-            if (activeCount > 0) {
-                tooltip.appendMarkdown(`**Working:**\n`);
-                const workingMembers = members.filter(m => m.status === 'working');
-                for (const member of workingMembers) {
-                    const taskInfo = member.currentTask ? ` - ${member.currentTask.title}` : '';
-                    tooltip.appendMarkdown(`- ${member.name}${taskInfo}\n`);
-                }
-            }
-            
-            const idleCount = totalCount - activeCount;
-            if (idleCount > 0) {
-                tooltip.appendMarkdown(`\n**Idle:** ${idleCount}\n`);
+            for (const member of members) {
+                tooltip.appendMarkdown(`- ${member.name} — ${member.role}\n`);
             }
 
             this.statusBarItem.tooltip = tooltip;
@@ -100,19 +86,5 @@ export class SquadStatusBar {
         this.stopPolling();
         this.statusBarItem.dispose();
     }
-
-    private getHealthIcon(activeCount: number, totalCount: number): string {
-        if (activeCount === 0) {
-            return '⚪'; // All idle
-        }
-        
-        const ratio = activeCount / totalCount;
-        if (ratio >= 0.7) {
-            return '🟢'; // High activity
-        } else if (ratio >= 0.3) {
-            return '🟡'; // Moderate activity
-        } else {
-            return '🟠'; // Low activity
-        }
-    }
+
 }

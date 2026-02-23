@@ -279,9 +279,10 @@ suite('StandupReportService', () => {
     // ─── Edge Cases: Date Boundaries ───────────────────────────────────────
 
     suite('Edge Cases — date boundaries', () => {
-        test('issue closed exactly 24h ago is included in day report', () => {
-            const exactly24hAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-            const closedIssues = [createIssue({ number: 1, closedAt: exactly24hAgo })];
+        test('issue closed just within 24h ago is included in day report', () => {
+            // Use 23h59m to avoid ms-level timing race between test and service
+            const justWithin24h = new Date(Date.now() - 23 * 60 * 60 * 1000 - 59 * 60 * 1000).toISOString();
+            const closedIssues = [createIssue({ number: 1, closedAt: justWithin24h })];
             const report = service.generateReport([], closedIssues, [], [], 'day');
             assert.strictEqual(report.closedIssues.length, 1);
         });
@@ -293,9 +294,10 @@ suite('StandupReportService', () => {
             assert.strictEqual(report.closedIssues.length, 0);
         });
 
-        test('issue closed exactly 7 days ago is included in week report', () => {
-            const exactly7d = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
-            const closedIssues = [createIssue({ number: 1, closedAt: exactly7d })];
+        test('issue closed just within 7 days ago is included in week report', () => {
+            // Use 6d23h59m to avoid ms-level timing race between test and service
+            const justWithin7d = new Date(Date.now() - 6 * 24 * 60 * 60 * 1000 - 23 * 60 * 60 * 1000 - 59 * 60 * 1000).toISOString();
+            const closedIssues = [createIssue({ number: 1, closedAt: justWithin7d })];
             const report = service.generateReport([], closedIssues, [], [], 'week');
             assert.strictEqual(report.closedIssues.length, 1);
         });

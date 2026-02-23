@@ -2214,3 +2214,123 @@ All service constructors, tree providers, and webview classes that need to resol
 - Four bugs silently broke features for `.squad` users: agent folder discovery, log entry opening, decisions tree, and team tree log parsing
 - A public getter on `SquadDataProvider` is the cleanest way to propagate the value without adding constructor parameters to every consumer
 
+
+
+---
+
+# Park Status Indicators
+
+**Date:** 2026-02-23
+**Author:** Rusty (requested by Jeffrey T. Fritz)
+**Status:** Decided
+
+## Decision
+
+Remove all visible active/idle/working status indicators from the extension UI. The underlying data infrastructure (MemberStatus type, OrchestrationLogService, SquadDataProvider status computation) is preserved — we're parking the feature, not deleting it.
+
+## Rationale
+
+The idle/active status has been unreliable and a source of ongoing issues (false "working" indicators from stale logs, race conditions, etc.). Rather than continuing to fight it, we're parking the UI feature until the underlying status detection is more robust.
+
+## What Changed
+
+- **Tree view:** Members always show `person` icon. Description shows role only, no ⚡/💤 badges. Tooltip shows name + role, no status.
+- **Dashboard:** No "Working" summary card. Member cards show 👤 avatar (no ⚡). No status badge line.
+- **Status bar:** Shows `Squad: N members` instead of `N/M Active 🟢`. No health icons.
+- **Work details webview:** No member status badge in "Assigned To" section.
+
+## Re-enablement
+
+To bring status back, revert the UI-layer changes in:
+- `src/views/SquadTreeProvider.ts` (icon + description + tooltip)
+- `src/views/dashboard/htmlTemplate.ts` (summary card + member cards)
+- `src/views/SquadStatusBar.ts` (active count + health icon)
+- `src/views/WorkDetailsWebview.ts` (member status badge)
+
+The data is still flowing — `SquadMember.status` is still computed, `TeamSummary.activeMembers` is still calculated. Just not displayed.
+
+
+---
+
+### 2026-02-18: Copilot Chat Idle Status Fallback
+**By:** Rusty  
+**What:** Added fallback status detection when Squad runs in VS Code Copilot Chat without creating active-work marker files. SquadUI now checks if ANY orchestration log file was modified in the last 10 minutes — if so, members who appear in logs are marked as working.  
+**Why:** Issue #63 reported that subagents show "Idle" during Copilot Chat sessions because the Squad orchestrator doesn't write active-work marker files. This fallback detects orchestration activity via log file timestamps, providing a signal that work is happening even when the formal marker protocol isn't used. The 10-minute window (vs. 5-minute marker staleness) accounts for delayed log writes. Active-work markers remain the primary status indicator when present.
+
+
+---
+
+### 2026-02-23: User directive — Park active/idle status feature
+**By:** Jeffrey T. Fritz (via Copilot)
+**What:** Park the idle/active status indicator feature for squad agents. Remove any indication of 'active' status from the UI. The status detection has been unreliable and is not worth fighting right now.
+**Why:** User request — the feature has been a recurring source of bugs (#63, #67) and the team should stop investing in it for now.
+
+
+---
+
+# StandupReportWebview — HTML Injection Risk
+
+**Date:** 2026-02-23
+**Author:** Basher (Tester)
+**Status:** Proposed
+
+## Context
+
+`StandupReportWebview.ts` renders issue titles, labels, and decision titles directly into HTML via template literals without escaping. For example:
+
+```typescript
+`<span class="issue-number" onclick="openIssue('${issue.htmlUrl}')">#${issue.number}</span> ${issue.title}`
+```
+
+If an issue title contains `<script>` or `onclick=...` content, it would be injected into the webview DOM.
+
+## Risk Assessment
+
+**Low-medium.** VS Code webview panels have a Content Security Policy that blocks inline scripts, so a `<script>` tag wouldn't execute. However, crafted HTML attributes or CSS injection could still cause visual corruption or clickjacking within the panel.
+
+## Recommendation
+
+Escape HTML entities in all user-sourced strings before injection: `&`, `<`, `>`, `"`, `'`. A simple utility function like `escapeHtml()` applied to `issue.title`, `decision.title`, and `issue.assignee` would close this gap.
+
+This applies to both `StandupReportWebview.ts` and `formatAsMarkdown()` in `StandupReportService.ts` (markdown injection is lower risk but worth noting).
+
+
+---
+
+# Test Strategy for Status Override Logic
+
+**Date:** 2026-02-22
+**Author:** Basher
+**Issue:** #63
+
+## Decision
+
+For testing status override logic and completion signal detection, use synthetic `OrchestrationLogEntry` objects instead of temp files on disk.
+
+## Context
+
+Issue #63 involved two behavior changes:
+1. SquadDataProvider working-to-idle override now distinguishes between "no tasks at all" (Copilot Chat, stay working) vs "tasks but none active" (show idle)
+2. OrchestrationLogService now checks outcomes for completion signals when extracting tasks from relatedIssues
+
+Both behaviors required comprehensive test coverage.
+
+## Rationale
+
+- **Synthetic entries are faster** — No disk I/O, temp directory cleanup, or async file operations
+- **Synthetic entries are clearer** — Test data is inline with assertions, easier to read and maintain
+- **Follows existing patterns** — `orchestrationTaskPipeline.test.ts` already uses synthetic entries for unit testing getActiveTasks()
+- **Integration tests still use disk** — Where file parsing is the behavior under test (e.g., parseLogFile), we still use temp fixtures
+
+## Implementation
+
+- Import `OrchestrationLogEntry` type from `../../models`
+- Construct minimal entry objects with required fields: `timestamp`, `date`, `topic`, `participants`, `summary`
+- Add optional fields as needed: `relatedIssues`, `outcomes`
+- SquadDataProvider tests still use temp directories because they test the full member resolution flow including team.md parsing
+
+## When to Use Each Approach
+
+- **Synthetic entries:** Unit testing task extraction, member states, completion signals
+- **Temp files:** Integration testing file parsing, directory scanning, multi-file workflows
+

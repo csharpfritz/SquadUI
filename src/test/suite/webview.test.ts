@@ -136,7 +136,6 @@ class TestableWebviewContent {
     generateHtml(workDetails: WorkDetails): string {
         const { task, member } = workDetails;
         const statusBadge = this.getStatusBadge(task.status);
-        const memberStatusBadge = this.getMemberStatusBadge(member.status);
         const startedAt = task.startedAt ? task.startedAt.toLocaleString() : 'Not started';
         const completedAt = task.completedAt ? task.completedAt.toLocaleString() : '—';
 
@@ -169,7 +168,6 @@ class TestableWebviewContent {
         <div class="member-avatar">${this.getInitials(member.name)}</div>
         <div class="member-name">${this.escapeHtml(member.name)}</div>
         <div class="member-role">${this.escapeHtml(member.role)}</div>
-        <span class="badge ${memberStatusBadge.class}">${memberStatusBadge.label}</span>
     </div>
 </body>
 </html>`;
@@ -203,7 +201,7 @@ suite('WorkDetailsWebview Test Suite', () => {
         });
     });
 
-    suite('getMemberStatusBadge', () => {
+    suite('getMemberStatusBadge (retained for compatibility)', () => {
         test('returns Working badge for working status', () => {
             const badge = webviewContent.getMemberStatusBadge('working');
             assert.strictEqual(badge.label, 'Working');
@@ -336,12 +334,12 @@ suite('WorkDetailsWebview Test Suite', () => {
             assert.ok(html.includes('>DO<'));
         });
 
-        test('includes member status badge', () => {
+        test('does not include member status badge', () => {
             const workDetails = createTestWorkDetails();
             const html = webviewContent.generateHtml(workDetails);
 
-            assert.ok(html.includes('badge-working'));
-            assert.ok(html.includes('Working'));
+            assert.ok(!html.includes('badge-working'), 'Should not show member status badge');
+            assert.ok(!html.includes('badge-idle'), 'Should not show member status badge');
         });
 
         test('escapes HTML in task title', () => {
@@ -393,12 +391,11 @@ suite('WorkDetailsWebview Test Suite', () => {
             assert.ok(html.includes('Completed'));
         });
 
-        test('renders idle member status correctly', () => {
+        test('renders idle member without status badge', () => {
             const workDetails = createTestWorkDetails({ member: { status: 'idle' } });
             const html = webviewContent.generateHtml(workDetails);
 
-            assert.ok(html.includes('badge-idle'));
-            assert.ok(html.includes('Idle'));
+            assert.ok(!html.includes('badge-idle'), 'Should not show idle badge');
         });
     });
 

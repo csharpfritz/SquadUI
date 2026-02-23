@@ -4,7 +4,7 @@
  */
 
 import * as vscode from 'vscode';
-import { WorkDetails, TaskStatus, MemberStatus } from '../models';
+import { WorkDetails, TaskStatus } from '../models';
 import { stripMarkdownLinks, renderMarkdownLinks } from '../utils/markdownUtils';
 
 export class WorkDetailsWebview {
@@ -73,7 +73,6 @@ export class WorkDetailsWebview {
         const { task, member } = workDetails;
 
         const statusBadge = this.getStatusBadge(task.status);
-        const memberStatusBadge = this.getMemberStatusBadge(member.status);
         const startedAt = task.startedAt ? this.formatDate(task.startedAt) : 'Not started';
         const completedAt = task.completedAt ? this.formatDate(task.completedAt) : '—';
 
@@ -244,7 +243,6 @@ export class WorkDetailsWebview {
                 <div class="member-name">${renderMarkdownLinks(this.escapeHtml(member.name))}</div>
                 <div class="member-role">${this.escapeHtml(member.role)}</div>
             </div>
-            <span class="badge ${memberStatusBadge.class}">${memberStatusBadge.label}</span>
         </div>
     </div>
 </body>
@@ -259,15 +257,6 @@ export class WorkDetailsWebview {
                 return { label: 'In Progress', class: 'badge-in-progress' };
             case 'completed':
                 return { label: 'Completed', class: 'badge-completed' };
-        }
-    }
-
-    private getMemberStatusBadge(status: MemberStatus): { label: string; class: string } {
-        switch (status) {
-            case 'working':
-                return { label: 'Working', class: 'badge-working' };
-            case 'idle':
-                return { label: 'Idle', class: 'badge-idle' };
         }
     }
 

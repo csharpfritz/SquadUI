@@ -42,10 +42,10 @@ suite('SquadStatusBar', () => {
         statusBar.dispose();
     });
 
-    // ─── getHealthIcon Logic Tests ──────────────────────────────────────────
+    // ─── Member Count Display Tests ─────────────────────────────────────────
 
-    suite('getHealthIcon() — Health Status Logic', () => {
-        test('0 active members shows ⚪ (all idle)', async () => {
+    suite('Member Count Display', () => {
+        test('shows member count for multiple members', async () => {
             mockProvider.setMembers([
                 { name: 'Alice', role: 'Dev', status: 'idle' },
                 { name: 'Bob', role: 'Tester', status: 'idle' },
@@ -54,27 +54,25 @@ suite('SquadStatusBar', () => {
             await statusBar.update();
             const statusBarItem = (statusBar as any).statusBarItem;
 
-            assert.ok(statusBarItem.text.includes('⚪'), 'Should show ⚪ when all idle');
-            assert.ok(statusBarItem.text.includes('0/2 Active'), 'Should show 0/2 active');
+            assert.ok(statusBarItem.text.includes('2 members'), 'Should show 2 members');
+            // No health icons should be present
+            assert.ok(!statusBarItem.text.includes('⚪'), 'Should not show health icon');
+            assert.ok(!statusBarItem.text.includes('Active'), 'Should not show Active label');
         });
 
-        test('70%+ active shows 🟢 (high activity)', async () => {
+        test('shows singular "member" for one member', async () => {
             mockProvider.setMembers([
                 { name: 'Alice', role: 'Dev', status: 'working' },
-                { name: 'Bob', role: 'Tester', status: 'working' },
-                { name: 'Charlie', role: 'Designer', status: 'working' },
-                { name: 'Dave', role: 'PM', status: 'idle' },
             ]);
 
             await statusBar.update();
             const statusBarItem = (statusBar as any).statusBarItem;
 
-            // 3/4 = 75% active
-            assert.ok(statusBarItem.text.includes('🟢'), 'Should show 🟢 for 75% active');
-            assert.ok(statusBarItem.text.includes('3/4 Active'), 'Should show 3/4 active');
+            assert.ok(statusBarItem.text.includes('1 member'), 'Should show 1 member');
+            assert.ok(!statusBarItem.text.includes('1 members'), 'Should not show "1 members"');
         });
 
-        test('30-69% active shows 🟡 (moderate activity)', async () => {
+        test('does not show active/idle counts', async () => {
             mockProvider.setMembers([
                 { name: 'Alice', role: 'Dev', status: 'working' },
                 { name: 'Bob', role: 'Tester', status: 'working' },
@@ -85,132 +83,12 @@ suite('SquadStatusBar', () => {
             await statusBar.update();
             const statusBarItem = (statusBar as any).statusBarItem;
 
-            // 2/4 = 50% active
-            assert.ok(statusBarItem.text.includes('🟡'), 'Should show 🟡 for 50% active');
-            assert.ok(statusBarItem.text.includes('2/4 Active'), 'Should show 2/4 active');
-        });
-
-        test('1-29% active shows 🟠 (low activity)', async () => {
-            mockProvider.setMembers([
-                { name: 'Alice', role: 'Dev', status: 'working' },
-                { name: 'Bob', role: 'Tester', status: 'idle' },
-                { name: 'Charlie', role: 'Designer', status: 'idle' },
-                { name: 'Dave', role: 'PM', status: 'idle' },
-            ]);
-
-            await statusBar.update();
-            const statusBarItem = (statusBar as any).statusBarItem;
-
-            // 1/4 = 25% active
-            assert.ok(statusBarItem.text.includes('🟠'), 'Should show 🟠 for 25% active');
-            assert.ok(statusBarItem.text.includes('1/4 Active'), 'Should show 1/4 active');
-        });
-
-        test('exactly 70% active shows 🟢', async () => {
-            mockProvider.setMembers([
-                { name: 'A', role: 'Dev', status: 'working' },
-                { name: 'B', role: 'Dev', status: 'working' },
-                { name: 'C', role: 'Dev', status: 'working' },
-                { name: 'D', role: 'Dev', status: 'working' },
-                { name: 'E', role: 'Dev', status: 'working' },
-                { name: 'F', role: 'Dev', status: 'working' },
-                { name: 'G', role: 'Dev', status: 'working' },
-                { name: 'H', role: 'Dev', status: 'idle' },
-                { name: 'I', role: 'Dev', status: 'idle' },
-                { name: 'J', role: 'Dev', status: 'idle' },
-            ]);
-
-            await statusBar.update();
-            const statusBarItem = (statusBar as any).statusBarItem;
-
-            // 7/10 = 70% active (boundary)
-            assert.ok(statusBarItem.text.includes('🟢'), 'Should show 🟢 for exactly 70% active');
-            assert.ok(statusBarItem.text.includes('7/10 Active'), 'Should show 7/10 active');
-        });
-
-        test('exactly 30% active shows 🟡', async () => {
-            mockProvider.setMembers([
-                { name: 'A', role: 'Dev', status: 'working' },
-                { name: 'B', role: 'Dev', status: 'working' },
-                { name: 'C', role: 'Dev', status: 'working' },
-                { name: 'D', role: 'Dev', status: 'idle' },
-                { name: 'E', role: 'Dev', status: 'idle' },
-                { name: 'F', role: 'Dev', status: 'idle' },
-                { name: 'G', role: 'Dev', status: 'idle' },
-                { name: 'H', role: 'Dev', status: 'idle' },
-                { name: 'I', role: 'Dev', status: 'idle' },
-                { name: 'J', role: 'Dev', status: 'idle' },
-            ]);
-
-            await statusBar.update();
-            const statusBarItem = (statusBar as any).statusBarItem;
-
-            // 3/10 = 30% active (boundary)
-            assert.ok(statusBarItem.text.includes('🟡'), 'Should show 🟡 for exactly 30% active');
-            assert.ok(statusBarItem.text.includes('3/10 Active'), 'Should show 3/10 active');
-        });
-
-        test('29% active shows 🟠 (below 30% threshold)', async () => {
-            mockProvider.setMembers([
-                { name: 'A', role: 'Dev', status: 'working' },
-                { name: 'B', role: 'Dev', status: 'working' },
-                { name: 'C', role: 'Dev', status: 'idle' },
-                { name: 'D', role: 'Dev', status: 'idle' },
-                { name: 'E', role: 'Dev', status: 'idle' },
-                { name: 'F', role: 'Dev', status: 'idle' },
-                { name: 'G', role: 'Dev', status: 'idle' },
-            ]);
-
-            await statusBar.update();
-            const statusBarItem = (statusBar as any).statusBarItem;
-
-            // 2/7 ≈ 28.6% active
-            assert.ok(statusBarItem.text.includes('🟠'), 'Should show 🟠 for 28.6% active');
-        });
-
-        test('69% active shows 🟡 (below 70% threshold)', async () => {
-            mockProvider.setMembers([
-                { name: 'A', role: 'Dev', status: 'working' },
-                { name: 'B', role: 'Dev', status: 'working' },
-                { name: 'C', role: 'Dev', status: 'working' },
-                { name: 'D', role: 'Dev', status: 'working' },
-                { name: 'E', role: 'Dev', status: 'working' },
-                { name: 'F', role: 'Dev', status: 'idle' },
-                { name: 'G', role: 'Dev', status: 'idle' },
-                { name: 'H', role: 'Dev', status: 'idle' },
-            ]);
-
-            await statusBar.update();
-            const statusBarItem = (statusBar as any).statusBarItem;
-
-            // 5/8 = 62.5% active
-            assert.ok(statusBarItem.text.includes('🟡'), 'Should show 🟡 for 62.5% active');
-        });
-
-        test('single working member shows 🟢 (100% active)', async () => {
-            mockProvider.setMembers([
-                { name: 'Alice', role: 'Dev', status: 'working' },
-            ]);
-
-            await statusBar.update();
-            const statusBarItem = (statusBar as any).statusBarItem;
-
-            // 1/1 = 100% active
-            assert.ok(statusBarItem.text.includes('🟢'), 'Should show 🟢 for 100% active');
-            assert.ok(statusBarItem.text.includes('1/1 Active'), 'Should show 1/1 active');
-        });
-
-        test('single idle member shows ⚪ (0% active)', async () => {
-            mockProvider.setMembers([
-                { name: 'Alice', role: 'Dev', status: 'idle' },
-            ]);
-
-            await statusBar.update();
-            const statusBarItem = (statusBar as any).statusBarItem;
-
-            // 0/1 = 0% active
-            assert.ok(statusBarItem.text.includes('⚪'), 'Should show ⚪ for 0% active');
-            assert.ok(statusBarItem.text.includes('0/1 Active'), 'Should show 0/1 active');
+            assert.ok(!statusBarItem.text.includes('Active'), 'Should not show Active');
+            assert.ok(!statusBarItem.text.includes('🟢'), 'Should not show health icon');
+            assert.ok(!statusBarItem.text.includes('🟡'), 'Should not show health icon');
+            assert.ok(!statusBarItem.text.includes('🟠'), 'Should not show health icon');
+            assert.ok(!statusBarItem.text.includes('⚪'), 'Should not show health icon');
+            assert.ok(statusBarItem.text.includes('4 members'), 'Should show total member count');
         });
     });
 
@@ -261,7 +139,7 @@ suite('SquadStatusBar', () => {
             assert.ok(statusBarItem.text.includes('Squad:'), 'Should include Squad: label');
         });
 
-        test('shows active count before total count', async () => {
+        test('shows member count', async () => {
             mockProvider.setMembers([
                 { name: 'Alice', role: 'Dev', status: 'working' },
                 { name: 'Bob', role: 'Tester', status: 'idle' },
@@ -271,16 +149,16 @@ suite('SquadStatusBar', () => {
             await statusBar.update();
             const statusBarItem = (statusBar as any).statusBarItem;
 
-            assert.ok(statusBarItem.text.includes('2/3'), 'Should show 2/3 format');
+            assert.ok(statusBarItem.text.includes('3 members'), 'Should show 3 members');
         });
     });
 
     // ─── Tooltip Tests ──────────────────────────────────────────────────────
 
     suite('Tooltip Content', () => {
-        test('tooltip includes working members', async () => {
+        test('tooltip includes member names and roles', async () => {
             mockProvider.setMembers([
-                { name: 'Alice', role: 'Dev', status: 'working', currentTask: { title: 'Fix bug #42' } } as any,
+                { name: 'Alice', role: 'Dev', status: 'working' },
                 { name: 'Bob', role: 'Tester', status: 'idle' },
             ]);
 
@@ -288,11 +166,11 @@ suite('SquadStatusBar', () => {
             const statusBarItem = (statusBar as any).statusBarItem;
             const tooltip = statusBarItem.tooltip as vscode.MarkdownString;
 
-            assert.ok(tooltip.value.includes('Alice'), 'Tooltip should include working member');
-            assert.ok(tooltip.value.includes('Fix bug #42'), 'Tooltip should include current task');
+            assert.ok(tooltip.value.includes('Alice'), 'Tooltip should include member name');
+            assert.ok(tooltip.value.includes('Bob'), 'Tooltip should include member name');
         });
 
-        test('tooltip shows idle count', async () => {
+        test('tooltip does not show working/idle breakdown', async () => {
             mockProvider.setMembers([
                 { name: 'Alice', role: 'Dev', status: 'working' },
                 { name: 'Bob', role: 'Tester', status: 'idle' },
@@ -303,7 +181,8 @@ suite('SquadStatusBar', () => {
             const statusBarItem = (statusBar as any).statusBarItem;
             const tooltip = statusBarItem.tooltip as vscode.MarkdownString;
 
-            assert.ok(tooltip.value.includes('**Idle:** 2'), 'Tooltip should show idle count');
+            assert.ok(!tooltip.value.includes('**Idle:**'), 'Tooltip should not show idle count');
+            assert.ok(!tooltip.value.includes('**Working:**'), 'Tooltip should not show working section');
         });
 
         test('tooltip is MarkdownString', async () => {

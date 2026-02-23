@@ -205,13 +205,13 @@ suite('TeamTreeProvider Test Suite', () => {
     });
 
     suite('tree item icons', () => {
-        test('working member has sync~spin icon', async () => {
+        test('member has person icon regardless of status', async () => {
             const children = await provider.getChildren();
             const danny = children.find((c) => c.label === 'Danny');
 
             assert.ok(danny);
             assert.ok(danny.iconPath instanceof vscode.ThemeIcon);
-            assert.strictEqual((danny.iconPath as vscode.ThemeIcon).id, 'sync~spin');
+            assert.strictEqual((danny.iconPath as vscode.ThemeIcon).id, 'person');
         });
 
         test('idle member has person icon', async () => {
@@ -243,7 +243,7 @@ suite('TeamTreeProvider Test Suite', () => {
     });
 
     suite('tree item descriptions', () => {
-        test('member description includes role and status', async () => {
+        test('member description includes role without status badge', async () => {
             const children = await provider.getChildren();
             const danny = children.find((c) => c.label === 'Danny');
 
@@ -251,8 +251,9 @@ suite('TeamTreeProvider Test Suite', () => {
             assert.ok(danny.description);
             const desc = String(danny.description);
             assert.ok(desc.includes('Lead'));
-            // Check for status badge (⚡) or legacy 'working' text
-            assert.ok(desc.includes('⚡') || desc.includes('working'), `Description "${desc}" should indicate working status`);
+            // Status badges should NOT be present
+            assert.ok(!desc.includes('⚡'), `Description "${desc}" should not include status badge`);
+            assert.ok(!desc.includes('💤'), `Description "${desc}" should not include status badge`);
         });
 
         test('task description shows status', async () => {

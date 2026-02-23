@@ -120,16 +120,13 @@ export class TeamTreeProvider implements vscode.TreeDataProvider<SquadTreeItem> 
                 : lowerName === 'ralph' ? 'eye'
                 : isCopilot ? 'robot'
                 : undefined;
-            item.iconPath = new vscode.ThemeIcon(
-                specialIcon ?? (member.status === 'working' ? 'sync~spin' : 'person')
-            );
+            item.iconPath = new vscode.ThemeIcon(specialIcon ?? 'person');
             
-            // Build description with status badge and issue count
-            const statusBadge = member.status === 'working' ? '⚡' : '💤';
+            // Build description with role and issue count
             const issueCount = await this.getIssueCount(member.name);
             const issueText = issueCount > 0 ? ` • ${issueCount} issue${issueCount > 1 ? 's' : ''}` : '';
             
-            item.description = `${statusBadge} ${member.role}${issueText}`;
+            item.description = `${member.role}${issueText}`;
             item.tooltip = this.getMemberTooltip(member);
 
             if (!isCopilot) {
@@ -276,11 +273,7 @@ export class TeamTreeProvider implements vscode.TreeDataProvider<SquadTreeItem> 
     private getMemberTooltip(member: SquadMember): vscode.MarkdownString {
         const md = new vscode.MarkdownString();
         md.appendMarkdown(`**${stripMarkdownLinks(member.name)}**\n\n`);
-        md.appendMarkdown(`Role: ${member.role}\n\n`);
-        md.appendMarkdown(`Status: ${member.status}`);
-        if (member.currentTask) {
-            md.appendMarkdown(`\n\nCurrent Task: ${member.currentTask.title}`);
-        }
+        md.appendMarkdown(`Role: ${member.role}`);
         return md;
     }
 

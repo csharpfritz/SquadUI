@@ -169,22 +169,6 @@ suite('WorkDetailsWebview — Edge Cases', () => {
         });
     });
 
-    // ─── getMemberStatusBadge() ─────────────────────────────────────────
-
-    suite('getMemberStatusBadge()', () => {
-        test('all valid statuses return badge objects', () => {
-            const getMemberStatusBadge = (webview as any).getMemberStatusBadge.bind(webview);
-
-            const working = getMemberStatusBadge('working');
-            assert.strictEqual(working.label, 'Working');
-            assert.strictEqual(working.class, 'badge-working');
-
-            const idle = getMemberStatusBadge('idle');
-            assert.strictEqual(idle.label, 'Idle');
-            assert.strictEqual(idle.class, 'badge-idle');
-        });
-    });
-
     // ─── dispose() ──────────────────────────────────────────────────────
 
     suite('dispose()', () => {

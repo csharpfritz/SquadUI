@@ -247,13 +247,13 @@ suite('Acceptance: Orchestration Logs → Tree View', () => {
     });
 
     suite('member item rendering', () => {
-        test('working member (Carol) has sync~spin icon', async () => {
+        test('all members have person icon (status not shown)', async () => {
             const members = await treeProvider.getChildren();
             const carol = members.find(r => r.label === 'Carol');
 
             assert.ok(carol);
             assert.ok(carol.iconPath instanceof vscode.ThemeIcon);
-            assert.strictEqual((carol.iconPath as vscode.ThemeIcon).id, 'sync~spin');
+            assert.strictEqual((carol.iconPath as vscode.ThemeIcon).id, 'person');
         });
 
         test('idle members (Alice, Bob) have person icon', async () => {
@@ -270,14 +270,15 @@ suite('Acceptance: Orchestration Logs → Tree View', () => {
             }
         });
 
-        test('member descriptions include role and status', async () => {
+        test('member descriptions include role without status', async () => {
             const members = await treeProvider.getChildren();
             const carol = members.find(r => r.label === 'Carol');
 
             assert.ok(carol);
             const desc = String(carol.description);
             assert.ok(desc.includes('Tester'), 'Description should include role');
-            assert.ok(desc.includes('⚡') || desc.includes('working'), 'Description should include status');
+            assert.ok(!desc.includes('⚡'), 'Description should not include status badge');
+            assert.ok(!desc.includes('💤'), 'Description should not include status badge');
         });
 
         test('member tooltips are MarkdownStrings', async () => {

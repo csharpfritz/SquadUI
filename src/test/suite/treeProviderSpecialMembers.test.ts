@@ -226,8 +226,8 @@ suite('TeamTreeProvider — Special Members', () => {
         });
     });
 
-    suite('status badges in description', () => {
-        test('working member gets ⚡ badge', async () => {
+    suite('no status badges in description', () => {
+        test('working member does not get ⚡ badge', async () => {
             const members: SquadMember[] = [
                 { name: 'Alice', role: 'Dev', status: 'working' },
             ];
@@ -238,10 +238,10 @@ suite('TeamTreeProvider — Special Members', () => {
             const alice = children.find(c => c.label === 'Alice');
 
             assert.ok(alice);
-            assert.ok(String(alice!.description).includes('⚡'));
+            assert.ok(!String(alice!.description).includes('⚡'));
         });
 
-        test('idle member gets 💤 badge', async () => {
+        test('idle member does not get 💤 badge', async () => {
             const members: SquadMember[] = [
                 { name: 'Bob', role: 'Tester', status: 'idle' },
             ];
@@ -252,7 +252,7 @@ suite('TeamTreeProvider — Special Members', () => {
             const bob = children.find(c => c.label === 'Bob');
 
             assert.ok(bob);
-            assert.ok(String(bob!.description).includes('💤'));
+            assert.ok(!String(bob!.description).includes('💤'));
         });
     });
 

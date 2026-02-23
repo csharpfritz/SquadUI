@@ -143,3 +143,14 @@
 
 📌 Team update (2026-02-18): Velocity chart uses all logs; status stays orchestration-only — DashboardDataBuilder now accepts optional `velocityTasks` parameter (9th arg). Velocity timeline uses `velocityTasks ?? tasks` (all logs or fallback). Activity swimlanes still use orchestration-only `tasks`. Architectural principle: velocity = all work signals; status = orchestration-only to prevent false "working" indicators from old session logs. — decided by Linus
 
+### Status Indicators Parked (2026-02-23)
+- **Directive:** Jeffrey T. Fritz asked to park the idle/active status feature — remove all visible status indicators from the UI.
+- **Tree view:** Removed `sync~spin` icon for working members (all members now use `person` icon). Removed ⚡/💤 status badges from member descriptions. Removed status line from member tooltips.
+- **Dashboard:** Removed "Working" summary card (activeMembers count). Removed status-based member avatar icon (⚡ vs 👤). Removed "⚡ Working" / "💤 Idle" status badge from member cards.
+- **Status bar:** Changed from `N/M Active 🟢` to simple `N members` display. Removed health icons (🟢🟡🟠⚪) and active/idle breakdown from tooltip.
+- **Work details webview:** Removed member status badge (`badge-working`/`badge-idle`) from the "Assigned To" section.
+- **Infrastructure preserved:** `MemberStatus` type, `OrchestrationLogService`, `SquadDataProvider` status computation, `TeamMemberOverview.status`, `TeamSummary.activeMembers` — all kept intact. Only UI rendering was changed.
+- **Tests updated:** 8 test files updated to match new behavior. All 1039 tests passing.
+- **Key pattern:** When parking a feature, strip the UI layer only — leave the data pipeline intact so re-enabling is a clean diff.
+📌 Team update (2026-02-23): Status indicators parked — all visible active/idle/working indicators removed from tree view, dashboard, status bar, and work details webview. Data infrastructure (MemberStatus, OrchestrationLogService, SquadDataProvider status computation) preserved for future re-enablement. — decided by Jeffrey T. Fritz
+

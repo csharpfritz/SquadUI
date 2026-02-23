@@ -118,7 +118,6 @@ class TestableWebviewRenderer {
     generateHtml(workDetails: WorkDetails): string {
         const { task, member } = workDetails;
         const statusBadge = this.getStatusBadge(task.status);
-        const memberStatusBadge = this.getMemberStatusBadge(member.status);
         const startedAt = task.startedAt ? task.startedAt.toLocaleString() : 'Not started';
         const completedAt = task.completedAt ? task.completedAt.toLocaleString() : '—';
 
@@ -147,7 +146,6 @@ class TestableWebviewRenderer {
         <div class="member-avatar">${this.getInitials(member.name)}</div>
         <div class="member-name">${this.escapeHtml(member.name)}</div>
         <div class="member-role">${this.escapeHtml(member.role)}</div>
-        <span class="badge ${memberStatusBadge.class}">${memberStatusBadge.label}</span>
     </div>
 </body>
 </html>`;
@@ -240,11 +238,11 @@ suite('E2E MVP Validation (Issue #14)', () => {
             assert.deepStrictEqual(treeLabels, memberNames);
         });
 
-        test('working member (Carol) gets sync~spin icon', async () => {
+        test('working member (Carol) gets person icon (status not shown)', async () => {
             const members = await treeProvider.getChildren();
             const carol = members.find(r => r.label === 'Carol')!;
             assert.ok(carol.iconPath instanceof vscode.ThemeIcon);
-            assert.strictEqual((carol.iconPath as vscode.ThemeIcon).id, 'sync~spin');
+            assert.strictEqual((carol.iconPath as vscode.ThemeIcon).id, 'person');
         });
 
         test('idle members get person icon (not spinning)', async () => {
@@ -260,12 +258,13 @@ suite('E2E MVP Validation (Issue #14)', () => {
             }
         });
 
-        test('member descriptions show role and status', async () => {
+        test('member descriptions show role without status', async () => {
             const members = await treeProvider.getChildren();
             const carol = members.find(r => r.label === 'Carol')!;
             const desc = String(carol.description);
             assert.ok(desc.includes('Tester'), 'Should include role');
-            assert.ok(desc.includes('⚡') || desc.includes('working'), 'Should include status');
+            assert.ok(!desc.includes('⚡'), 'Should not include status badge');
+            assert.ok(!desc.includes('💤'), 'Should not include status badge');
         });
 
         test('member status correctly reflects working vs idle from log data', async () => {
@@ -436,13 +435,12 @@ suite('E2E MVP Validation (Issue #14)', () => {
             assert.ok(html.includes('Tester'));
         });
 
-        test('webview HTML contains member status badge', async () => {
+        test('webview HTML does not contain member status badge', async () => {
             const details = await dataProvider.getWorkDetails('12');
             assert.ok(details);
             const html = renderer.generateHtml(details!);
-            const badge = renderer.getMemberStatusBadge(details!.member.status);
-            assert.ok(html.includes(badge.class));
-            assert.ok(html.includes(badge.label));
+            assert.ok(!html.includes('badge-working'), 'Should not include member status badge');
+            assert.ok(!html.includes('badge-idle'), 'Should not include member status badge');
         });
 
         test('markdown tables render as HTML tables, not raw pipes', () => {

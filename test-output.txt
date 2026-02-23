@@ -1,30 +1,57 @@
 
-> squadui@0.5.1 test
+> squadui@0.8.0 test
 > npm run compile && node ./out/test/runTest.js
 
 
-> squadui@0.5.1 compile
+> squadui@0.8.0 compile
 > tsc -p ./
 
 - Resolving version...
-Γ£ö Validated version: 1.109.3
-Γ£ö Found existing install in D:\SquadUI\.vscode-test\vscode-win32-x64-archive-1.109.3
+Γ£ö Validated version: 1.109.5
+Γ£ö Found existing install in C:\dev\SquadUI\.vscode-test\vscode-win32-x64-archive-1.109.5
 
-[main 2026-02-15T17:59:21.280Z] Error: Error mutex already exists
-    at id.S (file:///D:/SquadUI/.vscode-test/vscode-win32-x64-archive-1.109.3/b6a47e94e3/resources/app/out/main.js:145:18925)
-[main 2026-02-15T17:59:21.297Z] update#setState disabled
-[main 2026-02-15T17:59:21.298Z] update#ctor - updates are disabled by the environment
-Started local extension host with pid 32140.
-Loading development extension at d:\SquadUI
+[main 2026-02-23T14:20:58.179Z] Error: Error mutex already exists
+    at id.S (file:///C:/dev/SquadUI/.vscode-test/vscode-win32-x64-archive-1.109.5/072586267e/resources/app/out/main.js:145:18925)
+[main 2026-02-23T14:20:58.195Z] update#setState disabled
+[main 2026-02-23T14:20:58.196Z] update#ctor - updates are disabled by the environment
+Started local extension host with pid 77280.
+Loading development extension at c:\dev\SquadUI
 MCP Registry configured: https://api.mcp.github.com
 Settings Sync: Account status changed from uninitialized to unavailable
 [0m[0m
+[0m  WorkDetailsWebview ΓÇö Edge Cases[0m
+[0m    getInitials()[0m
+    [32m  Γ£ö[0m[90m handles hyphenated names[0m
+    [32m  Γ£ö[0m[90m handles single character name[0m
+    [32m  Γ£ö[0m[90m handles all uppercase name[0m
+    [32m  Γ£ö[0m[90m handles lowercase name (uppercases first chars)[0m
+[0m    renderInline()[0m
+    [32m  Γ£ö[0m[90m handles text with no formatting[0m
+    [32m  Γ£ö[0m[90m handles multiple bold sections[0m
+    [32m  Γ£ö[0m[90m handles mixed bold and code[0m
+    [32m  Γ£ö[0m[90m handles unclosed bold (no match)[0m
+    [32m  Γ£ö[0m[90m handles unclosed inline code (no match)[0m
+[0m    renderTable()[0m
+    [32m  Γ£ö[0m[90m returns empty string for empty lines array[0m
+    [32m  Γ£ö[0m[90m handles single row table (no separator)[0m
+    [32m  Γ£ö[0m[90m handles table with fewer data cells than header cells[0m
+    [32m  Γ£ö[0m[90m handles alignment separator with colons[0m
+[0m    renderMarkdown()[0m
+    [32m  Γ£ö[0m[90m handles empty string[0m
+    [32m  Γ£ö[0m[90m handles string with only newlines[0m
+    [32m  Γ£ö[0m[90m handles text with HTML entities that need escaping[0m
+[0m    getStatusBadge()[0m
+    [32m  Γ£ö[0m[90m all valid statuses return badge objects[0m
+[0m    getMemberStatusBadge()[0m
+    [32m  Γ£ö[0m[90m all valid statuses return badge objects[0m
+[0m    dispose()[0m
+    [32m  Γ£ö[0m[90m dispose is safe to call multiple times[0m
 [0m  WorkDetailsWebview Test Suite[0m
 [0m    getStatusBadge[0m
     [32m  Γ£ö[0m[90m returns Pending badge for pending status[0m
     [32m  Γ£ö[0m[90m returns In Progress badge for in_progress status[0m
     [32m  Γ£ö[0m[90m returns Completed badge for completed status[0m
-[0m    getMemberStatusBadge[0m
+[0m    getMemberStatusBadge (retained for compatibility)[0m
     [32m  Γ£ö[0m[90m returns Working badge for working status[0m
     [32m  Γ£ö[0m[90m returns Idle badge for idle status[0m
 [0m    getInitials[0m
@@ -47,14 +74,14 @@ Settings Sync: Account status changed from uninitialized to unavailable
     [32m  Γ£ö[0m[90m includes member name[0m
     [32m  Γ£ö[0m[90m includes member role[0m
     [32m  Γ£ö[0m[90m includes member initials[0m
-    [32m  Γ£ö[0m[90m includes member status badge[0m
+    [32m  Γ£ö[0m[90m does not include member status badge[0m
     [32m  Γ£ö[0m[90m escapes HTML in task title[0m
     [32m  Γ£ö[0m[90m shows Not started when startedAt is undefined[0m
     [32m  Γ£ö[0m[90m shows em dash when completedAt is undefined[0m
     [32m  Γ£ö[0m[90m includes correct HTML structure[0m
     [32m  Γ£ö[0m[90m renders pending status correctly[0m
     [32m  Γ£ö[0m[90m renders completed status correctly[0m
-    [32m  Γ£ö[0m[90m renders idle member status correctly[0m
+    [32m  Γ£ö[0m[90m renders idle member without status badge[0m
 [0m    renderMarkdown[0m
     [32m  Γ£ö[0m[90m converts markdown table to HTML table[0m
     [32m  Γ£ö[0m[90m converts bold text[0m
@@ -79,23 +106,54 @@ Settings Sync: Account status changed from uninitialized to unavailable
 [0m    Slug Generation[0m
     [36m  - handles member names with special characters[0m
     [36m  - handles member names with spaces[0m
+[0m  UpgradeSquadCommand[0m
+[0m    Registration[0m
+    [32m  Γ£ö[0m[90m registerUpgradeSquadCommand returns a Disposable[0m
+    [36m  - upgradeSquad command is registered when extension is active[0m
+[0m    hasTeam context key detection[0m
+    [32m  Γ£ö[0m[90m detects hasTeam as true when .ai-team/team.md exists[0m
+    [32m  Γ£ö[0m[90m detects hasTeam as false when .ai-team/ does not exist[0m
+    [32m  Γ£ö[0m[90m detects hasTeam as false when .ai-team/ exists but team.md is missing[0m
+[0m  TeamTreeProvider ΓÇö Special Members[0m
+[0m    sort order[0m
+    [32m  Γ£ö[0m[90m regular members appear before @copilot[0m
+    [32m  Γ£ö[0m[90m @copilot appears before scribe and ralph[0m
+    [32m  Γ£ö[0m[90m full ordering: regular ΓåÆ @copilot ΓåÆ scribe/ralph[0m
+[0m    special icons[0m
+    [32m  Γ£ö[0m[90m scribe has edit icon[0m
+    [32m  Γ£ö[0m[90m ralph has eye icon[0m
+    [32m  Γ£ö[0m[90m @copilot has robot icon[0m
+[0m    collapsibility[0m
+    [32m  Γ£ö[0m[90m scribe is not collapsible[0m
+    [32m  Γ£ö[0m[90m ralph is not collapsible[0m
+    [32m  Γ£ö[0m[90m @copilot is collapsible (can have issues)[0m
+[0m    commands[0m
+    [32m  Γ£ö[0m[90m @copilot does NOT have viewCharter command[0m
+    [32m  Γ£ö[0m[90m regular members have viewCharter command[0m
+    [32m  Γ£ö[0m[90m scribe does NOT have viewCharter command (no children = no command needed)[0m
+[0m    no status badges in description[0m
+    [32m  Γ£ö[0m[90m working member does not get ΓÜí badge[0m
+    [32m  Γ£ö[0m[90m idle member does not get ≡ƒÆñ badge[0m
+[0m    markdown links in member names[0m
+    [32m  Γ£ö[0m[90m markdown link in name is stripped for display[0m
 [0m  TeamTreeProvider Test Suite[0m
 [0m    getChildren[0m
     [32m  Γ£ö[0m[90m returns squad members at root level (no element)[0m
-    [32m  Γ£ö[0m[90m root items include members and Recent Activity section[0m
+    [32m  Γ£ö[0m[90m root items are all members (no section nodes)[0m
     [32m  Γ£ö[0m[90m root member items are collapsible[0m
     [32m  Γ£ö[0m[90m returns tasks for a member element[0m
     [32m  Γ£ö[0m[90m returns multiple tasks for member with multiple assignments[0m
     [32m  Γ£ö[0m[90m returns empty array for task element[0m
     [32m  Γ£ö[0m[90m returns empty array for member with no memberId[0m
+    [32m  Γ£ö[0m[90m deduplicates GitHub issues that already appear as tasks[0m
 [0m    getTreeItem[0m
     [32m  Γ£ö[0m[90m returns the element unchanged[0m
 [0m    tree item icons[0m
-    [32m  Γ£ö[0m[90m working member has sync~spin icon[0m
+    [32m  Γ£ö[0m[90m member has person icon regardless of status[0m
     [32m  Γ£ö[0m[90m idle member has person icon[0m
-    [32m  Γ£ö[0m[90m tasks have tasklist icon[0m
+    [32m  Γ£ö[0m[90m tasks have status-specific icon[0m
 [0m    tree item descriptions[0m
-    [32m  Γ£ö[0m[90m member description includes role and status[0m
+    [32m  Γ£ö[0m[90m member description includes role without status badge[0m
     [32m  Γ£ö[0m[90m task description shows status[0m
 [0m    tree item commands[0m
     [32m  Γ£ö[0m[90m task items have showWorkDetails command[0m
@@ -105,17 +163,12 @@ Settings Sync: Account status changed from uninitialized to unavailable
 [0m    tooltips[0m
     [32m  Γ£ö[0m[90m member tooltip is a MarkdownString[0m
     [32m  Γ£ö[0m[90m task tooltip is a MarkdownString[0m
-[0m    Recent Activity Section (for future feature)[0m
-    [32m  Γ£ö[0m[90m getChildren at root returns Recent Activity section (when implemented)[0m
-    [32m  Γ£ö[0m[90m Recent Activity section is collapsible (when implemented)[0m
-    [36m  - expanding Recent Activity returns log entry items (when implemented)[0m
-    [36m  - log entry items have correct labels with date and topic (when implemented)[0m
-    [36m  - log entry items are not collapsible (when implemented)[0m
-    [36m  - log entry items have history icon (when implemented)[0m
-    [36m  - log entry items have tooltip with summary (when implemented)[0m
-    [36m  - log entry items have command to open log file (when implemented)[0m
-    [36m  - Recent Activity shows only recent logs (last 7 days) (when implemented)[0m
-    [36m  - Recent Activity shows empty state when no logs (when implemented)[0m
+[0m    Per-Member Activity (log entries under members)[0m
+    [32m  Γ£ö[0m[90m member children include log-entry items when logs exist[0m
+    [32m  Γ£ö[0m[90m log-entry items are not collapsible[0m
+    [32m  Γ£ö[0m[90m log-entry items have history icon[0m
+    [32m  Γ£ö[0m[90m no Recent Activity section node at root[0m
+    [32m  Γ£ö[0m[90m root returns only member items[0m
 [0m  TeamMdService[0m
 [0m    parseTeamMd()[0m
     [32m  Γ£ö[0m[90m parses the standard fixture team.md[0m
@@ -157,36 +210,170 @@ Settings Sync: Account status changed from uninitialized to unavailable
     [32m  Γ£ö[0m[90m extracts inline capability format[0m
     [32m  Γ£ö[0m[90m extracts detailed (bulleted) capability format[0m
     [32m  Γ£ö[0m[90m combines auto-assign with capabilities[0m
+[0m    parseContent() ΓÇö Roster heading fallback[0m
+    [32m  Γ£ö[0m[90m parses members when heading is ## Roster instead of ## Members[0m
+    [32m  Γ£ö[0m[90m parses members with ## Roster under # Team Roster title[0m
+[0m    parseContent() ΓÇö Coding Agent section[0m
+    [32m  Γ£ö[0m[90m parses @copilot from Coding Agent section[0m
+    [32m  Γ£ö[0m[90m includes both Members table and Coding Agent entries[0m
+    [32m  Γ£ö[0m[90m handles Coding Agent section without Members section[0m
+    [32m  Γ£ö[0m[90m handles empty Coding Agent table[0m
+    [32m  Γ£ö[0m[90m does not duplicate members if in both sections[0m
 [0m    parseContent() ΓÇö edge cases[0m
     [32m  Γ£ö[0m[90m handles team.md with only a title[0m
     [32m  Γ£ö[0m[90m handles members with special characters in names[0m
     [32m  Γ£ö[0m[90m handles table with extra whitespace in cells[0m
     [32m  Γ£ö[0m[90m handles large team roster[0m
+    [32m  Γ£ö[0m[90m parses Ralph with Monitor status from Members table[0m
+[0m    parseContent() ΓÇö cross-platform line endings (CRLF)[0m
+    [32m  Γ£ö[0m[90m parses members table with Windows line endings[0m
+    [32m  Γ£ö[0m[90m parses Roster heading with CRLF line endings[0m
+    [32m  Γ£ö[0m[90m extracts repository and owner from CRLF content[0m
+    [32m  Γ£ö[0m[90m extracts copilot capabilities from CRLF content[0m
+    [32m  Γ£ö[0m[90m handles mixed LF and CRLF in same file[0m
+[0m  Team Display Resilience[0m
+[0m    getSquadMembers() with valid team.md[0m
+    [32m  Γ£ö[0m[90m returns members when team.md has valid Members table[0m
+[0m    getSquadMembers() with team.md missing Members section[0m
+    [32m  Γ£ö[0m[90m returns empty when team.md exists but has no Members section[0m[31m (1505ms)[0m
+[0m    getSquadMembers() retry on empty roster[0m
+    [32m  Γ£ö[0m[90m retries when team.md exists but Members is empty, succeeds on retry[0m[31m (1504ms)[0m
+[0m    getSquadMembers() fallback to log participants[0m
+    [32m  Γ£ö[0m[90m falls back to log-participant discovery when team.md is missing[0m
+[0m    getSquadMembers() no retry when team.md missing[0m
+    [32m  Γ£ö[0m[90m does NOT retry when team.md genuinely does not exist[0m
+[0m    FileWatcherService watch pattern[0m
+    [32m  Γ£ö[0m[90m WATCH_PATTERN includes .ai-team[0m
+    [32m  Γ£ö[0m[90m WATCH_PATTERN watches .md files[0m
+    [32m  Γ£ö[0m[90m start() creates watcher with correct glob pattern[0m
+[0m    TeamTreeProvider with empty members[0m
+    [32m  Γ£ö[0m[90m getSquadMemberItems returns empty array when no members exist[0m
+    [32m  Γ£ö[0m[90m does not crash when members list is empty[0m
+    [32m  Γ£ö[0m[90m getTreeItem works even with empty tree[0m
+[0m    Cache invalidation after refresh()[0m
+    [32m  Γ£ö[0m[90m after refresh(), getSquadMembers() re-reads from disk[0m
+    [32m  Γ£ö[0m[90m refresh() invalidates all cache fields[0m
+[0m  StandupReportService[0m
+[0m    generateReport()[0m
+    [32m  Γ£ö[0m[90m returns empty report with no data[0m
+    [32m  Γ£ö[0m[90m counts closed issues in period[0m
+    [32m  Γ£ö[0m[90m counts new issues in period[0m
+    [32m  Γ£ö[0m[90m identifies blocking issues[0m
+    [32m  Γ£ö[0m[90m filters decisions by period[0m
+    [32m  Γ£ö[0m[90m suggests next steps sorted by priority[0m
+    [32m  Γ£ö[0m[90m excludes blockers from next steps[0m
+    [32m  Γ£ö[0m[90m limits next steps to 5 items[0m
+    [32m  Γ£ö[0m[90m filters log entries by period[0m
+[0m    formatAsMarkdown()[0m
+    [32m  Γ£ö[0m[90m generates valid markdown[0m
+    [32m  Γ£ö[0m[90m handles weekly report[0m
+[0m    Edge Cases ΓÇö empty & missing data[0m
+    [32m  Γ£ö[0m[90m closed issues without closedAt are excluded[0m
+    [32m  Γ£ö[0m[90m decisions without date are excluded[0m
+    [32m  Γ£ö[0m[90m log entries with unparseable date are excluded[0m
+    [32m  Γ£ö[0m[90m all arrays empty produces a complete report shape[0m
+    [32m  Γ£ö[0m[90m open issues with no labels do not crash blocking check[0m
+[0m    Edge Cases ΓÇö date boundaries[0m
+    [32m  Γ£ö[0m[90m issue closed exactly 24h ago is included in day report[0m
+    [32m  Γ£ö[0m[90m issue closed just past 24h ago is excluded from day report[0m
+    [32m  Γ£ö[0m[90m issue closed exactly 7 days ago is included in week report[0m
+    [32m  Γ£ö[0m[90m default period is day[0m
+[0m    Edge Cases ΓÇö parseDate()[0m
+    [32m  Γ£ö[0m[90m parses YYYY-MM-DD format[0m
+    [32m  Γ£ö[0m[90m parses ISO 8601 strings[0m
+    [32m  Γ£ö[0m[90m returns null for garbage strings[0m
+    [32m  Γ£ö[0m[90m returns null for empty string[0m
+    [32m  Γ£ö[0m[90m handles YYYY-MM-DD embedded in longer text[0m
+[0m    Edge Cases ΓÇö priority sorting[0m
+    [32m  Γ£ö[0m[90m issues with no priority label sort after prioritized issues[0m
+    [32m  Γ£ö[0m[90m all PRIORITY_ORDER labels are recognized[0m
+    [32m  Γ£ö[0m[90m issues with multiple labels use first matching priority[0m
+[0m    Edge Cases ΓÇö blocking labels[0m
+    [32m  Γ£ö[0m[90m all four blocking labels are recognized[0m
+    [32m  Γ£ö[0m[90m impediment label is case-insensitive[0m
+[0m    Edge Cases ΓÇö large datasets[0m
+    [32m  Γ£ö[0m[90m handles 500 open issues without errors[0m
+    [32m  Γ£ö[0m[90m handles 500 closed issues without errors[0m
+[0m    formatAsMarkdown() ΓÇö edge cases[0m
+    [32m  Γ£ö[0m[90m empty report omits blockers and decisions sections[0m
+    [32m  Γ£ö[0m[90m issue without assignee has no @ mention[0m
+    [32m  Γ£ö[0m[90m decision without author has no parenthetical[0m
+    [32m  Γ£ö[0m[90m blocker labels are listed in markdown[0m
+[0m  SquadVersionService[0m
+[0m    isNewer() ΓÇö semver comparison[0m
+    [32m  Γ£ö[0m[90m returns false when versions are identical[0m
+    [32m  Γ£ö[0m[90m returns true when latest major is greater[0m
+    [32m  Γ£ö[0m[90m returns true when latest minor is greater[0m
+    [32m  Γ£ö[0m[90m returns true when latest patch is greater[0m
+    [32m  Γ£ö[0m[90m returns false when current is ahead (major)[0m
+    [32m  Γ£ö[0m[90m returns false when current is ahead (minor)[0m
+    [32m  Γ£ö[0m[90m returns false when current is ahead (patch)[0m
+    [32m  Γ£ö[0m[90m handles versions with different segment counts (1.0 vs 1.0.0)[0m
+    [32m  Γ£ö[0m[90m handles single-segment versions[0m
+    [32m  Γ£ö[0m[90m handles four-segment versions[0m
+    [32m  Γ£ö[0m[90m 0.x versions compare correctly[0m
+[0m    normalizeVersion() ΓÇö v-prefix stripping[0m
+    [32m  Γ£ö[0m[90m strips lowercase v prefix[0m
+    [32m  Γ£ö[0m[90m strips uppercase V prefix[0m
+    [32m  Γ£ö[0m[90m does not strip v from middle of string[0m
+    [32m  Γ£ö[0m[90m handles version without v prefix[0m
+    [32m  Γ£ö[0m[90m trims whitespace but v-strip requires v at start[0m
+[0m    Caching[0m
+    [32m  Γ£ö[0m[90m checkForUpgrade() returns cached result on second call[0m
+    [32m  Γ£ö[0m[90m checkForUpgrade() returns cached false result too[0m
+    [32m  Γ£ö[0m[90m resetCache() causes next checkForUpgrade() to re-fetch[0m
+[0m    forceCheck() ΓÇö bypass cache[0m
+    [32m  Γ£ö[0m[90m forceCheck() always re-fetches even when cached[0m
+    [32m  Γ£ö[0m[90m forceCheck() updates cached result for subsequent checkForUpgrade()[0m
+[0m    Error handling ΓÇö always returns { available: false }[0m
+    [32m  Γ£ö[0m[90m returns { available: false } when GitHub API fails[0m
+    [32m  Γ£ö[0m[90m returns { available: false } when CLI is not installed[0m
+    [32m  Γ£ö[0m[90m returns { available: false } when both fail[0m
+    [32m  Γ£ö[0m[90m returns { available: false } when getLatestVersion throws[0m
+    [32m  Γ£ö[0m[90m returns { available: false } when getInstalledVersion throws[0m
+    [32m  Γ£ö[0m[90m returns { available: false } when both throw[0m
+    [32m  Γ£ö[0m[90m includes version info when only one side fails[0m
+[0m    UpgradeCheckResult shape[0m
+    [32m  Γ£ö[0m[90m includes currentVersion and latestVersion when upgrade available[0m
+    [32m  Γ£ö[0m[90m includes versions when no upgrade available[0m
+[0m    package.json configuration[0m
+    [32m  Γ£ö[0m[90m squadui.checkForUpdates command is declared with category "Squad"[0m
+    [32m  Γ£ö[0m[90m upgrade button when-clause includes squadui.upgradeAvailable[0m
 [0m  SquadStatusBar[0m
-[0m    getHealthIcon() ΓÇö Health Status Logic[0m
-    [32m  Γ£ö[0m[90m 0 active members shows ΓÜ¬ (all idle)[0m
-    [32m  Γ£ö[0m[90m 70%+ active shows ≡ƒƒó (high activity)[0m
-    [32m  Γ£ö[0m[90m 30-69% active shows ≡ƒƒí (moderate activity)[0m
-    [32m  Γ£ö[0m[90m 1-29% active shows ≡ƒƒá (low activity)[0m
-    [32m  Γ£ö[0m[90m exactly 70% active shows ≡ƒƒó[0m
-    [32m  Γ£ö[0m[90m exactly 30% active shows ≡ƒƒí[0m
-    [32m  Γ£ö[0m[90m 29% active shows ≡ƒƒá (below 30% threshold)[0m
-    [32m  Γ£ö[0m[90m 69% active shows ≡ƒƒí (below 70% threshold)[0m
-    [32m  Γ£ö[0m[90m single working member shows ≡ƒƒó (100% active)[0m
-    [32m  Γ£ö[0m[90m single idle member shows ΓÜ¬ (0% active)[0m
+[0m    Member Count Display[0m
+    [32m  Γ£ö[0m[90m shows member count for multiple members[0m
+    [32m  Γ£ö[0m[90m shows singular "member" for one member[0m
+    [32m  Γ£ö[0m[90m does not show active/idle counts[0m
 [0m    Empty Squad Handling[0m
     [32m  Γ£ö[0m[90m shows "Empty" when no members[0m
     [32m  Γ£ö[0m[90m empty squad has no background color[0m
 [0m    Status Bar Text Format[0m
     [32m  Γ£ö[0m[90m includes organization icon[0m
     [32m  Γ£ö[0m[90m shows "Squad:" label[0m
-    [32m  Γ£ö[0m[90m shows active count before total count[0m
+    [32m  Γ£ö[0m[90m shows member count[0m
 [0m    Tooltip Content[0m
-    [32m  Γ£ö[0m[90m tooltip includes working members[0m
-    [31m  1) tooltip shows idle count[0m
+    [32m  Γ£ö[0m[90m tooltip includes member names and roles[0m
+    [32m  Γ£ö[0m[90m tooltip does not show working/idle breakdown[0m
     [32m  Γ£ö[0m[90m tooltip is MarkdownString[0m
 [0m    Command Binding[0m
     [32m  Γ£ö[0m[90m status bar item has openDashboard command[0m
+[0m  squadFolderDetection[0m
+[0m    detectSquadFolder[0m
+    [32m  Γ£ö[0m[90m returns .squad when neither folder exists (default)[0m
+    [32m  Γ£ö[0m[90m returns .ai-team when only legacy folder exists[0m
+    [32m  Γ£ö[0m[90m returns .squad when only new folder exists[0m
+    [32m  Γ£ö[0m[90m returns .squad when both folders exist (prefers new)[0m
+[0m    hasSquadTeam[0m
+    [32m  Γ£ö[0m[90m returns false when no squad folder exists[0m
+    [32m  Γ£ö[0m[90m returns false when squad folder exists but no team.md[0m
+    [32m  Γ£ö[0m[90m returns true when team.md exists in .squad[0m
+    [32m  Γ£ö[0m[90m returns true when team.md exists in .ai-team[0m
+    [32m  Γ£ö[0m[90m returns true when team.md exists in both folders (prefers .squad)[0m
+    [32m  Γ£ö[0m[90m returns false when .squad exists but only .ai-team has team.md[0m
+[0m    getSquadWatchPattern[0m
+    [32m  Γ£ö[0m[90m returns pattern that watches both folders[0m
+[0m    Migration scenario[0m
+    [32m  Γ£ö[0m[90m seamlessly handles transition from .ai-team to .squad[0m
 [0m  SquadDataProvider ΓÇö Fallback Behavior[0m
 [0m    Primary path: team.md present[0m
     [32m  Γ£ö[0m[90m uses team.md as authoritative roster[0m
@@ -205,6 +392,44 @@ Settings Sync: Account status changed from uninitialized to unavailable
     [32m  Γ£ö[0m[90m team.md-only: getWorkDetails returns undefined[0m
     [32m  Γ£ö[0m[90m team.md-only: no currentTask on any member[0m
     [32m  Γ£ö[0m[90m refresh allows re-reading updated team.md[0m
+[0m  SquadDataProvider ΓÇö Extended Coverage[0m
+[0m    getWorkspaceRoot()[0m
+    [32m  Γ£ö[0m[90m returns the teamRoot passed to constructor[0m
+    [32m  Γ£ö[0m[90m returns actual path for test fixtures[0m
+[0m    getDecisions()[0m
+    [32m  Γ£ö[0m[90m returns decisions from decisions.md[0m
+    [32m  Γ£ö[0m[90m caches decisions after first call[0m
+    [32m  Γ£ö[0m[90m refresh invalidates decisions cache[0m
+    [32m  Γ£ö[0m[90m returns empty array when no decisions exist[0m
+[0m    getWorkDetails() ΓÇö Edge Cases[0m
+    [32m  Γ£ö[0m[90m returns placeholder member when assignee not in roster[0m
+    [32m  Γ£ö[0m[90m getLogEntries caches results[0m
+    [32m  Γ£ö[0m[90m getTasks caches results[0m
+[0m    getSquadMembers() ΓÇö working-to-idle override (issue #63)[0m
+    [32m  Γ£ö[0m[90m member shown as idle when log says working but no in-progress tasks[0m
+    [32m  Γ£ö[0m[90m member stays working when log says working and has no tasks at all (Copilot Chat)[0m
+    [32m  Γ£ö[0m[90m member stays working when log says working and has in-progress tasks[0m
+    [32m  Γ£ö[0m[90m member not in logs shows as idle[0m
+[0m    GitHub-aware status (setOpenIssues)[0m
+    [32m  Γ£ö[0m[90m idle member with open issues becomes working[0m
+    [32m  Γ£ö[0m[90m working member stays working (not downgraded by issues)[0m
+    [32m  Γ£ö[0m[90m most recent issue is used as currentTask[0m
+    [32m  Γ£ö[0m[90m member with log task keeps log task instead of issue[0m
+    [32m  Γ£ö[0m[90m case-insensitive member name matching for issues[0m
+[0m  SkillsTreeProvider[0m
+[0m    getChildren()[0m
+    [32m  Γ£ö[0m[90m returns skill items at root level[0m
+    [32m  Γ£ö[0m[90m returns empty array for element children (skills are leaf nodes)[0m
+    [32m  Γ£ö[0m[90m returns empty array when no skills exist[0m
+[0m    getTreeItem()[0m
+    [32m  Γ£ö[0m[90m returns the element unchanged[0m
+[0m    skill item rendering[0m
+    [32m  Γ£ö[0m[90m skill items have book icon[0m
+    [32m  Γ£ö[0m[90m skill items have viewSkill command[0m
+    [32m  Γ£ö[0m[90m skill items have contextValue "skill"[0m
+    [32m  Γ£ö[0m[90m skill items have MarkdownString tooltip[0m
+[0m    refresh()[0m
+    [32m  Γ£ö[0m[90m fires onDidChangeTreeData event[0m
 [0m  Skill Import Feature (Issue #39)[0m
 [0m    parseInstalledSkill()[0m
     [32m  Γ£ö[0m[90m parses skill name from first H1 heading[0m
@@ -280,11 +505,11 @@ Settings Sync: Account status changed from uninitialized to unavailable
     [32m  Γ£ö[0m[90m installed skills include raw content[0m
     [32m  Γ£ö[0m[90m skips subdirectories without SKILL.md[0m
 [0m    downloadSkill()[0m
-    [32m  Γ£ö[0m[90m creates skill directory and writes SKILL.md[0m[31m (338ms)[0m
+    [32m  Γ£ö[0m[90m creates skill directory and writes SKILL.md[0m[31m (327ms)[0m
     [32m  Γ£ö[0m[90m uses content field when available[0m
     [32m  Γ£ö[0m[90m handles skill names with special characters (slug generation)[0m
     [32m  Γ£ö[0m[90m handles skill names with leading/trailing special characters[0m
-    [32m  Γ£ö[0m[90m builds stub with source link when no content provided[0m[31m (198ms)[0m
+    [32m  Γ£ö[0m[90m builds stub with source link when no content provided[0m[31m (124ms)[0m
 [0m    searchSkills()[0m
     [32m  Γ£ö[0m[90m filters by name (case-insensitive)[0m
     [32m  Γ£ö[0m[90m filters by description (case-insensitive)[0m
@@ -305,14 +530,14 @@ Settings Sync: Account status changed from uninitialized to unavailable
     [32m  Γ£ö[0m[90m returns empty array for empty markdown[0m
     [32m  Γ£ö[0m[90m returns empty array for markdown with no list items[0m
 [0m    parseSkillsShHtml()[0m
-    [31m  2) extracts skill entries from HTML anchor tags[0m
+    [32m  Γ£ö[0m[90m extracts leaderboard entries with h3 skill names[0m
     [32m  Γ£ö[0m[90m all extracted skills have source "skills.sh"[0m
-    [32m  Γ£ö[0m[90m skips boilerplate links[0m
-    [31m  3) extracts nearby description from p/span tags[0m
-    [31m  4) handles JSON-LD structured data[0m
+    [32m  Γ£ö[0m[90m skips navigation and non-3-segment links[0m
+    [32m  Γ£ö[0m[90m builds GitHub URL from owner/repo path[0m
+    [32m  Γ£ö[0m[90m uses owner/repo as description[0m
     [32m  Γ£ö[0m[90m returns empty for empty HTML[0m
-    [32m  Γ£ö[0m[90m handles malformed JSON-LD gracefully[0m
-    [31m  5) prepends https://skills.sh to relative URLs[0m
+    [32m  Γ£ö[0m[90m returns empty for HTML with no leaderboard entries[0m
+    [32m  Γ£ö[0m[90m deduplicates entries with same name[0m
 [0m    parseAwesomeReadme() ΓÇö Regression Tests[0m
     [32m  Γ£ö[0m[90m parses list with em-dash separator correctly[0m
     [32m  Γ£ö[0m[90m parses list with regular hyphen separator correctly[0m
@@ -321,6 +546,14 @@ Settings Sync: Account status changed from uninitialized to unavailable
     [32m  Γ£ö[0m[90m handles * bullet style in addition to -[0m
     [32m  Γ£ö[0m[90m returns empty array for empty content[0m
     [32m  Γ£ö[0m[90m returns empty array for non-list content[0m
+[0m    parseAwesomeReadme() ΓÇö Table Format Tests[0m
+    [32m  Γ£ö[0m[90m extracts skill entries from markdown table rows[0m
+    [32m  Γ£ö[0m[90m converts relative skill URLs to GitHub URLs[0m
+    [32m  Γ£ö[0m[90m strips HTML tags from table descriptions[0m
+    [32m  Γ£ö[0m[90m skips table header separator rows[0m
+    [32m  Γ£ö[0m[90m skips table entries without description[0m
+    [32m  Γ£ö[0m[90m handles mixed table and list formats[0m
+    [32m  Γ£ö[0m[90m preserves absolute URLs in table rows[0m
 [0m    parseSkillsShHtml() ΓÇö Regression Tests (Fixed Parser)[0m
     [32m  Γ£ö[0m[90m parses leaderboard entry with h3 skill name and p repo path[0m
     [32m  Γ£ö[0m[90m extracts owner/repo from href path (3 segments)[0m
@@ -333,6 +566,18 @@ Settings Sync: Account status changed from uninitialized to unavailable
     [32m  Γ£ö[0m[90m returns empty array for empty HTML[0m
     [32m  Γ£ö[0m[90m does NOT pick up nav tabs as skills[0m
     [32m  Γ£ö[0m[90m deduplicates entries (same skill appearing twice)[0m
+[0m    extractGitHubSubpath() ΓÇö Subdirectory Skill Fetching[0m
+    [32m  Γ£ö[0m[90m extracts subpath from tree URL[0m
+    [32m  Γ£ö[0m[90m extracts subpath from blob URL[0m
+    [32m  Γ£ö[0m[90m extracts multi-level subpath[0m
+    [32m  Γ£ö[0m[90m returns undefined for root-level repo URL[0m
+    [32m  Γ£ö[0m[90m returns undefined for repo URL with only branch[0m
+    [32m  Γ£ö[0m[90m handles URL with http protocol[0m
+    [32m  Γ£ö[0m[90m returns undefined for non-GitHub URL[0m
+    [32m  Γ£ö[0m[90m handles branch names with slashes[0m
+    [32m  Γ£ö[0m[90m extracts single-level subpath[0m
+    [32m  Γ£ö[0m[90m returns undefined for empty URL[0m
+    [32m  Γ£ö[0m[90m returns undefined for malformed GitHub URL[0m
 [0m    searchSkills() ΓÇö Regression Tests[0m
     [32m  Γ£ö[0m[90m filters by name match (case-insensitive)[0m
     [32m  Γ£ö[0m[90m filters by description match[0m
@@ -358,6 +603,21 @@ SquadUI extension is now active
   [32m  Γ£ö[0m[90m skill item contextValue is "skill"[0m
   [32m  Γ£ö[0m[90m skill items are leaf nodes (not collapsible)[0m
   [32m  Γ£ö[0m[90m skill tooltips are MarkdownStrings[0m
+[0m  Session Log Isolation: Sensei scenario[0m
+  [32m  Γ£ö[0m[90m members from session logs only should be idle[0m
+  [32m  Γ£ö[0m[90m members from orchestration-log entries should have correct status[0m
+  [32m  Γ£ö[0m[90m no issue-based tasks created from session log content[0m
+  [32m  Γ£ö[0m[90m parseOrchestrationLogs() returns only orchestration-log entries[0m
+  [32m  Γ£ö[0m[90m parseAllLogs() returns entries from both directories[0m
+[0m  Session Log Isolation: Issue reference scenario[0m
+  [32m  Γ£ö[0m[90m issues from session log should NOT appear as in-progress tasks[0m
+  [32m  Γ£ö[0m[90m issue #8 from orchestration-log SHOULD appear as in-progress[0m
+  [32m  Γ£ö[0m[90m Livingston should NOT show as working (only in session log)[0m
+  [32m  Γ£ö[0m[90m Rusty SHOULD show as working (in orchestration log)[0m
+[0m  parseOrchestrationLogs vs parseAllLogs isolation[0m
+  [32m  Γ£ö[0m[90m discoverOrchestrationLogFiles() returns only orchestration-log/ files[0m
+  [32m  Γ£ö[0m[90m discoverLogFiles() returns files from both directories[0m
+  [32m  Γ£ö[0m[90m parseOrchestrationLogs() returns fewer entries than parseAllLogs()[0m
 [0m  OrchestrationLogService[0m
 [0m    discoverLogFiles()[0m
     [32m  Γ£ö[0m[90m finds .md files in orchestration-logs directory[0m
@@ -422,6 +682,19 @@ SquadUI extension is now active
   [32m  Γ£ö[0m[90m SquadDataProvider shows members as idle when no logs exist[0m
   [32m  Γ£ö[0m[90m SquadDataProvider preserves roles from team.md[0m
   [32m  Γ£ö[0m[90m SquadDataProvider falls back to log participants when team.md missing[0m
+[0m  removeMemberCommand ΓÇö Slug Generation[0m
+  [32m  Γ£ö[0m[90m simple lowercase name[0m
+  [32m  Γ£ö[0m[90m mixed case name[0m
+  [32m  Γ£ö[0m[90m name with spaces[0m
+  [32m  Γ£ö[0m[90m name with special characters[0m
+  [32m  Γ£ö[0m[90m name with @ prefix[0m
+  [32m  Γ£ö[0m[90m name with multiple spaces[0m
+  [32m  Γ£ö[0m[90m name with hyphens (already slugged)[0m
+  [32m  Γ£ö[0m[90m name with underscores[0m
+  [32m  Γ£ö[0m[90m name with leading/trailing spaces[0m
+  [32m  Γ£ö[0m[90m empty string returns empty[0m
+  [32m  Γ£ö[0m[90m single character name[0m
+  [32m  Γ£ö[0m[90m name with numbers[0m
 [0m  removeMemberCommand[0m
 [0m    parseMemberRows() ΓÇö Table Parsing Logic[0m
     [32m  Γ£ö[0m[90m parses well-formed table row correctly[0m
@@ -434,6 +707,21 @@ SquadUI extension is now active
     [32m  Γ£ö[0m[90m stops parsing at next section (##)[0m
     [32m  Γ£ö[0m[90m returns empty array when no Members section exists[0m
     [32m  Γ£ö[0m[90m returns empty array when Members section is empty[0m
+[0m  Orchestration Task Pipeline ΓÇö getMemberStates()[0m
+  [32m  Γ£ö[0m[90m returns empty map for empty entries[0m
+  [32m  Γ£ö[0m[90m marks most-recent-entry participants as working, others as idle[0m
+  [32m  Γ£ö[0m[90m case-insensitive member matching (Danny vs danny)[0m
+  [32m  Γ£ö[0m[90m handles entries with empty participants array[0m
+  [32m  Γ£ö[0m[90m handles single entry with multiple participants[0m
+[0m  Orchestration Task Pipeline ΓÇö getActiveTasks()[0m
+  [32m  Γ£ö[0m[90m extracts tasks from relatedIssues (e.g. "#42")[0m
+  [32m  Γ£ö[0m[90m deduplicates tasks across entries[0m
+  [32m  Γ£ö[0m[90m extracts prose-based tasks from What Was Done sections[0m
+  [32m  Γ£ö[0m[90m assigns tasks to correct members (first participant)[0m
+  [32m  Γ£ö[0m[90m marks tasks from old entries (>30 days) ΓÇö staleness awareness[0m
+  [32m  Γ£ö[0m[90m handles entries with no tasks gracefully[0m
+  [32m  Γ£ö[0m[90m case-insensitive completion detection (Completed, DONE, Γ£à)[0m
+  [32m  Γ£ö[0m[90m handles entries with both issue tasks and prose tasks[0m
 [0m  OrchestrationLogService ΓÇö Table Format Extraction[0m
 [0m    extractOutcomeFromTable()[0m
     [32m  Γ£ö[0m[90m extracts value from | **Outcome** | value | row[0m
@@ -450,10 +738,45 @@ SquadUI extension is now active
     [32m  Γ£ö[0m[90m skips table rows (lines starting with |)[0m
     [32m  Γ£ö[0m[90m returns "No summary available" when only table rows exist after heading[0m
     [32m  Γ£ö[0m[90m still extracts prose paragraphs that appear after tables[0m
+[0m    getActiveTasks() ΓÇö relatedIssues completion signal detection (issue #63)[0m
+    [32m  Γ£ö[0m[90m relatedIssues with "Closed #NN" outcome ΓåÆ task status = completed[0m
+    [32m  Γ£ö[0m[90m relatedIssues with "Fixed #NN" outcome ΓåÆ task status = completed[0m
+    [32m  Γ£ö[0m[90m relatedIssues with "Working on #NN" outcome ΓåÆ task status = in_progress[0m
+    [32m  Γ£ö[0m[90m relatedIssues without matching outcomes ΓåÆ task status = in_progress[0m
 [0m    parseLogFile() ΓÇö table-format integration[0m
     [32m  Γ£ö[0m[90m table-only entry gets summary from Outcome, not raw table text[0m
     [32m  Γ£ö[0m[90m entry with ## Summary section still uses that section (priority 1)[0m
     [32m  Γ£ö[0m[90m existing prose-based logs still parse correctly[0m
+[0m  markdownUtils ΓÇö Edge Cases[0m
+[0m    stripMarkdownLinks ΓÇö edge cases[0m
+    [32m  Γ£ö[0m[90m handles adjacent links with no separator[0m
+    [32m  Γ£ö[0m[90m handles link with empty display text[0m
+    [32m  Γ£ö[0m[90m handles link text with parentheses[0m
+    [32m  Γ£ö[0m[90m handles URL with nested parentheses[0m
+    [32m  Γ£ö[0m[90m handles mixed plain text and links[0m
+    [32m  Γ£ö[0m[90m handles multiline text with links[0m
+    [32m  Γ£ö[0m[90m does not strip image syntax ![alt](url)[0m
+[0m    renderMarkdownLinks ΓÇö edge cases[0m
+    [32m  Γ£ö[0m[90m handles adjacent links[0m
+    [32m  Γ£ö[0m[90m handles URL with query parameters[0m
+    [32m  Γ£ö[0m[90m handles URL with hash fragment[0m
+    [32m  Γ£ö[0m[90m preserves text around links[0m
+    [32m  Γ£ö[0m[90m handles link with special chars in display text[0m
+[0m  markdownUtils[0m
+[0m    stripMarkdownLinks[0m
+    [32m  Γ£ö[0m[90m strips markdown link and returns display text[0m
+    [32m  Γ£ö[0m[90m strips multiple markdown links[0m
+    [32m  Γ£ö[0m[90m passes through plain text unchanged[0m
+    [32m  Γ£ö[0m[90m passes through empty string[0m
+    [32m  Γ£ö[0m[90m handles link with complex URL[0m
+    [32m  Γ£ö[0m[90m handles link with spaces in display text[0m
+    [32m  Γ£ö[0m[90m handles text with brackets but no valid link syntax[0m
+[0m    renderMarkdownLinks[0m
+    [32m  Γ£ö[0m[90m converts markdown link to anchor tag[0m
+    [32m  Γ£ö[0m[90m converts multiple markdown links[0m
+    [32m  Γ£ö[0m[90m passes through plain text unchanged[0m
+    [32m  Γ£ö[0m[90m passes through empty string[0m
+    [32m  Γ£ö[0m[90m handles link with spaces in display text[0m
 [0m  IssueDetailWebview[0m
 [0m    getContrastColor()[0m
     [32m  Γ£ö[0m[90m returns black text for light backgrounds[0m
@@ -472,8 +795,8 @@ SquadUI extension is now active
     [32m  Γ£ö[0m[90m leaves safe text unchanged[0m
 [0m    formatDateString()[0m
     [32m  Γ£ö[0m[90m formats valid ISO dates[0m
-    [31m  6) returns raw string for invalid dates[0m
-    [31m  7) returns raw string for empty date[0m
+    [32m  Γ£ö[0m[90m returns "Invalid Date" for invalid dates[0m
+    [32m  Γ£ö[0m[90m returns "Invalid Date" for empty date[0m
     [32m  Γ£ö[0m[90m formats ISO date with timezone[0m
 [0m    getHtmlContent()[0m
     [32m  Γ£ö[0m[90m produces valid HTML with issue number[0m
@@ -490,6 +813,26 @@ SquadUI extension is now active
     [32m  Γ£ö[0m[90m escapes special characters in body[0m
     [32m  Γ£ö[0m[90m includes Open in GitHub button[0m
     [32m  Γ£ö[0m[90m includes correct GitHub URL in button[0m
+[0m  initSquadWizard[0m
+[0m    Welcome view configuration[0m
+    [32m  Γ£ö[0m[90m viewsWelcome entries exist for all three panels with Form your Squad button[0m
+[0m    Command registration[0m
+    [32m  Γ£ö[0m[90m squadui.initSquad is declared in package.json with category "Squad"[0m
+    [36m  - initSquad command is registered when extension is active[0m
+[0m    Universe selection[0m
+    [32m  Γ£ö[0m[90m universe list is exported and non-empty[0m
+[0m    Cancellation handling[0m
+    [36m  - cancelling universe QuickPick creates no terminal and shows no InputBox[0m
+    [36m  - cancelling mission InputBox creates no terminal[0m
+[0m    Mission validation[0m
+    [36m  - empty mission string should be rejected by validation[0m
+[0m  initSquadCommand[0m
+[0m    registerInitSquadCommand()[0m
+    [32m  Γ£ö[0m[90m returns a Disposable[0m
+    [36m  - registers the squadui.initSquad command[0m
+[0m    package.json configuration[0m
+    [32m  Γ£ö[0m[90m squadui.initSquad command is declared[0m
+    [32m  Γ£ö[0m[90m welcome view has Form your Squad button[0m
 [0m  htmlTemplate.ts ΓÇö Dashboard HTML Generation[0m
 [0m    Regression: Optional Fields in DecisionEntry[0m
     [32m  Γ£ö[0m[90m getDashboardHtml does not crash when content is undefined[0m
@@ -573,6 +916,54 @@ SquadUI extension is now active
     [32m  Γ£ö[0m[90m uses default API base URL when not specified[0m
     [32m  Γ£ö[0m[90m accepts custom API base URL[0m
     [32m  Γ£ö[0m[90m stores provided token[0m
+[0m  GitHubIssuesService ΓÇö Closed Issues[0m
+[0m    getClosedIssues()[0m
+    [32m  Γ£ö[0m[90m returns empty array when no issue source is configured[0m
+    [32m  Γ£ö[0m[90m returns empty array when team.md has no repository[0m
+    [32m  Γ£ö[0m[90m returns cached data when cache is fresh (cache hit)[0m
+    [32m  Γ£ö[0m[90m identifies expired cache as a cache miss[0m
+    [32m  Γ£ö[0m[90m identifies fresh cache as not expired[0m
+    [32m  Γ£ö[0m[90m null closedCache is treated as expired[0m
+    [32m  Γ£ö[0m[90m forceRefresh bypasses fresh cache[0m
+    [32m  Γ£ö[0m[90m invalidateCache clears closedCache[0m
+[0m    getClosedIssuesByMember()[0m
+    [32m  Γ£ö[0m[90m maps closed issues to members via squad: labels[0m
+    [32m  Γ£ö[0m[90m handles case-insensitive label matching (Squad:Danny vs squad:danny)[0m
+    [32m  Γ£ö[0m[90m handles issues with no labels[0m
+    [32m  Γ£ö[0m[90m handles issues with undefined closedAt[0m
+    [32m  Γ£ö[0m[90m returns empty map when all issues lack squad labels[0m
+    [32m  Γ£ö[0m[90m returns empty map when no closed issues exist[0m
+    [32m  Γ£ö[0m[90m deduplicates issues with multiple squad labels for the same member[0m
+    [32m  Γ£ö[0m[90m assignee strategy maps issues via memberAliases[0m
+[0m    Rate limit resilience[0m
+    [32m  Γ£ö[0m[90m fresh closed cache avoids API call (serves cached data on would-be 403)[0m
+    [32m  Γ£ö[0m[90m getClosedIssues with no config does not throw (returns empty)[0m
+[0m  FileWatcherService[0m
+[0m    constructor[0m
+    [32m  Γ£ö[0m[90m creates service with default debounce[0m
+    [32m  Γ£ö[0m[90m creates service with custom debounce[0m
+[0m    isWatching()[0m
+    [32m  Γ£ö[0m[90m returns false before start()[0m
+    [32m  Γ£ö[0m[90m returns false after dispose()[0m
+[0m    onFileChange()[0m
+    [32m  Γ£ö[0m[90m returns a Disposable[0m
+    [32m  Γ£ö[0m[90m callback can be unregistered via dispose[0m
+    [32m  Γ£ö[0m[90m multiple callbacks can be registered[0m
+[0m    registerCacheInvalidator()[0m
+    [32m  Γ£ö[0m[90m returns a Disposable[0m
+    [32m  Γ£ö[0m[90m invalidator can be unregistered via dispose[0m
+    [32m  Γ£ö[0m[90m multiple invalidators can be registered[0m
+[0m    start() and stop()[0m
+    [32m  Γ£ö[0m[90m stop() is safe to call before start()[0m
+    [32m  Γ£ö[0m[90m stop() is safe to call multiple times[0m
+[0m    dispose()[0m
+    [32m  Γ£ö[0m[90m dispose is idempotent[0m
+    [32m  Γ£ö[0m[90m isWatching returns false after dispose[0m
+    [32m  Γ£ö[0m[90m start() is no-op after dispose[0m
+[0m    queueEvent ΓÇö internal debounce behavior[0m
+    [32m  Γ£ö[0m[90m queueEvent is no-op after dispose[0m
+    [32m  Γ£ö[0m[90m flushPendingEvents is no-op when disposed[0m
+    [32m  Γ£ö[0m[90m flushPendingEvents is no-op with empty pending events[0m
 [0m  Extension Test Suite[0m
 [0m    Extension Activation[0m
     [32m  Γ£ö[0m[90m extension is present[0m
@@ -581,6 +972,16 @@ SquadUI extension is now active
     [36m  - commands are registered when extension is active with workspace[0m
 [0m    View Contribution[0m
     [32m  Γ£ö[0m[90m squadTeam view is declared in package.json[0m
+[0m  normalizeEol[0m
+  [32m  Γ£ö[0m[90m passes through LF-only content unchanged[0m
+  [32m  Γ£ö[0m[90m converts CRLF to LF[0m
+  [32m  Γ£ö[0m[90m converts standalone CR to LF[0m
+  [32m  Γ£ö[0m[90m handles mixed line endings in same string[0m
+  [32m  Γ£ö[0m[90m handles empty string[0m
+  [32m  Γ£ö[0m[90m handles string with no line endings[0m
+  [32m  Γ£ö[0m[90m handles consecutive CRLF pairs[0m
+[0m  EOL constant[0m
+  [32m  Γ£ö[0m[90m matches os.EOL[0m
 [0m  E2E MVP Validation (Issue #14)[0m
 [0m    AC-1: Extension loads without errors[0m
     [32m  Γ£ö[0m[90m extension is discoverable by ID[0m
@@ -591,9 +992,9 @@ SquadUI extension is now active
 [0m    AC-2: Tree view shows squad members with correct status[0m
     [32m  Γ£ö[0m[90m tree returns all 3 team.md members at root[0m
     [32m  Γ£ö[0m[90m member labels match team.md roster names exactly[0m
-    [32m  Γ£ö[0m[90m working member (Carol) gets sync~spin icon[0m
+    [31m  1) working member (Carol) gets sync~spin icon[0m
     [32m  Γ£ö[0m[90m idle members get person icon (not spinning)[0m
-    [32m  Γ£ö[0m[90m member descriptions show role and status[0m
+    [31m  2) member descriptions show role and status[0m
     [32m  Γ£ö[0m[90m member status correctly reflects working vs idle from log data[0m
     [32m  Γ£ö[0m[90m all member roles come from team.md, not default[0m
 [0m    AC-3: Clicking member expands to show tasks[0m
@@ -603,14 +1004,14 @@ SquadUI extension is now active
     [32m  Γ£ö[0m[90m task items have meaningful titles (not raw markdown)[0m
     [32m  Γ£ö[0m[90m task items have correct status badges[0m
     [32m  Γ£ö[0m[90m task items are leaf nodes (not collapsible)[0m
-    [32m  Γ£ö[0m[90m task items have tasklist icon[0m
+    [32m  Γ£ö[0m[90m task items have status-specific icon[0m
 [0m    AC-4: Clicking task shows details in webview[0m
     [32m  Γ£ö[0m[90m getWorkDetails() returns correct task and member data[0m
     [32m  Γ£ö[0m[90m getWorkDetails() includes related log entries[0m
     [32m  Γ£ö[0m[90m webview HTML contains task title[0m
     [32m  Γ£ö[0m[90m webview HTML contains task description[0m
     [32m  Γ£ö[0m[90m webview HTML contains member name and role[0m
-    [32m  Γ£ö[0m[90m webview HTML contains member status badge[0m
+    [32m  Γ£ö[0m[90m webview HTML does not contain member status badge[0m
     [32m  Γ£ö[0m[90m markdown tables render as HTML tables, not raw pipes[0m
     [32m  Γ£ö[0m[90m bold text renders as <strong> tags[0m
     [32m  Γ£ö[0m[90m task items have showWorkDetails command wired up[0m
@@ -635,6 +1036,125 @@ SquadUI extension is now active
     [32m  Γ£ö[0m[90m webview handles task with no dates[0m
     [32m  Γ£ö[0m[90m webview escapes HTML in task titles (XSS prevention)[0m
     [32m  Γ£ö[0m[90m multiple refreshes do not corrupt state[0m
+[0m  Deep-Link: URI Handler Parsing[0m
+  [32m  Γ£ö[0m[90m extracts path param from dashboard URI[0m
+  [32m  Γ£ö[0m[90m extracts member and path params from charter URI[0m
+  [32m  Γ£ö[0m[90m handles dashboard URI with no query params[0m
+  [32m  Γ£ö[0m[90m handles charter URI with member but no path[0m
+  [32m  Γ£ö[0m[90m handles charter URI with no member param[0m
+  [32m  Γ£ö[0m[90m handles unknown URI path gracefully[0m
+  [32m  Γ£ö[0m[90m handles URI with encoded special characters in member name[0m
+[0m  Deep-Link: switchToRoot Validation[0m
+  [36m  - refreshTree with non-existent teamRoot shows warning[0m
+  [36m  - openDashboard with non-existent teamRoot shows warning[0m
+[0m  Deep-Link: Backward Compatibility[0m
+  [36m  - refreshTree works with no arguments[0m
+  [36m  - openDashboard works with no arguments[0m
+  [36m  - viewCharter works with memberName only (no teamRoot)[0m
+[0m  Deep-Link: Tree Item Object Arg Handling[0m
+  [36m  - refreshTree ignores tree item object arg[0m
+  [36m  - openDashboard ignores tree item object arg[0m
+  [36m  - refreshTree accepts valid string path[0m
+  [36m  - openDashboard accepts valid string path[0m
+[0m  Deep-Link: SquadDataProvider.setRoot[0m
+  [32m  Γ£ö[0m[90m setRoot updates getWorkspaceRoot()[0m
+  [32m  Γ£ö[0m[90m setRoot updates getSquadFolder()[0m
+  [32m  Γ£ö[0m[90m setRoot clears cached members[0m
+  [32m  Γ£ö[0m[90m setRoot clears cached decisions[0m
+  [32m  Γ£ö[0m[90m setRoot with .squad folder works correctly[0m
+[0m  DecisionsTreeProvider[0m
+[0m    getChildren()[0m
+    [32m  Γ£ö[0m[90m returns decision items at root level[0m
+    [32m  Γ£ö[0m[90m returns empty array for element children (decisions are leaf nodes)[0m
+    [32m  Γ£ö[0m[90m returns empty array when no decisions exist[0m
+[0m    decision item rendering[0m
+    [32m  Γ£ö[0m[90m decision items have notebook icon[0m
+    [32m  Γ£ö[0m[90m decision items have openDecision command[0m
+    [32m  Γ£ö[0m[90m decision description includes date and author[0m
+    [32m  Γ£ö[0m[90m decision tooltip is a MarkdownString[0m
+    [32m  Γ£ö[0m[90m decision tooltip includes title[0m
+[0m    getTreeItem()[0m
+    [32m  Γ£ö[0m[90m returns the element unchanged[0m
+[0m    refresh()[0m
+    [32m  Γ£ö[0m[90m fires onDidChangeTreeData event[0m
+[0m  DecisionService ΓÇö File Parsing[0m
+[0m    parseDecisionFile()[0m
+    [32m  Γ£ö[0m[90m parses decision file with H1 heading[0m
+    [32m  Γ£ö[0m[90m parses decision file with H2 heading (no H1)[0m
+    [32m  Γ£ö[0m[90m extracts date from heading prefix[0m
+    [32m  Γ£ö[0m[90m strips "Decision:" prefix from title[0m
+    [32m  Γ£ö[0m[90m strips "User directive" prefix from title[0m
+    [32m  Γ£ö[0m[90m falls back to file creation date when no date metadata[0m
+    [32m  Γ£ö[0m[90m returns "Untitled Decision" when no heading found[0m
+Error parsing decision file /nonexistent/file.md: Error: ENOENT: no such file or directory, open 'C:\nonexistent\file.md'
+	at Object.readFileSync (node:fs:442:20)
+	at t.readFileSync (node:electron/js2c/node_init:2:11013)
+	at DecisionService.parseDecisionFile (c:\dev\SquadUI\out\services\DecisionService.js:242:56)
+	at Context.<anonymous> (c:\dev\SquadUI\out\test\suite\decisionServiceFiles.test.js:155:36)
+	at callFn (c:\dev\SquadUI\node_modules\mocha\lib\runnable.js:366:21)
+	at Runnable.run (c:\dev\SquadUI\node_modules\mocha\lib\runnable.js:354:5)
+	at Runner.runTest (c:\dev\SquadUI\node_modules\mocha\lib\runner.js:719:10)
+	at c:\dev\SquadUI\node_modules\mocha\lib\runner.js:842:12
+	at next (c:\dev\SquadUI\node_modules\mocha\lib\runner.js:634:14)
+	at c:\dev\SquadUI\node_modules\mocha\lib\runner.js:644:7
+	at next (c:\dev\SquadUI\node_modules\mocha\lib\runner.js:527:14)
+	at Immediate._onImmediate (c:\dev\SquadUI\node_modules\mocha\lib\runner.js:612:5)
+	at process.processImmediate (node:internal/timers:485:21)
+    [32m  Γ£ö[0m[90m returns null for unreadable file[0m
+    [32m  Γ£ö[0m[90m matches **By:** pattern for author[0m
+    [32m  Γ£ö[0m[90m prefers **Author:** over **By:**[0m
+[0m    scanDirectory()[0m
+    [32m  Γ£ö[0m[90m finds .md files in decisions directory[0m
+    [32m  Γ£ö[0m[90m ignores non-.md files[0m
+    [32m  Γ£ö[0m[90m recurses into subdirectories[0m
+    [32m  Γ£ö[0m[90m handles empty directory[0m
+[0m    getDecisions() ΓÇö Integration[0m
+    [32m  Γ£ö[0m[90m combines decisions.md and decisions/ directory[0m
+    [32m  Γ£ö[0m[90m returns decisions sorted by date descending[0m
+    [32m  Γ£ö[0m[90m returns empty array when no decisions exist[0m
+    [32m  Γ£ö[0m[90m handles missing decisions/ directory gracefully[0m
+[0m  DecisionService ΓÇö Edge Cases (Hardening)[0m
+[0m    scanDirectory() ΓÇö error handling[0m
+    [32m  Γ£ö[0m[90m handles non-existent directory gracefully (returns empty, no throw)[0m
+[0m    parseDecisionFile() ΓÇö error handling[0m
+Error parsing decision file c:\dev\SquadUI\test-fixtures\temp-decision-edge-1771856464505\nonexistent-file.md: Error: ENOENT: no such file or directory, open 'c:\dev\SquadUI\test-fixtures\temp-decision-edge-1771856464505\nonexistent-file.md'
+	at Object.readFileSync (node:fs:442:20)
+	at t.readFileSync (node:electron/js2c/node_init:2:11013)
+	at DecisionService.parseDecisionFile (c:\dev\SquadUI\out\services\DecisionService.js:242:56)
+	at Context.<anonymous> (c:\dev\SquadUI\out\test\suite\decisionServiceEdgeCases.test.js:85:36)
+	at callFn (c:\dev\SquadUI\node_modules\mocha\lib\runnable.js:366:21)
+	at Runnable.run (c:\dev\SquadUI\node_modules\mocha\lib\runnable.js:354:5)
+	at Runner.runTest (c:\dev\SquadUI\node_modules\mocha\lib\runner.js:719:10)
+	at c:\dev\SquadUI\node_modules\mocha\lib\runner.js:842:12
+	at next (c:\dev\SquadUI\node_modules\mocha\lib\runner.js:634:14)
+	at c:\dev\SquadUI\node_modules\mocha\lib\runner.js:644:7
+	at next (c:\dev\SquadUI\node_modules\mocha\lib\runner.js:527:14)
+	at Immediate._onImmediate (c:\dev\SquadUI\node_modules\mocha\lib\runner.js:612:5)
+	at process.processImmediate (node:internal/timers:485:21)
+    [32m  Γ£ö[0m[90m returns null for non-existent file path[0m
+Error parsing decision file c:\dev\SquadUI\test-fixtures\temp-decision-edge-1771856464506\a-directory: Error: EISDIR: illegal operation on a directory, read
+	at Object.readFileSync (node:fs:442:20)
+	at t.readFileSync (node:electron/js2c/node_init:2:11013)
+	at DecisionService.parseDecisionFile (c:\dev\SquadUI\out\services\DecisionService.js:242:56)
+	at Context.<anonymous> (c:\dev\SquadUI\out\test\suite\decisionServiceEdgeCases.test.js:91:36)
+	at callFn (c:\dev\SquadUI\node_modules\mocha\lib\runnable.js:366:21)
+	at Runnable.run (c:\dev\SquadUI\node_modules\mocha\lib\runnable.js:354:5)
+	at Runner.runTest (c:\dev\SquadUI\node_modules\mocha\lib\runner.js:719:10)
+	at c:\dev\SquadUI\node_modules\mocha\lib\runner.js:842:12
+	at next (c:\dev\SquadUI\node_modules\mocha\lib\runner.js:634:14)
+	at c:\dev\SquadUI\node_modules\mocha\lib\runner.js:644:7
+	at next (c:\dev\SquadUI\node_modules\mocha\lib\runner.js:527:14)
+	at Immediate._onImmediate (c:\dev\SquadUI\node_modules\mocha\lib\runner.js:612:5)
+	at process.processImmediate (node:internal/timers:485:21)
+    [32m  Γ£ö[0m[90m returns null for directory path instead of file[0m
+[0m    getDecisions() ΓÇö missing resources[0m
+    [32m  Γ£ö[0m[90m works when decisions.md exists but decisions/ directory does not[0m
+    [32m  Γ£ö[0m[90m works when neither decisions.md nor decisions/ directory exists[0m
+    [32m  Γ£ö[0m[90m returns empty array when .ai-team/ does not exist at all[0m
+    [32m  Γ£ö[0m[90m handles empty decisions.md (file exists, no content)[0m
+    [32m  Γ£ö[0m[90m handles decisions.md with only whitespace[0m
+[0m  DecisionsTreeProvider ΓÇö Error Handling (Hardening)[0m
+  [32m  Γ£ö[0m[90m getDecisionItems returns empty array when decisionService throws[0m
 [0m  DecisionService[0m
 [0m    parseDecisionsMd() ΓÇö Main Parser[0m
     [32m  Γ£ö[0m[90m returns empty array when decisions.md does not exist[0m
@@ -661,6 +1181,14 @@ SquadUI extension is now active
     [32m  Γ£ö[0m[90m handles empty decisions.md[0m
     [32m  Γ£ö[0m[90m handles decisions.md with only comments[0m
     [32m  Γ£ö[0m[90m realistic decisions.md with mixed patterns[0m
+[0m      H1 decision format (# Decision: Title)[0m
+      [32m  Γ£ö[0m[90m parses a single H1 decision with metadata[0m
+      [32m  Γ£ö[0m[90m parses multiple H1 decisions[0m
+      [32m  Γ£ö[0m[90m H1 with subsections does not produce extra decisions[0m
+      [32m  Γ£ö[0m[90m mixed H1 and H2 decisions are all parsed[0m
+      [32m  Γ£ö[0m[90m plain H1 without "Decision:" prefix is NOT treated as a decision[0m
+      [32m  Γ£ö[0m[90m H1 decision with **Issue:** field is parsed without error[0m
+      [32m  Γ£ö[0m[90m content field includes full section with subsections[0m
 [0m    parseDecisionFile() ΓÇö Individual File Parser[0m
     [32m  Γ£ö[0m[90m extracts title from first # heading[0m
     [32m  Γ£ö[0m[90m falls back to ## or ### heading if no # heading[0m
@@ -675,24 +1203,24 @@ SquadUI extension is now active
     [32m  Γ£ö[0m[90m falls back to file creation date when no date metadata[0m
     [32m  Γ£ö[0m[90m includes full content in DecisionEntry[0m
     [32m  Γ£ö[0m[90m includes filePath in DecisionEntry[0m
-Error parsing decision file /nonexistent/file.md: Error: ENOENT: no such file or directory, open 'D:\nonexistent\file.md'
+Error parsing decision file /nonexistent/file.md: Error: ENOENT: no such file or directory, open 'C:\nonexistent\file.md'
 	at Object.readFileSync (node:fs:442:20)
 	at t.readFileSync (node:electron/js2c/node_init:2:11013)
-	at DecisionService.parseDecisionFile (d:\SquadUI\out\services\DecisionService.js:183:32)
-	at Context.<anonymous> (d:\SquadUI\out\test\suite\decisionService.test.js:649:38)
-	at callFn (d:\SquadUI\node_modules\mocha\lib\runnable.js:366:21)
-	at Runnable.run (d:\SquadUI\node_modules\mocha\lib\runnable.js:354:5)
-	at Runner.runTest (d:\SquadUI\node_modules\mocha\lib\runner.js:719:10)
-	at d:\SquadUI\node_modules\mocha\lib\runner.js:842:12
-	at next (d:\SquadUI\node_modules\mocha\lib\runner.js:634:14)
-	at d:\SquadUI\node_modules\mocha\lib\runner.js:644:7
-	at next (d:\SquadUI\node_modules\mocha\lib\runner.js:527:14)
-	at cbHookRun (d:\SquadUI\node_modules\mocha\lib\runner.js:592:7)
-	at done (d:\SquadUI\node_modules\mocha\lib\runnable.js:310:5)
-	at callFn (d:\SquadUI\node_modules\mocha\lib\runnable.js:389:7)
-	at Runnable.run (d:\SquadUI\node_modules\mocha\lib\runnable.js:354:5)
-	at next (d:\SquadUI\node_modules\mocha\lib\runner.js:551:10)
-	at Immediate._onImmediate (d:\SquadUI\node_modules\mocha\lib\runner.js:612:5)
+	at DecisionService.parseDecisionFile (c:\dev\SquadUI\out\services\DecisionService.js:242:56)
+	at Context.<anonymous> (c:\dev\SquadUI\out\test\suite\decisionService.test.js:817:38)
+	at callFn (c:\dev\SquadUI\node_modules\mocha\lib\runnable.js:366:21)
+	at Runnable.run (c:\dev\SquadUI\node_modules\mocha\lib\runnable.js:354:5)
+	at Runner.runTest (c:\dev\SquadUI\node_modules\mocha\lib\runner.js:719:10)
+	at c:\dev\SquadUI\node_modules\mocha\lib\runner.js:842:12
+	at next (c:\dev\SquadUI\node_modules\mocha\lib\runner.js:634:14)
+	at c:\dev\SquadUI\node_modules\mocha\lib\runner.js:644:7
+	at next (c:\dev\SquadUI\node_modules\mocha\lib\runner.js:527:14)
+	at cbHookRun (c:\dev\SquadUI\node_modules\mocha\lib\runner.js:592:7)
+	at done (c:\dev\SquadUI\node_modules\mocha\lib\runnable.js:310:5)
+	at callFn (c:\dev\SquadUI\node_modules\mocha\lib\runnable.js:389:7)
+	at Runnable.run (c:\dev\SquadUI\node_modules\mocha\lib\runnable.js:354:5)
+	at next (c:\dev\SquadUI\node_modules\mocha\lib\runner.js:551:10)
+	at Immediate._onImmediate (c:\dev\SquadUI\node_modules\mocha\lib\runner.js:612:5)
 	at process.processImmediate (node:internal/timers:485:21)
     [32m  Γ£ö[0m[90m returns null for nonexistent file[0m
     [32m  Γ£ö[0m[90m handles empty file gracefully[0m
@@ -716,6 +1244,26 @@ Error parsing decision file /nonexistent/file.md: Error: ENOENT: no such file or
     [32m  Γ£ö[0m[90m handles date prefix with colon vs no colon[0m
     [32m  Γ£ö[0m[90m handles **Date:** with extra whitespace[0m
     [32m  Γ£ö[0m[90m handles **Date:** case variations (Date, DATE, date)[0m
+[0m    parseDecisionsMd() ΓÇö H1 Decision Format[0m
+    [32m  Γ£ö[0m[90m parses H1 "# Decision: Title" heading[0m
+    [32m  Γ£ö[0m[90m H1 decision subsections are not parsed as separate decisions[0m
+    [32m  Γ£ö[0m[90m parses multiple H1 decisions[0m
+    [32m  Γ£ö[0m[90m H1 decision content includes subsections[0m
+    [32m  Γ£ö[0m[90m mixed H1 decisions and H2 decisions in same file[0m
+    [32m  Γ£ö[0m[90m H1 decision without metadata still parses[0m
+    [32m  Γ£ö[0m[90m non-decision H1 headings are ignored[0m
+[0m  dateUtils[0m
+[0m    parseDateAsLocal[0m
+    [32m  Γ£ö[0m[90m date-only string roundtrips through toLocalDateKey unchanged[0m
+    [32m  Γ£ö[0m[90m date-only string produces local midnight[0m
+    [32m  Γ£ö[0m[90m ISO timestamp with Z is parsed as UTC (standard behavior)[0m
+    [32m  Γ£ö[0m[90m ISO timestamp with timezone offset is parsed correctly[0m
+    [32m  Γ£ö[0m[90m various date-only strings all roundtrip correctly[0m
+    [32m  Γ£ö[0m[90m date-only string never shifts to previous day[0m
+[0m    toLocalDateKey[0m
+    [32m  Γ£ö[0m[90m formats date as YYYY-MM-DD[0m
+    [32m  Γ£ö[0m[90m pads single-digit months and days[0m
+    [32m  Γ£ö[0m[90m handles December correctly[0m
 [0m  DashboardDataBuilder[0m
 [0m    Velocity Timeline (via buildDashboardData)[0m
     [32m  Γ£ö[0m[90m empty tasks ΓåÆ 31 data points all zero[0m
@@ -731,6 +1279,11 @@ Error parsing decision file /nonexistent/file.md: Error: ENOENT: no such file or
     [32m  Γ£ö[0m[90m tasks with Date objects completedAt work correctly[0m
     [32m  Γ£ö[0m[90m timeline dates are in chronological order[0m
     [32m  Γ£ö[0m[90m mix of valid and excluded tasks ΓåÆ only valid counted[0m
+    [32m  Γ£ö[0m[90m unmatched closed issues in allClosedIssues appear in velocity[0m
+    [32m  Γ£ö[0m[90m no double-counting when issue in both closedIssues and allClosedIssues[0m
+    [32m  Γ£ö[0m[90m allClosedIssues undefined falls back to member map[0m
+    [32m  Γ£ö[0m[90m empty allClosedIssues produces zero closed-issue counts[0m
+    [32m  Γ£ö[0m[90m old issues outside 30-day window excluded from allClosedIssues[0m
 [0m    Activity Heatmap (via buildDashboardData)[0m
     [32m  Γ£ö[0m[90m empty log entries ΓåÆ all members at 0.0[0m
     [32m  Γ£ö[0m[90m single member with log entries ΓåÆ activity level 1.0[0m
@@ -755,12 +1308,70 @@ Error parsing decision file /nonexistent/file.md: Error: ENOENT: no such file or
     [32m  Γ£ö[0m[90m no members ΓåÆ no swimlanes[0m
     [32m  Γ£ö[0m[90m startDate and endDate are YYYY-MM-DD format[0m
     [32m  Γ£ö[0m[90m multiple tasks per member with mixed statuses[0m
+[0m    Milestone Burndown End-Date Bounding[0m
+    [32m  Γ£ö[0m[90m closed milestone ends at last close date[0m
+    [32m  Γ£ö[0m[90m open milestone extends to today[0m
+[0m    Milestone Burndown ΓÇö Comprehensive[0m
+    [32m  Γ£ö[0m[90m zero issues ΓåÆ empty result[0m
+    [32m  Γ£ö[0m[90m single open issue ΓåÆ daily points from creation to today[0m
+    [32m  Γ£ö[0m[90m single closed issue ΓåÆ remaining drops to 0[0m
+    [32m  Γ£ö[0m[90m daily rollup ΓÇö multiple issues closing on different days[0m
+    [32m  Γ£ö[0m[90m multiple issues closing on same day ΓåÆ all counted[0m
+    [32m  Γ£ö[0m[90m member stacking ΓÇö byMember tracks per-member breakdown[0m
+    [32m  Γ£ö[0m[90m squad: label overrides assignee for member mapping[0m
+    [32m  Γ£ö[0m[90m squad: label matching is case-insensitive[0m
+    [32m  Γ£ö[0m[90m unassigned issues grouped as "unassigned"[0m
+    [32m  Γ£ö[0m[90m member colors are assigned in parallel with memberNames[0m
+    [32m  Γ£ö[0m[90m due date extends burndown beyond last close date[0m
+    [32m  Γ£ö[0m[90m issues created at staggered times ΓåÆ burndown ramps up[0m
+    [32m  Γ£ö[0m[90m all data point dates are YYYY-MM-DD format[0m
+    [32m  Γ£ö[0m[90m data points are in chronological order[0m
+    [32m  Γ£ö[0m[90m byMember keys initialize to 0 for all members[0m
+    [32m  Γ£ö[0m[90m dueDate is preserved in result[0m
+    [32m  Γ£ö[0m[90m no dueDate ΓåÆ dueDate undefined in result[0m
+    [32m  Γ£ö[0m[90m remaining is monotonically non-increasing when no new issues[0m
+[0m    Velocity Timeline ΓÇö Edge Cases[0m
+    [32m  Γ£ö[0m[90m duplicate issues in allClosedIssues ΓåÆ counted once[0m
+    [32m  Γ£ö[0m[90m tasks + allClosedIssues combine correctly[0m
+    [32m  Γ£ö[0m[90m closedAt at exact 30-day boundary ΓåÆ excluded[0m
+    [32m  Γ£ö[0m[90m issues with no closedAt ΓåÆ not counted[0m
+    [32m  Γ£ö[0m[90m velocity with velocityTasks and allClosedIssues both populated[0m
+    [32m  Γ£ö[0m[90m completedAt as string ΓåÆ parsed correctly via parseDateAsLocal[0m
+    [32m  Γ£ö[0m[90m all 31 timeline dates are unique[0m
 [0m    buildDashboardData ΓÇö Full Pipeline[0m
     [32m  Γ£ö[0m[90m empty everything ΓåÆ valid DashboardData structure[0m
     [32m  Γ£ö[0m[90m decisions passed through unchanged[0m
     [32m  Γ£ö[0m[90m all sub-builders compose correctly[0m
     [32m  Γ£ö[0m[90m result conforms to DashboardData shape[0m
     [32m  Γ£ö[0m[90m large dataset does not crash[0m
+[0m  Velocity Tasks ΓÇö Session Log Counting[0m
+  [32m  Γ£ö[0m[90m velocityTasks parameter uses all-log tasks in velocity chart[0m
+  [32m  Γ£ö[0m[90m velocityTasks undefined falls back to tasks (backward compat)[0m
+  [32m  Γ£ö[0m[90m velocityTasks can include session-log-derived tasks not in tasks[0m
+  [32m  Γ£ö[0m[90m swimlanes still use orchestration-only tasks even when velocityTasks provided[0m
+[0m  getVelocityTasks() ΓÇö SquadDataProvider integration[0m
+  [32m  Γ£ö[0m[90m getVelocityTasks() returns tasks from session log entries that getTasks() does not[0m
+[0m  SquadDataProvider ΓÇö Agents Folder Discovery[0m
+[0m    Agents folder with charter files[0m
+    [32m  Γ£ö[0m[90m discovers members from agent directories with charter.md[0m
+[0m    Agents folder without charter files[0m
+    [32m  Γ£ö[0m[90m discovers members with default role when no charter.md exists[0m
+[0m    Skips excluded directories[0m
+    [32m  Γ£ö[0m[90m skips _alumni and scribe directories[0m
+[0m    Empty agents folder[0m
+    [32m  Γ£ö[0m[90m returns empty array when agents folder has no subdirectories[0m
+[0m    No agents folder[0m
+    [32m  Γ£ö[0m[90m returns empty array when agents directory does not exist[0m
+[0m    team.md takes priority over agents folder[0m
+    [32m  Γ£ö[0m[90m uses team.md members when valid Members table exists[0m
+[0m    Role extraction from charter[0m
+    [32m  Γ£ö[0m[90m extracts role from "- **Role:** Backend Dev" format[0m
+    [32m  Γ£ö[0m[90m uses default role when charter has no Identity section[0m
+    [32m  Γ£ö[0m[90m uses default role when charter has Identity section but no Role line[0m
+[0m  addSkillCommand[0m
+[0m    registerAddSkillCommand()[0m
+    [32m  Γ£ö[0m[90m returns a Disposable[0m
+    [36m  - registers the squadui.addSkill command[0m
 [0m  AddMemberCommand[0m
 [0m    Command Registration[0m
     [36m  - addMember command is registered when extension is active[0m
@@ -787,6 +1398,20 @@ Error parsing decision file /nonexistent/file.md: Error: ENOENT: no such file or
     [36m  - agent name with spaces is normalized to lowercase directory name[0m
     [36m  - adding agent that already exists warns or handles gracefully[0m
     [36m  - custom role via "Other..." produces correct charter content[0m
+[0m  SquadDataProvider ΓÇö Active-Work Markers[0m
+  [32m  Γ£ö[0m[90m getSquadMembers() works normally when active-work directory does not exist[0m
+  [32m  Γ£ö[0m[90m empty active-work directory causes no status overrides[0m
+  [32m  Γ£ö[0m[90m active marker overrides member status to working[0m
+  [32m  Γ£ö[0m[90m marker overrides log-based idle status[0m
+  [32m  Γ£ö[0m[90m stale marker (mtime > 5 min) is ignored, member stays idle[0m
+  [32m  Γ£ö[0m[90m fresh marker (mtime < 5 min) is respected, member becomes working[0m
+  [32m  Γ£ö[0m[90m non-.md files in active-work/ are ignored[0m
+  [32m  Γ£ö[0m[90m multiple markers set multiple members to working[0m
+  [32m  Γ£ö[0m[90m marker for unknown member does not crash or affect known members[0m
+  [32m  Γ£ö[0m[90m marker slug matches member name case-insensitively[0m
+  [32m  Γ£ö[0m[90m marker at exactly the staleness boundary is treated as stale[0m
+  [32m  Γ£ö[0m[90m marker just under the staleness boundary is fresh[0m
+  [32m  Γ£ö[0m[90m marker does not double-set status for already-working member[0m
 [0m  Acceptance: Orchestration Logs ΓåÆ Tree View[0m
 [0m    data pipeline produces correct members and tasks[0m
     [32m  Γ£ö[0m[90m all team.md members appear as squad members[0m
@@ -803,16 +1428,16 @@ Error parsing decision file /nonexistent/file.md: Error: ENOENT: no such file or
     [32m  Γ£ö[0m[90m Bob has no task children (not first participant)[0m
 [0m    task items have correct labels, icons, and commands[0m
     [32m  Γ£ö[0m[90m task labels include issue number[0m
-    [32m  Γ£ö[0m[90m task items use tasklist icon[0m
+    [32m  Γ£ö[0m[90m task items use status-specific icons[0m
     [32m  Γ£ö[0m[90m task items have showWorkDetails command[0m
     [32m  Γ£ö[0m[90m task command arguments contain task ID[0m
     [32m  Γ£ö[0m[90m task items are not collapsible (leaf nodes)[0m
     [32m  Γ£ö[0m[90m task description shows status[0m
     [32m  Γ£ö[0m[90m task tooltips are MarkdownStrings[0m
 [0m    member item rendering[0m
-    [32m  Γ£ö[0m[90m working member (Carol) has sync~spin icon[0m
+    [31m  3) working member (Carol) has sync~spin icon[0m
     [32m  Γ£ö[0m[90m idle members (Alice, Bob) have person icon[0m
-    [32m  Γ£ö[0m[90m member descriptions include role and status[0m
+    [31m  4) member descriptions include role and status[0m
     [32m  Γ£ö[0m[90m member tooltips are MarkdownStrings[0m
 [0m    work details for pipeline-discovered tasks[0m
     [32m  Γ£ö[0m[90m getWorkDetails returns task and member for log-derived task[0m
@@ -821,101 +1446,74 @@ Error parsing decision file /nonexistent/file.md: Error: ENOENT: no such file or
 [0m    refresh propagates through pipeline[0m
     [32m  Γ£ö[0m[90m refresh re-reads data from fixtures[0m
     [32m  Γ£ö[0m[90m tree provider refresh fires change event[0m
-[92m [0m[32m 599 passing[0m[90m (1s)[0m
-[36m [0m[36m 39 pending[0m
-[31m  7 failing[0m
-[0m  1) SquadStatusBar
-       Tooltip Content
-         tooltip shows idle count:
-
-      [31mAssertionError [ERR_ASSERTION]: Tooltip should show idle count[0m
-      [32m+ expected[0m [31m- actual[0m
-
-      [31m-false[0m
-      [32m+true[0m
-      [0m[90m
-  	at Context.<anonymous> (d:\SquadUI\out\test\suite\squadStatusBar.test.js:276:20)
-[0m
-[0m  2) SkillCatalogService
-       parseSkillsShHtml()
-         extracts skill entries from HTML anchor tags:
-
-      [31mAssertionError [ERR_ASSERTION]: Should find at least 2 skills, found 0[0m
-      [32m+ expected[0m [31m- actual[0m
-
-      [31m-false[0m
-      [32m+true[0m
-      [0m[90m
-  	at Context.<anonymous> (d:\SquadUI\out\test\suite\skillCatalogService.test.js:367:20)
-  	at process.processImmediate (node:internal/timers:485:21)
-[0m
-[0m  3) SkillCatalogService
-       parseSkillsShHtml()
-         extracts nearby description from p/span tags:
-[0m[31m     AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
-
-  assert.ok(skill)
-[0m[90m
-  	at Context.<anonymous> (d:\SquadUI\out\test\suite\skillCatalogService.test.js:400:20)
-  	at process.processImmediate (node:internal/timers:485:21)
-[0m
-[0m  4) SkillCatalogService
-       parseSkillsShHtml()
-         handles JSON-LD structured data:
-[0m[31m     AssertionError [ERR_ASSERTION]: Should extract from JSON-LD[0m[90m
-  	at Context.<anonymous> (d:\SquadUI\out\test\suite\skillCatalogService.test.js:415:20)
-  	at process.processImmediate (node:internal/timers:485:21)
-[0m
-[0m  5) SkillCatalogService
-       parseSkillsShHtml()
-         prepends https://skills.sh to relative URLs:
-[0m[31m     AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
-
-  assert.ok(skill)
-[0m[90m
-  	at Context.<anonymous> (d:\SquadUI\out\test\suite\skillCatalogService.test.js:432:20)
-  	at process.processImmediate (node:internal/timers:485:21)
-[0m
-[0m  6) IssueDetailWebview
-       formatDateString()
-         returns raw string for invalid dates:
+[92m [0m[32m 1035 passing[0m[90m (5s)[0m
+[36m [0m[36m 47 pending[0m
+[31m  4 failing[0m
+[0m  1) E2E MVP Validation (Issue #14)
+       AC-2: Tree view shows squad members with correct status
+         working member (Carol) gets sync~spin icon:
 
       [31mAssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
 + actual - expected
 
-+ 'Invalid Date'
-- 'not-a-date'
++ 'person'
+- 'sync~spin'
 [0m
       [32m+ expected[0m [31m- actual[0m
 
-      [31m-Invalid Date[0m
-      [32m+not-a-date[0m
+      [31m-person[0m
+      [32m+sync~spin[0m
       [0m[90m
-  	at Context.<anonymous> (d:\SquadUI\out\test\suite\issueDetailWebview.test.js:139:20)
-  	at process.processImmediate (node:internal/timers:485:21)
+  	at Context.<anonymous> (c:\dev\SquadUI\out\test\suite\e2e-validation.test.js:268:20)
 [0m
-[0m  7) IssueDetailWebview
-       formatDateString()
-         returns raw string for empty date:
+[0m  2) E2E MVP Validation (Issue #14)
+       AC-2: Tree view shows squad members with correct status
+         member descriptions show role and status:
+
+      [31mAssertionError [ERR_ASSERTION]: Should include status[0m
+      [32m+ expected[0m [31m- actual[0m
+
+      [31m-false[0m
+      [32m+true[0m
+      [0m[90m
+  	at Context.<anonymous> (c:\dev\SquadUI\out\test\suite\e2e-validation.test.js:283:20)
+[0m
+[0m  3) Acceptance: Orchestration Logs ΓåÆ Tree View
+       member item rendering
+         working member (Carol) has sync~spin icon:
 
       [31mAssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
++ actual - expected
 
-'Invalid Date' !== ''
++ 'person'
+- 'sync~spin'
 [0m
       [32m+ expected[0m [31m- actual[0m
 
-      [31m-Invalid Date[0m
+      [31m-person[0m
+      [32m+sync~spin[0m
       [0m[90m
-  	at Context.<anonymous> (d:\SquadUI\out\test\suite\issueDetailWebview.test.js:144:20)
-  	at process.processImmediate (node:internal/timers:485:21)
+  	at Context.<anonymous> (c:\dev\SquadUI\out\test\suite\acceptance.test.js:210:20)
 [0m
-Error: 7 tests failed.
-	at d:\SquadUI\out\test\suite\index.js:59:32
-	at done (d:\SquadUI\node_modules\mocha\lib\mocha.js:1000:7)
-[main 2026-02-15T17:59:24.476Z] Extension host with pid 32140 exited with code: 0, signal: unknown.
+[0m  4) Acceptance: Orchestration Logs ΓåÆ Tree View
+       member item rendering
+         member descriptions include role and status:
+
+      [31mAssertionError [ERR_ASSERTION]: Description should include status[0m
+      [32m+ expected[0m [31m- actual[0m
+
+      [31m-false[0m
+      [32m+true[0m
+      [0m[90m
+  	at Context.<anonymous> (c:\dev\SquadUI\out\test\suite\acceptance.test.js:227:20)
+[0m
+Error: 4 tests failed.
+	at c:\dev\SquadUI\out\test\suite\index.js:59:32
+	at done (c:\dev\SquadUI\node_modules\mocha\lib\mocha.js:1000:7)
+[main 2026-02-23T14:21:05.125Z] Extension host with pid 77280 exited with code: 0, signal: unknown.
 Exit code:   1
 Failed to run tests: TestRunFailedError: Test run failed with code 1
-    at ChildProcess.onProcessClosed (D:\SquadUI\node_modules\@vscode\test-electron\out\runTest.js:110:24)
+    at ChildProcess.onProcessClosed (C:\dev\SquadUI\node_modules\@vscode\test-electron\out\runTest.js:110:24)
     at ChildProcess.emit (node:events:519:28)
     at ChildProcess._handle.onexit (node:internal/child_process:293:12) {
   code: 1,
