@@ -438,6 +438,21 @@ ${decisionList}`;
             border-radius: 4px;
             transition: width 0.3s;
         }
+        .charts-container {
+            display: flex;
+            gap: 16px;
+        }
+        .charts-container > div {
+            flex: 1;
+            min-width: 0;
+        }
+        .chart-label {
+            font-size: 0.85em;
+            color: var(--vscode-descriptionForeground);
+            text-align: center;
+            margin-bottom: 4px;
+            font-weight: 600;
+        }
         canvas {
             width: 100%;
             height: 200px;
@@ -478,7 +493,7 @@ ${decisionList}`;
         ${this.formatDate(report.summary.periodStart)} – ${this.formatDate(report.summary.periodEnd)}
     </div>
 
-    ${this.renderMilestoneSection(burndown)}
+    ${this.renderMilestoneSection(burndown, report)}
 
     <div class="summary-grid">
         <div class="summary-card success">
@@ -524,6 +539,7 @@ ${decisionList}`;
         }
 
         ${this.getBurndownChartScript(burndown)}
+        ${this.getVelocityChartScript(report)}
     </script>
 </body>
 </html>`;
@@ -630,13 +646,16 @@ ${decisionList}`;
         `;
     }
 
-    private renderMilestoneSection(burndown?: MilestoneBurndown): string {
-        if (!burndown || burndown.totalIssues === 0) { return ''; }
-        const closedCount = burndown.totalIssues - (burndown.dataPoints.length > 0 ? burndown.dataPoints[burndown.dataPoints.length - 1].remaining : 0);
-        const pct = Math.round((closedCount / burndown.totalIssues) * 100);
-        const dueText = burndown.dueDate ? `Due: ${burndown.dueDate}` : '';
-        return `
-            <div class="milestone-section">
+    private renderMilestoneSection(burndown: MilestoneBurndown | undefined, report: StandupReport): string {
+        const hasVelocity = report.closedIssues.length > 0 || report.newIssues.length > 0;
+        if ((!burndown || burndown.totalIssues === 0) && !hasVelocity) { return ''; }
+
+        let burndownHtml = '';
+        if (burndown && burndown.totalIssues > 0) {
+            const closedCount = burndown.totalIssues - (burndown.dataPoints.length > 0 ? burndown.dataPoints[burndown.dataPoints.length - 1].remaining : 0);
+            const pct = Math.round((closedCount / burndown.totalIssues) * 100);
+            const dueText = burndown.dueDate ? `Due: ${burndown.dueDate}` : '';
+            burndownHtml = `
                 <div class="milestone-header">
                     <div class="milestone-title">🎯 ${this.escapeHtml(burndown.title)}</div>
                     <div class="milestone-stats">
@@ -646,8 +665,31 @@ ${decisionList}`;
                 </div>
                 <div class="milestone-progress">
                     <div class="milestone-progress-fill" style="width: ${pct}%"></div>
-                </div>
-                <canvas id="burndown-chart"></canvas>
+                </div>`;
+        }
+
+        const velocityHtml = hasVelocity ? `
+                <div>
+                    <div class="chart-label">Issue Velocity</div>
+                    <canvas id="velocity-chart"></canvas>
+                </div>` : '';
+
+        const burndownChartHtml = burndown && burndown.totalIssues > 0 ? `
+                <div>
+                    <div class="chart-label">Milestone Burndown</div>
+                    <canvas id="burndown-chart"></canvas>
+                </div>` : '';
+
+        const chartsHtml = (burndownChartHtml || velocityHtml) ? `
+                <div class="charts-container">
+                    ${burndownChartHtml}
+                    ${velocityHtml}
+                </div>` : '';
+
+        return `
+            <div class="milestone-section">
+                ${burndownHtml}
+                ${chartsHtml}
             </div>
         `;
     }
@@ -784,6 +826,131 @@ ${decisionList}`;
                     const val = Math.round(maxVal * (1 - i / 4));
                     ctx.fillText(String(val), pad.left - 6, y + 4);
                 }
+            }
+
+            draw();
+            window.addEventListener('resize', draw);
+        })();
+        `;
+    }
+
+    /**
+     * Generates the velocity chart JavaScript showing opened vs closed issues per day.
+     */
+    private getVelocityChartScript(report: StandupReport): string {
+        if (report.closedIssues.length === 0 && report.newIssues.length === 0) { return ''; }
+
+        // Group issues by date
+        const dateMap: Record<string, { opened: number; closed: number }> = {};
+
+        for (const issue of report.newIssues) {
+            const key = issue.createdAt.substring(0, 10);
+            if (!dateMap[key]) { dateMap[key] = { opened: 0, closed: 0 }; }
+            dateMap[key].opened++;
+        }
+        for (const issue of report.closedIssues) {
+            const key = issue.closedAt ? issue.closedAt.substring(0, 10) : issue.updatedAt.substring(0, 10);
+            if (!dateMap[key]) { dateMap[key] = { opened: 0, closed: 0 }; }
+            dateMap[key].closed++;
+        }
+
+        const sortedDates = Object.keys(dateMap).sort();
+        const velocityData = sortedDates.map(date => ({ date, ...dateMap[date] }));
+        const velocityJson = JSON.stringify(velocityData).replace(/</g, '\\u003c');
+
+        return `
+        (function() {
+            const canvas = document.getElementById('velocity-chart');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            const dpr = window.devicePixelRatio || 1;
+            const data = ${velocityJson};
+
+            function resolveColor(varName, fallback) {
+                const resolved = getComputedStyle(document.documentElement).getPropertyValue(varName).trim();
+                return resolved || fallback;
+            }
+
+            function draw() {
+                const rect = canvas.getBoundingClientRect();
+                canvas.width = rect.width * dpr;
+                canvas.height = rect.height * dpr;
+                ctx.scale(dpr, dpr);
+                ctx.clearRect(0, 0, rect.width, rect.height);
+
+                if (data.length === 0) return;
+
+                const fg = resolveColor('--vscode-foreground', '#ccc');
+                const border = resolveColor('--vscode-panel-border', '#444');
+                const successColor = resolveColor('--vscode-testing-iconPassed', '#4ec9b0');
+                const warningColor = resolveColor('--vscode-editorWarning-foreground', '#d18616');
+                const pad = { top: 10, right: 16, bottom: 30, left: 40 };
+                const w = rect.width - pad.left - pad.right;
+                const h = rect.height - pad.top - pad.bottom;
+                const maxVal = Math.max(...data.map(d => Math.max(d.opened, d.closed)), 1);
+
+                const barGroupWidth = w / data.length;
+                const barWidth = Math.max(4, barGroupWidth * 0.35);
+                const yScale = h / maxVal;
+
+                // Grid lines
+                ctx.strokeStyle = border;
+                ctx.lineWidth = 0.5;
+                for (let i = 0; i <= 4; i++) {
+                    const y = pad.top + (h / 4) * i;
+                    ctx.beginPath();
+                    ctx.moveTo(pad.left, y);
+                    ctx.lineTo(pad.left + w, y);
+                    ctx.stroke();
+                }
+
+                // Bars
+                for (let i = 0; i < data.length; i++) {
+                    const cx = pad.left + barGroupWidth * i + barGroupWidth / 2;
+
+                    // Closed bar (green, left)
+                    const closedH = data[i].closed * yScale;
+                    ctx.fillStyle = successColor;
+                    ctx.fillRect(cx - barWidth - 1, pad.top + h - closedH, barWidth, closedH);
+
+                    // Opened bar (orange, right)
+                    const openedH = data[i].opened * yScale;
+                    ctx.fillStyle = warningColor;
+                    ctx.fillRect(cx + 1, pad.top + h - openedH, barWidth, openedH);
+                }
+
+                // X-axis labels
+                ctx.fillStyle = fg;
+                ctx.font = '10px var(--vscode-font-family, sans-serif)';
+                ctx.textAlign = 'center';
+                const labelCount = Math.min(data.length, 6);
+                const step = Math.max(1, Math.floor(data.length / labelCount));
+                for (let i = 0; i < data.length; i += step) {
+                    const cx = pad.left + barGroupWidth * i + barGroupWidth / 2;
+                    ctx.fillText(data[i].date.substring(5), cx, pad.top + h + 18);
+                }
+
+                // Y-axis labels
+                ctx.textAlign = 'right';
+                for (let i = 0; i <= 4; i++) {
+                    const y = pad.top + (h / 4) * i;
+                    const val = Math.round(maxVal * (1 - i / 4));
+                    ctx.fillText(String(val), pad.left - 6, y + 4);
+                }
+
+                // Legend
+                const legendY = pad.top + 2;
+                const legendX = pad.left + w - 120;
+                ctx.font = '10px var(--vscode-font-family, sans-serif)';
+                ctx.textAlign = 'left';
+                ctx.fillStyle = successColor;
+                ctx.fillRect(legendX, legendY, 10, 10);
+                ctx.fillStyle = fg;
+                ctx.fillText('Closed', legendX + 14, legendY + 9);
+                ctx.fillStyle = warningColor;
+                ctx.fillRect(legendX + 60, legendY, 10, 10);
+                ctx.fillStyle = fg;
+                ctx.fillText('Opened', legendX + 74, legendY + 9);
             }
 
             draw();
