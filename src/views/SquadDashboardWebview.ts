@@ -85,6 +85,9 @@ export class SquadDashboardWebview {
                 case 'openLogEntry':
                     await this.handleOpenLogEntry(message.date, message.topic);
                     break;
+                case 'openStandup':
+                    await vscode.commands.executeCommand('squadui.generateStandup');
+                    break;
             }
         }, undefined, []);
 

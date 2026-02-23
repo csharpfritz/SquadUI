@@ -57,6 +57,19 @@ export function getDashboardHtml(data: DashboardData): string {
             border-bottom-color: var(--vscode-textLink-foreground);
             color: var(--vscode-textLink-foreground);
         }
+        .tab.standup-btn {
+            margin-left: auto;
+            background-color: var(--vscode-button-background);
+            color: var(--vscode-button-foreground);
+            border-radius: 4px;
+            padding: 6px 14px;
+            font-size: 12px;
+            margin-top: 4px;
+            margin-bottom: 4px;
+        }
+        .tab.standup-btn:hover {
+            opacity: 0.9;
+        }
 
         /* Tab Content */
         .tab-content {
@@ -452,6 +465,7 @@ export function getDashboardHtml(data: DashboardData): string {
         <button class="tab" data-tab="velocity">Velocity</button>
         <button class="tab" data-tab="activity">Activity</button>
         <button class="tab" data-tab="decisions">Decisions</button>
+        <button class="tab standup-btn" id="open-standup-btn" title="Generate Standup Report">📊 Standup</button>
     </div>
 
     <!-- Team Tab -->
@@ -1211,6 +1225,11 @@ export function getDashboardHtml(data: DashboardData): string {
                     });
                     break;
             }
+        });
+
+        // Standup report button handler
+        document.getElementById('open-standup-btn').addEventListener('click', () => {
+            vscode.postMessage({ command: 'openStandup' });
         });
     </script>
 </body>
