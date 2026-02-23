@@ -135,3 +135,18 @@
    - v1.1 enables observability (skills usage, burndown metrics)
    - Key implementation: DecisionService.search() and HealthCheck diagnostic command
    - Roadmap session logged to .ai-team/log/2026-02-23-feature-roadmap.md
+
+### DecisionSearchService (#69) (2026-02-24)
+- Created DecisionSearchService in src/services/DecisionSearchService.ts - pure service, no file I/O, no VS Code deps
+- Methods: search(), filterByDate(), filterByAuthor(), filter() (combined criteria)
+- Search ranking: title match (weight 10) > author match (weight 5) > content match (weight 3)
+- Multi-word queries split on whitespace; each term scored independently and summed
+- filterByDate() uses string comparison on YYYY-MM-DD keys (avoids timezone issues)
+- filterByAuthor() is case-insensitive substring match
+- filter() chains: search first (preserves ranking order) then date range then author
+- Open-ended date ranges: omit startDate or endDate in DecisionSearchCriteria
+- Decisions without date excluded from date filters; decisions without author excluded from author filters
+- Exported DecisionSearchCriteria and ScoredDecision interfaces for consumer use
+- 37 tests in decisionSearchService.test.ts covering all methods and edge cases
+- Service is decoupled from DecisionService - operates on DecisionEntry[], not files
+- UI integration (tree view search box, filter controls) is Rusty's follow-up
