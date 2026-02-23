@@ -64,6 +64,7 @@ export class GitHubIssuesService {
     private cache: IssueCache | null = null;
     private closedCache: IssueCache | null = null;
     private issueSourceCache: IssueSourceConfig | null = null;
+    private effectiveConfigCache: IssueSourceConfig | null = null;
 
     constructor(options: GitHubIssuesServiceOptions = {}) {
         this.teamMdService = new TeamMdService();
@@ -102,9 +103,65 @@ export class GitHubIssuesService {
             repo: repoName,
             matching: roster.issueMatching,
             memberAliases: roster.memberAliases,
+            upstream: roster.upstream,
         };
 
         return this.issueSourceCache;
+    }
+
+    /**
+     * Resolves the effective issue source config for API calls.
+     * If the configured repo is a fork, returns a config pointing to the upstream
+     * (parent) repository where issues live. Resolution order:
+     *   1. Manual **Upstream** field in team.md's Issue Source table
+     *   2. Auto-detect via GitHub API (GET /repos/{owner}/{repo} → parent field)
+     *   3. Fall back to the configured repo itself
+     *
+     * Result is cached; call invalidateAll() to clear.
+     */
+    async getEffectiveConfig(workspaceRoot: string): Promise<IssueSourceConfig | null> {
+        if (this.effectiveConfigCache) {
+            return this.effectiveConfigCache;
+        }
+
+        const config = await this.getIssueSource(workspaceRoot);
+        if (!config) {
+            return null;
+        }
+
+        // 1. Manual upstream override from team.md
+        if (config.upstream) {
+            const resolved = this.parseUpstreamString(config.upstream, config);
+            if (resolved) {
+                this.effectiveConfigCache = resolved;
+                return resolved;
+            }
+        }
+
+        // 2. Auto-detect fork parent via GitHub API
+        try {
+            const repoInfo = await this.apiGet<{
+                fork: boolean;
+                parent?: { owner: { login: string }; name: string; full_name: string };
+            }>(`/repos/${config.owner}/${config.repo}`);
+
+            if (repoInfo.fork && repoInfo.parent) {
+                const upstream: IssueSourceConfig = {
+                    ...config,
+                    owner: repoInfo.parent.owner.login,
+                    repo: repoInfo.parent.name,
+                    repository: repoInfo.parent.full_name,
+                };
+                this.effectiveConfigCache = upstream;
+                return upstream;
+            }
+        } catch {
+            // API error — fall back to configured repo
+        }
+
+        // 3. Not a fork, use configured repo
+        this.effectiveConfigCache = config;
+        return config;
     }
 
     /**
@@ -120,7 +177,7 @@ export class GitHubIssuesService {
             return this.cache.issues;
         }
 
-        const config = await this.getIssueSource(workspaceRoot);
+        const config = await this.getEffectiveConfig(workspaceRoot);
         if (!config) {
             return [];
         }
@@ -227,7 +284,7 @@ export class GitHubIssuesService {
             return this.closedCache.issues;
         }
 
-        const config = await this.getIssueSource(workspaceRoot);
+        const config = await this.getEffectiveConfig(workspaceRoot);
         if (!config) {
             return [];
         }
@@ -310,7 +367,7 @@ export class GitHubIssuesService {
      * Used to build burndown charts.
      */
     async getMilestoneIssues(workspaceRoot: string, milestoneNumber: number): Promise<GitHubIssue[]> {
-        const config = await this.getIssueSource(workspaceRoot);
+        const config = await this.getEffectiveConfig(workspaceRoot);
         if (!config) { return []; }
 
         const allIssues: GitHubIssue[] = [];
@@ -344,7 +401,7 @@ export class GitHubIssuesService {
      * Returns all milestones (open and closed) sorted by most recently created.
      */
     async getMilestones(workspaceRoot: string): Promise<GitHubMilestone[]> {
-        const config = await this.getIssueSource(workspaceRoot);
+        const config = await this.getEffectiveConfig(workspaceRoot);
         if (!config) { return []; }
 
         try {
@@ -377,6 +434,7 @@ export class GitHubIssuesService {
         this.cache = null;
         this.closedCache = null;
         this.issueSourceCache = null;
+        this.effectiveConfigCache = null;
     }
 
     /**
@@ -401,6 +459,31 @@ export class GitHubIssuesService {
             return matching;
         }
         return ['labels', 'assignees'];
+    }
+
+    /**
+     * Parses an upstream string ("owner/repo" or "github.com/owner/repo") into
+     * an IssueSourceConfig that inherits matching/aliases from the original config.
+     */
+    private parseUpstreamString(upstream: string, baseConfig: IssueSourceConfig): IssueSourceConfig | null {
+        const parts = upstream.split('/');
+        if (parts.length < 2) {
+            return null;
+        }
+
+        const owner = parts.length === 2 ? parts[0] : parts[parts.length - 2];
+        const repo = parts[parts.length - 1];
+
+        if (!owner || !repo) {
+            return null;
+        }
+
+        return {
+            ...baseConfig,
+            owner,
+            repo,
+            repository: `${owner}/${repo}`,
+        };
     }
 
     /**

@@ -265,6 +265,9 @@ export interface IssueSourceConfig {
 
     /** Map of squad member name → GitHub username for assignee matching */
     memberAliases?: Map<string, string>;
+
+    /** Manual upstream repository override from team.md ("owner/repo" format) */
+    upstream?: string;
 }
 
 // ─── GitHub Issues Service Contract ────────────────────────────────────────

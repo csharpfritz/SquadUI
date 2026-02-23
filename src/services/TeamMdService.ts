@@ -34,6 +34,9 @@ export interface ExtendedTeamRoster extends TeamRoster {
 
     /** Squad member name → GitHub username mapping */
     memberAliases?: Map<string, string>;
+
+    /** Upstream repository for forks ("owner/repo" format from Issue Source table) */
+    upstream?: string;
 }
 
 /**
@@ -86,6 +89,7 @@ export class TeamMdService {
         const copilotCapabilities = this.extractCopilotCapabilities(normalized);
         const issueMatching = this.extractIssueMatching(normalized);
         const memberAliases = this.extractMemberAliases(normalized);
+        const upstream = this.extractUpstream(normalized);
 
         const roster: ExtendedTeamRoster = {
             members,
@@ -99,6 +103,9 @@ export class TeamMdService {
         }
         if (memberAliases && memberAliases.size > 0) {
             roster.memberAliases = memberAliases;
+        }
+        if (upstream) {
+            roster.upstream = upstream;
         }
 
         return roster;
@@ -429,6 +436,29 @@ export class TeamMdService {
         }
 
         return raw.split(',').map(s => s.trim().toLowerCase()).filter(s => s.length > 0);
+    }
+
+    /**
+     * Extracts the Upstream field from the Issue Source table.
+     * Used to specify the parent repository for forks ("owner/repo" format).
+     */
+    private extractUpstream(content: string): string | undefined {
+        const upstreamMatch = content.match(/\*\*Upstream\*\*\s*\|\s*([^\n|]+)/i);
+        if (!upstreamMatch) {
+            return undefined;
+        }
+
+        const raw = upstreamMatch[1].trim();
+        if (!raw || raw === '—' || raw === '-') {
+            return undefined;
+        }
+
+        // Must contain a '/' to be a valid owner/repo format
+        if (!raw.includes('/')) {
+            return undefined;
+        }
+
+        return raw;
     }
 
     /**

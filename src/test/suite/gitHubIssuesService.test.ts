@@ -424,4 +424,278 @@ suite('GitHubIssuesService', () => {
             assert.strictEqual(token, 'ghp_test123');
         });
     });
+
+    suite('Fork-aware config resolution', () => {
+        test('getEffectiveConfig returns null when no issue source configured', async () => {
+            const service = new GitHubIssuesService();
+            const config = await service.getEffectiveConfig('/nonexistent/path');
+            assert.strictEqual(config, null);
+        });
+
+        test('manual upstream override is used when present in team.md', async () => {
+            const tempDir = path.join(TEST_FIXTURES_ROOT, 'temp-upstream-manual');
+            const aiTeamDir = path.join(tempDir, '.ai-team');
+            await fs.promises.mkdir(aiTeamDir, { recursive: true });
+            await fs.promises.writeFile(path.join(aiTeamDir, 'team.md'), [
+                '# Team',
+                '',
+                '## Issue Source',
+                '',
+                '| Field | Value |',
+                '|-------|-------|',
+                '| **Repository** | myfork/SquadUI |',
+                '| **Upstream** | csharpfritz/SquadUI |',
+                '',
+                '## Members',
+                '',
+                '| Name | Role |',
+                '|------|------|',
+                '| Alice | Engineer |',
+            ].join('\n'));
+
+            try {
+                const service = new GitHubIssuesService();
+                const config = await service.getEffectiveConfig(tempDir);
+
+                assert.ok(config);
+                assert.strictEqual(config!.owner, 'csharpfritz', 'Should use upstream owner');
+                assert.strictEqual(config!.repo, 'SquadUI', 'Should use upstream repo');
+                assert.strictEqual(config!.repository, 'csharpfritz/SquadUI');
+            } finally {
+                await fs.promises.rm(tempDir, { recursive: true, force: true });
+            }
+        });
+
+        test('manual upstream with github.com prefix is parsed correctly', async () => {
+            const tempDir = path.join(TEST_FIXTURES_ROOT, 'temp-upstream-long');
+            const aiTeamDir = path.join(tempDir, '.ai-team');
+            await fs.promises.mkdir(aiTeamDir, { recursive: true });
+            await fs.promises.writeFile(path.join(aiTeamDir, 'team.md'), [
+                '# Team',
+                '',
+                '## Issue Source',
+                '',
+                '| Field | Value |',
+                '|-------|-------|',
+                '| **Repository** | myfork/SquadUI |',
+                '| **Upstream** | github.com/org/upstream-repo |',
+                '',
+                '## Members',
+                '',
+                '| Name | Role |',
+                '|------|------|',
+                '| Alice | Engineer |',
+            ].join('\n'));
+
+            try {
+                const service = new GitHubIssuesService();
+                const config = await service.getEffectiveConfig(tempDir);
+
+                assert.ok(config);
+                assert.strictEqual(config!.owner, 'org');
+                assert.strictEqual(config!.repo, 'upstream-repo');
+            } finally {
+                await fs.promises.rm(tempDir, { recursive: true, force: true });
+            }
+        });
+
+        test('effective config is cached across calls', async () => {
+            const tempDir = path.join(TEST_FIXTURES_ROOT, 'temp-upstream-cache');
+            const aiTeamDir = path.join(tempDir, '.ai-team');
+            await fs.promises.mkdir(aiTeamDir, { recursive: true });
+            await fs.promises.writeFile(path.join(aiTeamDir, 'team.md'), [
+                '# Team',
+                '',
+                '## Issue Source',
+                '',
+                '| Field | Value |',
+                '|-------|-------|',
+                '| **Repository** | myfork/SquadUI |',
+                '| **Upstream** | csharpfritz/SquadUI |',
+                '',
+                '## Members',
+                '',
+                '| Name | Role |',
+                '|------|------|',
+                '| Alice | Engineer |',
+            ].join('\n'));
+
+            try {
+                const service = new GitHubIssuesService();
+                const config1 = await service.getEffectiveConfig(tempDir);
+                const config2 = await service.getEffectiveConfig(tempDir);
+
+                assert.strictEqual(config1, config2, 'Should return cached effective config');
+            } finally {
+                await fs.promises.rm(tempDir, { recursive: true, force: true });
+            }
+        });
+
+        test('invalidateAll clears effective config cache', async () => {
+            const service = new GitHubIssuesService();
+
+            // Populate effective config cache
+            (service as unknown as { effectiveConfigCache: object }).effectiveConfigCache = {
+                repository: 'upstream/repo',
+                owner: 'upstream',
+                repo: 'repo',
+            };
+
+            service.invalidateAll();
+
+            assert.strictEqual(
+                (service as unknown as { effectiveConfigCache: null }).effectiveConfigCache,
+                null,
+                'Should clear effective config cache'
+            );
+        });
+
+        test('upstream field preserved in IssueSourceConfig from team.md', async () => {
+            const tempDir = path.join(TEST_FIXTURES_ROOT, 'temp-upstream-field');
+            const aiTeamDir = path.join(tempDir, '.ai-team');
+            await fs.promises.mkdir(aiTeamDir, { recursive: true });
+            await fs.promises.writeFile(path.join(aiTeamDir, 'team.md'), [
+                '# Team',
+                '',
+                '## Issue Source',
+                '',
+                '| Field | Value |',
+                '|-------|-------|',
+                '| **Repository** | myfork/SquadUI |',
+                '| **Upstream** | csharpfritz/SquadUI |',
+                '',
+                '## Members',
+                '',
+                '| Name | Role |',
+                '|------|------|',
+                '| Alice | Engineer |',
+            ].join('\n'));
+
+            try {
+                const service = new GitHubIssuesService();
+                const config = await service.getIssueSource(tempDir);
+
+                assert.ok(config);
+                assert.strictEqual(config!.upstream, 'csharpfritz/SquadUI', 'Raw config should have upstream');
+                assert.strictEqual(config!.owner, 'myfork', 'Raw config owner should be the fork');
+            } finally {
+                await fs.promises.rm(tempDir, { recursive: true, force: true });
+            }
+        });
+
+        test('matching strategies preserved when using upstream', async () => {
+            const tempDir = path.join(TEST_FIXTURES_ROOT, 'temp-upstream-matching');
+            const aiTeamDir = path.join(tempDir, '.ai-team');
+            await fs.promises.mkdir(aiTeamDir, { recursive: true });
+            await fs.promises.writeFile(path.join(aiTeamDir, 'team.md'), [
+                '# Team',
+                '',
+                '## Issue Source',
+                '',
+                '| Field | Value |',
+                '|-------|-------|',
+                '| **Repository** | myfork/SquadUI |',
+                '| **Upstream** | csharpfritz/SquadUI |',
+                '| **Matching** | labels, assignees |',
+                '',
+                '## Members',
+                '',
+                '| Name | Role |',
+                '|------|------|',
+                '| Alice | Engineer |',
+            ].join('\n'));
+
+            try {
+                const service = new GitHubIssuesService();
+                const config = await service.getEffectiveConfig(tempDir);
+
+                assert.ok(config);
+                assert.strictEqual(config!.owner, 'csharpfritz', 'Should use upstream owner');
+                assert.deepStrictEqual(config!.matching, ['labels', 'assignees'], 'Should preserve matching strategies');
+            } finally {
+                await fs.promises.rm(tempDir, { recursive: true, force: true });
+            }
+        });
+
+        test('no upstream field falls through to API detection', async () => {
+            const tempDir = path.join(TEST_FIXTURES_ROOT, 'temp-no-upstream');
+            const aiTeamDir = path.join(tempDir, '.ai-team');
+            await fs.promises.mkdir(aiTeamDir, { recursive: true });
+            await fs.promises.writeFile(path.join(aiTeamDir, 'team.md'), [
+                '# Team',
+                '',
+                '## Issue Source',
+                '',
+                '| Field | Value |',
+                '|-------|-------|',
+                '| **Repository** | org/repo |',
+                '',
+                '## Members',
+                '',
+                '| Name | Role |',
+                '|------|------|',
+                '| Alice | Engineer |',
+            ].join('\n'));
+
+            try {
+                const service = new GitHubIssuesService();
+                const rawConfig = await service.getIssueSource(tempDir);
+
+                assert.ok(rawConfig);
+                assert.strictEqual(rawConfig!.upstream, undefined, 'Raw config should have no upstream');
+                // getEffectiveConfig would try the API, but without a mock it will fall back
+                // to the configured repo — which is the correct behavior
+                const effectiveConfig = await service.getEffectiveConfig(tempDir);
+                assert.ok(effectiveConfig);
+                assert.strictEqual(effectiveConfig!.owner, 'org', 'Should fall back to configured owner');
+                assert.strictEqual(effectiveConfig!.repo, 'repo', 'Should fall back to configured repo');
+            } finally {
+                await fs.promises.rm(tempDir, { recursive: true, force: true });
+            }
+        });
+
+        test('upstream with dash/em-dash is treated as absent', async () => {
+            const tempDir = path.join(TEST_FIXTURES_ROOT, 'temp-upstream-dash');
+            const aiTeamDir = path.join(tempDir, '.ai-team');
+            await fs.promises.mkdir(aiTeamDir, { recursive: true });
+            await fs.promises.writeFile(path.join(aiTeamDir, 'team.md'), [
+                '# Team',
+                '',
+                '## Issue Source',
+                '',
+                '| Field | Value |',
+                '|-------|-------|',
+                '| **Repository** | org/repo |',
+                '| **Upstream** | — |',
+                '',
+                '## Members',
+                '',
+                '| Name | Role |',
+                '|------|------|',
+                '| Alice | Engineer |',
+            ].join('\n'));
+
+            try {
+                const service = new GitHubIssuesService();
+                const config = await service.getIssueSource(tempDir);
+
+                assert.ok(config);
+                assert.strictEqual(config!.upstream, undefined, 'Dash upstream should be treated as absent');
+            } finally {
+                await fs.promises.rm(tempDir, { recursive: true, force: true });
+            }
+        });
+
+        test('parseUpstreamString returns null for invalid format', () => {
+            const service = new GitHubIssuesService();
+            const parseUpstream = (service as unknown as {
+                parseUpstreamString: (upstream: string, config: object) => object | null;
+            }).parseUpstreamString.bind(service);
+
+            const baseConfig = { repository: 'org/repo', owner: 'org', repo: 'repo' };
+
+            assert.strictEqual(parseUpstream('noslash', baseConfig), null, 'Should reject string without /');
+            assert.strictEqual(parseUpstream('', baseConfig), null, 'Should reject empty string');
+        });
+    });
 });

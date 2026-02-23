@@ -776,4 +776,105 @@ suite('TeamMdService', () => {
             assert.strictEqual(roster.members.length, 2);
         });
     });
+
+    suite('Upstream parsing', () => {
+        test('parses Upstream field from Issue Source table', () => {
+            const content = [
+                '## Issue Source',
+                '',
+                '| Field | Value |',
+                '|-------|-------|',
+                '| **Repository** | myfork/SquadUI |',
+                '| **Upstream** | csharpfritz/SquadUI |',
+                '',
+                '## Members',
+                '',
+                '| Name | Role |',
+                '|------|------|',
+                '| Alice | Engineer |',
+            ].join('\n');
+
+            const roster = service.parseContent(content);
+            assert.strictEqual(roster.upstream, 'csharpfritz/SquadUI');
+        });
+
+        test('upstream is undefined when not specified', () => {
+            const content = [
+                '## Issue Source',
+                '',
+                '| Field | Value |',
+                '|-------|-------|',
+                '| **Repository** | org/repo |',
+                '',
+                '## Members',
+                '',
+                '| Name | Role |',
+                '|------|------|',
+                '| Alice | Engineer |',
+            ].join('\n');
+
+            const roster = service.parseContent(content);
+            assert.strictEqual(roster.upstream, undefined);
+        });
+
+        test('upstream em-dash is treated as absent', () => {
+            const content = [
+                '## Issue Source',
+                '',
+                '| Field | Value |',
+                '|-------|-------|',
+                '| **Repository** | org/repo |',
+                '| **Upstream** | — |',
+                '',
+                '## Members',
+                '',
+                '| Name | Role |',
+                '|------|------|',
+                '| Alice | Engineer |',
+            ].join('\n');
+
+            const roster = service.parseContent(content);
+            assert.strictEqual(roster.upstream, undefined);
+        });
+
+        test('upstream without slash is treated as invalid', () => {
+            const content = [
+                '## Issue Source',
+                '',
+                '| Field | Value |',
+                '|-------|-------|',
+                '| **Repository** | org/repo |',
+                '| **Upstream** | invalidformat |',
+                '',
+                '## Members',
+                '',
+                '| Name | Role |',
+                '|------|------|',
+                '| Alice | Engineer |',
+            ].join('\n');
+
+            const roster = service.parseContent(content);
+            assert.strictEqual(roster.upstream, undefined);
+        });
+
+        test('upstream with github.com prefix is preserved as-is', () => {
+            const content = [
+                '## Issue Source',
+                '',
+                '| Field | Value |',
+                '|-------|-------|',
+                '| **Repository** | myfork/repo |',
+                '| **Upstream** | github.com/org/upstream |',
+                '',
+                '## Members',
+                '',
+                '| Name | Role |',
+                '|------|------|',
+                '| Alice | Engineer |',
+            ].join('\n');
+
+            const roster = service.parseContent(content);
+            assert.strictEqual(roster.upstream, 'github.com/org/upstream');
+        });
+    });
 });
