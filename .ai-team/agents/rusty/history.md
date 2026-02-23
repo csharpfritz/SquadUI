@@ -159,3 +159,10 @@
 ### 2026-02-23: Team Updates
  Park Status Indicators feature  removed all active/idle status UI indicators from tree view, dashboard, status bar, and work details webview. Infrastructure preserved for future re-enablement. Test files updated (8 total). Decided by Rusty
 
+### Standup Report Enhancements (2026-02-23)
+- **Issue number linkification in AI summaries:** Added `linkifyIssueNumbers()` and `deriveRepoBaseUrl()` methods to `StandupReportWebview`. AI-generated executive summary and decisions summary now convert `#N` patterns into clickable links that open the GitHub issue. Repo base URL is derived from the first issue's `htmlUrl` in the report, with fallback to `https://github.com/csharpfritz/SquadUI`.
+- **Velocity chart legend moved to HTML:** Removed in-canvas legend drawing from `getVelocityChartScript()`. Added `<div class="chart-legend">` below the velocity canvas in `renderMilestoneSection()` with `.chart-legend` CSS (flex row, centered, color swatches).
+- **Key pattern:** `escapeAndParagraph()` now accepts optional `repoBaseUrl` param — escape HTML first, then linkify issue numbers, then split into `<p>` tags. This ordering prevents HTML injection while allowing generated links.
+- **Key file:** `src/views/StandupReportWebview.ts` — all standup report rendering
+📌 Team update (2026-02-23): Issue number linkification in AI summaries — `#N` patterns in executive summary and decisions summary are now clickable links. Velocity chart legend moved from canvas overlay to centered HTML row below chart. — decided by Rusty
+

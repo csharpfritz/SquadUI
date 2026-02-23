@@ -457,6 +457,25 @@ ${decisionList}`;
             width: 100%;
             height: 200px;
         }
+        .chart-legend {
+            display: flex;
+            justify-content: center;
+            gap: 16px;
+            margin-top: 6px;
+            font-size: 0.8em;
+            color: var(--vscode-descriptionForeground);
+        }
+        .chart-legend-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .chart-legend-swatch {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 2px;
+        }
         .decisions-summary {
             background-color: var(--vscode-sideBar-background);
             border: 1px solid var(--vscode-border);
@@ -510,13 +529,13 @@ ${decisionList}`;
         </div>
     </div>
 
-    ${this.renderExecutiveSummary(executiveSummary)}
+    ${this.renderExecutiveSummary(executiveSummary, this.deriveRepoBaseUrl(report))}
 
     ${this.renderClosedIssues(report)}
     ${this.renderNewIssues(report)}
     ${this.renderBlockers(report)}
     ${this.renderNextSteps(report)}
-    ${this.renderDecisions(report, decisionsSummary)}
+    ${this.renderDecisions(report, decisionsSummary, this.deriveRepoBaseUrl(report))}
 
     <script>
         const vscode = acquireVsCodeApi();
@@ -626,12 +645,12 @@ ${decisionList}`;
         `;
     }
 
-    private renderDecisions(report: StandupReport, decisionsSummary?: string): string {
+    private renderDecisions(report: StandupReport, decisionsSummary?: string, repoBaseUrl?: string): string {
         if (report.recentDecisions.length === 0) {
             return '';
         }
         const summaryHtml = decisionsSummary
-            ? `<div class="decisions-summary">${this.escapeAndParagraph(decisionsSummary)}</div>`
+            ? `<div class="decisions-summary">${this.escapeAndParagraph(decisionsSummary, repoBaseUrl)}</div>`
             : '';
         const items = report.recentDecisions.map(decision => {
             const author = decision.author ? ` (${decision.author})` : '';
@@ -672,6 +691,10 @@ ${decisionList}`;
                 <div>
                     <div class="chart-label">Issue Velocity</div>
                     <canvas id="velocity-chart"></canvas>
+                    <div class="chart-legend">
+                        <span class="chart-legend-item"><span class="chart-legend-swatch" style="background-color: var(--vscode-success, #4ec9b0);"></span>Closed</span>
+                        <span class="chart-legend-item"><span class="chart-legend-swatch" style="background-color: var(--vscode-warning, #d18616);"></span>Opened</span>
+                    </div>
                 </div>` : '';
 
         const burndownChartHtml = burndown && burndown.totalIssues > 0 ? `
@@ -694,20 +717,29 @@ ${decisionList}`;
         `;
     }
 
-    private renderExecutiveSummary(summary?: string): string {
+    private renderExecutiveSummary(summary?: string, repoBaseUrl?: string): string {
         if (!summary) { return ''; }
         return `
             <h2>📝 Executive Summary</h2>
-            <div class="executive-summary">${this.escapeAndParagraph(summary)}</div>
+            <div class="executive-summary">${this.escapeAndParagraph(summary, repoBaseUrl)}</div>
         `;
     }
 
     /**
-     * Escapes HTML and converts newline-separated text into <p> tags.
+     * Escapes HTML, linkifies #N issue references, and converts newline-separated text into <p> tags.
      */
-    private escapeAndParagraph(text: string): string {
-        const escaped = this.escapeHtml(text);
+    private escapeAndParagraph(text: string, repoBaseUrl?: string): string {
+        let escaped = this.escapeHtml(text);
+        escaped = this.linkifyIssueNumbers(escaped, repoBaseUrl);
         return escaped.split(/\n\n+/).map(p => `<p>${p.trim()}</p>`).join('');
+    }
+
+    /**
+     * Converts #N patterns in already-escaped HTML into clickable issue links.
+     */
+    private linkifyIssueNumbers(html: string, repoBaseUrl?: string): string {
+        const base = repoBaseUrl || 'https://github.com/csharpfritz/SquadUI';
+        return html.replace(/#(\d+)/g, `<a href="#" class="issue-number" onclick="openIssue('${base}/issues/$1'); return false;">#$1</a>`);
     }
 
     private escapeHtml(text: string): string {
@@ -717,6 +749,21 @@ ${decisionList}`;
             .replace(/>/g, '&gt;')
             .replace(/"/g, '&quot;')
             .replace(/'/g, '&#039;');
+    }
+
+    /**
+     * Derives the repo base URL (e.g. https://github.com/owner/repo) from issue htmlUrls in the report.
+     */
+    private deriveRepoBaseUrl(report: StandupReport): string | undefined {
+        const allIssues = [...report.closedIssues, ...report.newIssues, ...report.blockingIssues, ...report.suggestedNextSteps];
+        for (const issue of allIssues) {
+            if (issue.htmlUrl) {
+                // htmlUrl is like https://github.com/owner/repo/issues/123
+                const match = issue.htmlUrl.match(/^(https:\/\/github\.com\/[^/]+\/[^/]+)\//);
+                if (match) { return match[1]; }
+            }
+        }
+        return undefined;
     }
 
     /**
@@ -937,20 +984,6 @@ ${decisionList}`;
                     const val = Math.round(maxVal * (1 - i / 4));
                     ctx.fillText(String(val), pad.left - 6, y + 4);
                 }
-
-                // Legend
-                const legendY = pad.top + 2;
-                const legendX = pad.left + w - 120;
-                ctx.font = '10px var(--vscode-font-family, sans-serif)';
-                ctx.textAlign = 'left';
-                ctx.fillStyle = successColor;
-                ctx.fillRect(legendX, legendY, 10, 10);
-                ctx.fillStyle = fg;
-                ctx.fillText('Closed', legendX + 14, legendY + 9);
-                ctx.fillStyle = warningColor;
-                ctx.fillRect(legendX + 60, legendY, 10, 10);
-                ctx.fillStyle = fg;
-                ctx.fillText('Opened', legendX + 74, legendY + 9);
             }
 
             draw();
