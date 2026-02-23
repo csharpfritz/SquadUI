@@ -221,6 +221,32 @@ export function activate(context: vscode.ExtensionContext): void {
         })
     );
 
+    // Register edit charter command — opens charter in text editor + markdown preview side-by-side
+    context.subscriptions.push(
+        vscode.commands.registerCommand('squadui.editCharter', async (rawName?: unknown) => {
+            let memberName: string = '';
+            if (typeof rawName === 'string') {
+                memberName = rawName;
+            } else if (typeof rawName === 'object' && rawName !== null) {
+                memberName = String((rawName as any).label || (rawName as any).memberId || (rawName as any).name || '');
+            }
+            if (!memberName) {
+                vscode.window.showWarningMessage('No member selected');
+                return;
+            }
+            const slug = memberName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+            const charterPath = path.join(currentRoot, squadFolderName, 'agents', slug, 'charter.md');
+            if (!fs.existsSync(charterPath)) {
+                vscode.window.showWarningMessage(`Charter not found for ${memberName}`);
+                return;
+            }
+            const uri = vscode.Uri.file(charterPath);
+            const doc = await vscode.workspace.openTextDocument(uri);
+            await vscode.window.showTextDocument(doc, { preview: false });
+            await vscode.commands.executeCommand('markdown.showPreviewToSide', uri);
+        })
+    );
+
     // Register squad init command
     let allocationPollInterval: ReturnType<typeof setInterval> | undefined;
     let initInProgress = false;
