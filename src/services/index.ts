@@ -29,3 +29,7 @@ export {
     type StandupSummary,
     type StandupPeriod
 } from './StandupReportService';
+export {
+    HealthCheckService,
+    type HealthCheckResult
+} from './HealthCheckService';

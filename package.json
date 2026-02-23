@@ -84,6 +84,12 @@
         "icon": "$(open-preview)"
       },
       {
+        "command": "squadui.editCharter",
+        "title": "Edit Charter",
+        "category": "Squad",
+        "icon": "$(edit)"
+      },
+      {
         "command": "squadui.removeMember",
         "title": "Remove Team Member",
         "category": "Squad",
@@ -134,6 +140,12 @@
         "title": "Generate Standup Report",
         "category": "Squad",
         "icon": "$(report)"
+      },
+      {
+        "command": "squadui.healthCheck",
+        "title": "Health Check",
+        "category": "Squad",
+        "icon": "$(checklist)"
       }
     ],
     "viewsWelcome": [
@@ -173,6 +185,11 @@
       ],
       "view/item/context": [
         {
+          "command": "squadui.editCharter",
+          "when": "view == squadTeam && viewItem == member",
+          "group": "inline"
+        },
+        {
           "command": "squadui.removeMember",
           "when": "view == squadTeam && viewItem == member",
           "group": "inline"
@@ -194,6 +211,10 @@
         }
       ],
       "commandPalette": [
+        {
+          "command": "squadui.editCharter",
+          "when": "false"
+        },
         {
           "command": "squadui.showWorkDetails",
           "when": "false"

@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs';
 import { GitHubIssue } from './models';
-import { SquadDataProvider, FileWatcherService, GitHubIssuesService, SquadVersionService } from './services';
+import { SquadDataProvider, FileWatcherService, GitHubIssuesService, SquadVersionService, HealthCheckService } from './services';
 import { TeamTreeProvider, SkillsTreeProvider, DecisionsTreeProvider, WorkDetailsWebview, IssueDetailWebview, SquadStatusBar, SquadDashboardWebview, StandupReportWebview } from './views';
 import { registerInitSquadCommand, registerUpgradeSquadCommand, registerAddMemberCommand, registerRemoveMemberCommand, registerAddSkillCommand } from './commands';
 import { detectSquadFolder, hasSquadTeam } from './utils/squadFolderDetection';
@@ -218,6 +218,32 @@ export function activate(context: vscode.ExtensionContext): void {
             }
             const uri = vscode.Uri.file(charterPath);
             await vscode.commands.executeCommand('markdown.showPreview', uri);
+        })
+    );
+
+    // Register edit charter command — opens charter in text editor + markdown preview side-by-side
+    context.subscriptions.push(
+        vscode.commands.registerCommand('squadui.editCharter', async (rawName?: unknown) => {
+            let memberName: string = '';
+            if (typeof rawName === 'string') {
+                memberName = rawName;
+            } else if (typeof rawName === 'object' && rawName !== null) {
+                memberName = String((rawName as any).label || (rawName as any).memberId || (rawName as any).name || '');
+            }
+            if (!memberName) {
+                vscode.window.showWarningMessage('No member selected');
+                return;
+            }
+            const slug = memberName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+            const charterPath = path.join(currentRoot, squadFolderName, 'agents', slug, 'charter.md');
+            if (!fs.existsSync(charterPath)) {
+                vscode.window.showWarningMessage(`Charter not found for ${memberName}`);
+                return;
+            }
+            const uri = vscode.Uri.file(charterPath);
+            const doc = await vscode.workspace.openTextDocument(uri);
+            await vscode.window.showTextDocument(doc, { preview: false });
+            await vscode.commands.executeCommand('markdown.showPreviewToSide', uri);
         })
     );
 
@@ -489,6 +515,25 @@ export function activate(context: vscode.ExtensionContext): void {
                 fs.rmSync(skillDir, { recursive: true });
                 vscode.window.showInformationMessage(`Removed skill: ${skillSlug}`);
                 skillsProvider.refresh();
+            }
+        })
+    );
+
+    // Register health check command — runs diagnostics and shows results in output channel
+    context.subscriptions.push(
+        vscode.commands.registerCommand('squadui.healthCheck', async () => {
+            const healthService = new HealthCheckService();
+            const results = await healthService.runAll(squadFolderName, currentRoot);
+            const output = vscode.window.createOutputChannel('Squad Health Check');
+            output.clear();
+            output.appendLine(healthService.formatResults(results));
+            output.show(true);
+
+            const failed = results.filter(r => r.status === 'fail').length;
+            if (failed > 0) {
+                vscode.window.showWarningMessage(`Squad Health Check: ${failed} issue(s) found. See output for details.`);
+            } else {
+                vscode.window.showInformationMessage('Squad Health Check: All checks passed.');
             }
         })
     );
