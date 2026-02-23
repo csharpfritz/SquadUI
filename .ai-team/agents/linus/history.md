@@ -123,3 +123,6 @@
 - `DashboardDataBuilder.buildDashboardData()` always returns fully-populated `DashboardData` — no null fields in the structure.
 - `DecisionService` handles missing file (returns early), empty file (no headings found), and inbox subdirectories (recursive `scanDirectory`). Graceful: never throws.
 
+
+### Team Update: 2026-02-23 - Fork-Aware Issue Fetching
+ **Team update (2026-02-23):** Fork-aware issue fetching shipped: when repo is a fork, SquadUI auto-detects upstream via GitHub API (GET /repos/{owner}/{repo}  parent), with manual override via team.md **Upstream** | owner/repo. All issue queries (open, closed, milestones) use upstream. Fallback to configured repo if not a fork. No breaking changes  repos without forks behave identically.  decided by @copilot

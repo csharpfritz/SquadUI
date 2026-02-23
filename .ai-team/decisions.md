@@ -2283,3 +2283,59 @@ Both behaviors required comprehensive test coverage.
 - **Synthetic entries:** Unit testing task extraction, member states, completion signals
 - **Temp files:** Integration testing file parsing, directory scanning, multi-file workflows
 
+
+---
+
+## Fork-Aware Issue Fetching
+
+**Author:** @copilot (Coordinator)
+**Date:** 2026-02-23
+**Status:** Implemented
+
+### Decision
+
+When a Squad workspace repo is a fork, SquadUI now automatically resolves the upstream (parent) repository for issue fetching. All issue-related API calls (open issues, closed issues, milestones) use the upstream repo.
+
+### Resolution Order
+
+1. **Manual override:** **Upstream** | owner/repo in team.md's Issue Source table
+2. **Auto-detect:** GitHub API GET /repos/{owner}/{repo}  parent field
+3. **Fallback:** Use the configured repository as-is
+
+### Usage
+
+Add to team.md Issue Source table:
+
+```markdown
+| **Upstream** | csharpfritz/SquadUI |
+```
+
+Or leave it out  SquadUI will auto-detect if the repo is a fork.
+
+### Impact
+
+- GitHubIssuesService, TeamMdService, IssueSourceConfig model
+- All existing matching strategies (labels, assignees) work against upstream issues
+- No breaking changes  repos without forks behave identically
+
+---
+
+## Standup Report: Issue Linkification & Chart Legend
+
+**Author:** Rusty (Extension Dev)
+**Date:** 2026-02-23
+**Requested by:** Jeffrey T. Fritz
+
+### Decisions
+
+#### 1. AI Summary Issue Linkification
+
+#N patterns in AI-generated executive summaries and decisions summaries are now rendered as clickable links that open the corresponding GitHub issue. The repo base URL is derived dynamically from the first issue's htmlUrl in the report, with a hardcoded fallback to https://github.com/csharpfritz/SquadUI.
+
+**Rationale:** The scapeAndParagraph() pipeline is: escape HTML  linkify issue numbers  wrap in <p> tags. This ordering prevents HTML injection from user-supplied text while allowing the generated anchor tags to render.
+
+#### 2. Velocity Chart Legend Below Canvas
+
+The velocity chart legend was moved from an in-canvas overlay (top-right corner) to a centered HTML <div class="chart-legend"> row below the canvas element.
+
+**Rationale:** The in-canvas legend overlapped with bar chart data, especially on narrow viewports. An HTML legend is also more accessible and respects VS Code theme colors via CSS variables.
