@@ -58,6 +58,37 @@ suite('GitHubIssuesService', () => {
             }
         });
 
+        test('reads team.md from .squad folder when squadFolder option is set', async () => {
+            const tempDir = path.join(TEST_FIXTURES_ROOT, 'temp-squad-folder');
+            const squadDir = path.join(tempDir, '.squad');
+            await fs.promises.mkdir(squadDir, { recursive: true });
+            await fs.promises.writeFile(path.join(squadDir, 'team.md'), [
+                '# Team',
+                '',
+                '## Issue Source',
+                '',
+                '| Field | Value |',
+                '|-------|-------|',
+                '| **Repository** | testowner/testrepo |',
+            ].join('\n'));
+
+            try {
+                // Without squadFolder option, service looks in .ai-team (misses .squad)
+                const defaultService = new GitHubIssuesService();
+                const defaultConfig = await defaultService.getIssueSource(tempDir);
+                assert.strictEqual(defaultConfig, null, 'Default service should not find .squad/team.md');
+
+                // With squadFolder option, service finds team.md in .squad
+                const squadService = new GitHubIssuesService({ squadFolder: '.squad' });
+                const squadConfig = await squadService.getIssueSource(tempDir);
+                assert.ok(squadConfig, 'Squad service should find .squad/team.md');
+                assert.strictEqual(squadConfig!.owner, 'testowner');
+                assert.strictEqual(squadConfig!.repo, 'testrepo');
+            } finally {
+                await fs.promises.rm(tempDir, { recursive: true, force: true });
+            }
+        });
+
         test('parses owner/repo format correctly', async () => {
             const tempDir = path.join(TEST_FIXTURES_ROOT, 'temp-repo-format');
             const aiTeamDir = path.join(tempDir, '.ai-team');
@@ -422,6 +453,20 @@ suite('GitHubIssuesService', () => {
 
             const token = (service as unknown as { token: string }).token;
             assert.strictEqual(token, 'ghp_test123');
+        });
+
+        test('passes squadFolder to internal TeamMdService', () => {
+            const service = new GitHubIssuesService({ squadFolder: '.squad' });
+
+            const teamMdService = (service as unknown as { teamMdService: { squadFolder: string } }).teamMdService;
+            assert.strictEqual(teamMdService.squadFolder, '.squad');
+        });
+
+        test('defaults to .ai-team when squadFolder not specified', () => {
+            const service = new GitHubIssuesService();
+
+            const teamMdService = (service as unknown as { teamMdService: { squadFolder: string } }).teamMdService;
+            assert.strictEqual(teamMdService.squadFolder, '.ai-team');
         });
     });
 });
