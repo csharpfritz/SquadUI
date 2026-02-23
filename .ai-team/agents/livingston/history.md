@@ -87,3 +87,13 @@
 - Verify with `git ls-remote --tags` after pushing tags
 
 📌 Team update (2026-02-17): Always use normalizeEol() for markdown parsing to ensure cross-platform compatibility — decided by Copilot (Jeffrey T. Fritz)
+
+### 2026-02-24: Release v0.9.0 — Standup Report Enhancements + Fork-Aware Issues
+
+**Release process executed successfully:**
+- Bumped version: `0.8.0` → `0.9.0` in `package.json`
+- Updated `CHANGELOG.md`: Added v0.9.0 section with Standup Report enhancements (dashboard button, milestone burndown, AI summaries), XSS/CSP fix, fork-aware issue fetching, velocity chart improvements, and test count update (1053 tests)
+- Committed: `chore: release v0.9.0` (commit 33767b8)
+- Tagged: `git tag v0.9.0` and pushed with `git push origin main --tags`
+- Tag verified: `v0.9.0` confirmed in origin remote (`33767b8342b26fdc2f6691b78064297cfcc533b1`)
+- Release workflow will trigger automatically via GitHub Actions on tag push (v* pattern matches v0.9.0)
