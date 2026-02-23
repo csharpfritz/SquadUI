@@ -3,7 +3,7 @@
  * Builds data for velocity charts, activity timelines, and decision browser.
  */
 
-import { OrchestrationLogEntry, Task, SquadMember, DashboardData, VelocityDataPoint, ActivityHeatmapPoint, ActivitySwimlane, TimelineTask, DecisionEntry, TeamMemberOverview, TeamSummary, MemberIssueMap, GitHubIssue, MilestoneBurndown, BurndownDataPoint } from '../../models';
+import { OrchestrationLogEntry, Task, SquadMember, DashboardData, VelocityDataPoint, ActivityHeatmapPoint, ActivitySwimlane, TimelineTask, DecisionEntry, TeamMemberOverview, TeamSummary, MemberIssueMap, GitHubIssue, MilestoneBurndown, BurndownDataPoint, isActiveStatus } from '../../models';
 import { parseDateAsLocal, toLocalDateKey } from '../../utils/dateUtils';
 
 export class DashboardDataBuilder {
@@ -233,12 +233,16 @@ export class DashboardDataBuilder {
             totalOpenIssues += memberOpenIssues.length;
             totalClosedIssues += memberClosedIssues.length;
             totalActiveTasks += memberTasks.length;
-            if (member.status === 'working') { activeMembers++; }
+            if (isActiveStatus(member.status)) { activeMembers++; }
 
             return {
                 name: member.name,
                 role: member.role,
                 status: member.status,
+                statusLabel: member.activityContext?.shortLabel,
+                activityContext: member.activityContext
+                    ? { description: member.activityContext.description, shortLabel: member.activityContext.shortLabel }
+                    : undefined,
                 iconType,
                 openIssueCount: memberOpenIssues.length,
                 closedIssueCount: memberClosedIssues.length,

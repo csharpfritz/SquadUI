@@ -11,7 +11,7 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
-import { SquadMember, Task, WorkDetails, OrchestrationLogEntry, DecisionEntry, MemberIssueMap, GitHubIssue } from '../models';
+import { SquadMember, Task, WorkDetails, OrchestrationLogEntry, DecisionEntry, MemberIssueMap, GitHubIssue, isActiveStatus } from '../models';
 import { OrchestrationLogService } from './OrchestrationLogService';
 import { TeamMdService } from './TeamMdService';
 import { DecisionService } from './DecisionService';
@@ -96,7 +96,7 @@ export class SquadDataProvider {
         }
 
         const entries = await this.getOrchestrationLogEntries();
-        const memberStates = this.orchestrationService.getMemberStates(entries);
+        const memberActivity = this.orchestrationService.getMemberActivity(entries);
         const tasks = await this.getTasks();
 
         // Try team.md as authoritative roster first
@@ -118,18 +118,20 @@ export class SquadDataProvider {
         if (roster && roster.members.length > 0) {
             // Primary path: team.md defines the roster, logs overlay status
             members = roster.members.map(member => {
-                const logStatus = memberStates.get(member.name) ?? 'idle';
+                const logActivity = memberActivity.get(member.name);
+                const logStatus = logActivity?.status ?? 'idle';
                 const currentTask = tasks.find(t => t.assignee === member.name && t.status === 'in_progress');
                 const memberTasks = tasks.filter(t => t.assignee === member.name);
-                // Override 'working' to 'idle' ONLY if the member has tasks but none are in-progress
+                // Override active to 'idle' ONLY if the member has tasks but none are in-progress
                 // (all their work is completed — they shouldn't show as spinning).
                 // If they have NO tasks at all, trust the log status (Copilot Chat scenario).
                 const hasTasksButNoneActive = memberTasks.length > 0 && !currentTask;
-                const status = (logStatus === 'working' && hasTasksButNoneActive) ? 'idle' : logStatus;
+                const status = (isActiveStatus(logStatus) && hasTasksButNoneActive) ? 'idle' : logStatus;
                 return {
                     name: member.name,
                     role: member.role,
                     status,
+                    activityContext: status !== 'idle' ? logActivity?.context : undefined,
                     currentTask,
                 };
             });
@@ -139,16 +141,17 @@ export class SquadDataProvider {
 
             if (agentMembers.length > 0) {
                 members = agentMembers.map(member => {
-                    const logStatus = memberStates.get(member.name) ?? 'idle';
+                    const logActivity = memberActivity.get(member.name);
+                    const logStatus = logActivity?.status ?? 'idle';
                     const currentTask = tasks.find(t => t.assignee === member.name && t.status === 'in_progress');
                     const memberTasks = tasks.filter(t => t.assignee === member.name);
-                    // Override 'working' to 'idle' ONLY if the member has tasks but none are in-progress
                     const hasTasksButNoneActive = memberTasks.length > 0 && !currentTask;
-                    const status = (logStatus === 'working' && hasTasksButNoneActive) ? 'idle' : logStatus;
+                    const status = (isActiveStatus(logStatus) && hasTasksButNoneActive) ? 'idle' : logStatus;
                     return {
                         name: member.name,
                         role: member.role,
                         status,
+                        activityContext: status !== 'idle' ? logActivity?.context : undefined,
                         currentTask,
                     };
                 });
@@ -163,16 +166,17 @@ export class SquadDataProvider {
 
                 members = [];
                 for (const name of memberNames) {
-                    const logStatus = memberStates.get(name) ?? 'idle';
+                    const logActivity = memberActivity.get(name);
+                    const logStatus = logActivity?.status ?? 'idle';
                     const currentTask = tasks.find(t => t.assignee === name && t.status === 'in_progress');
                     const memberTasks = tasks.filter(t => t.assignee === name);
-                    // Override 'working' to 'idle' ONLY if the member has tasks but none are in-progress
                     const hasTasksButNoneActive = memberTasks.length > 0 && !currentTask;
-                    const status = (logStatus === 'working' && hasTasksButNoneActive) ? 'idle' : logStatus;
+                    const status = (isActiveStatus(logStatus) && hasTasksButNoneActive) ? 'idle' : logStatus;
                     members.push({
                         name,
                         role: 'Squad Member',
                         status,
+                        activityContext: status !== 'idle' ? logActivity?.context : undefined,
                         currentTask,
                     });
                 }
@@ -183,12 +187,13 @@ export class SquadDataProvider {
         const activeMarkers = await this.detectActiveMarkers();
         for (const member of members) {
             const slug = member.name.toLowerCase();
-            if (activeMarkers.has(slug)) {
+            if (activeMarkers.has(slug) && member.status === 'idle') {
                 member.status = 'working';
+                member.activityContext = { description: 'Active work marker detected', shortLabel: '⚡ Working' };
             }
         }
 
-        // GitHub-aware status: members with open squad:{member} issues show as working
+        // GitHub-aware status: members with open squad:{member} issues show as working-on-issue
         // This is the fallback for "cold start" and between-session scenarios
         if (this.openIssuesByMember) {
             for (const member of members) {
@@ -196,10 +201,15 @@ export class SquadDataProvider {
                 if (member.status === 'idle') {
                     const memberIssues = this.openIssuesByMember.get(member.name.toLowerCase());
                     if (memberIssues && memberIssues.length > 0) {
-                        member.status = 'working';
+                        const mostRecent = this.getMostRecentIssue(memberIssues);
+                        member.status = 'working-on-issue';
+                        member.activityContext = {
+                            description: mostRecent.title,
+                            shortLabel: `⚙️ Issue #${mostRecent.number}`,
+                            issueNumber: mostRecent.number,
+                        };
                         // If no currentTask from logs, use most recent issue
                         if (!member.currentTask) {
-                            const mostRecent = this.getMostRecentIssue(memberIssues);
                             member.currentTask = {
                                 id: `#${mostRecent.number}`,
                                 title: mostRecent.title,

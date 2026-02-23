@@ -241,7 +241,7 @@ export class WorkDetailsWebview {
             <div class="member-avatar">${this.getInitials(stripMarkdownLinks(member.name))}</div>
             <div class="member-info">
                 <div class="member-name">${renderMarkdownLinks(this.escapeHtml(member.name))}</div>
-                <div class="member-role">${this.escapeHtml(member.role)}</div>
+                <div class="member-role">${this.escapeHtml(member.role)}</div>${member.activityContext ? `\n                <div class="member-role">${this.escapeHtml(member.activityContext.shortLabel)}</div>` : ''}
             </div>
         </div>
     </div>

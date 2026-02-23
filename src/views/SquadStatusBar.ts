@@ -5,6 +5,7 @@
 
 import * as vscode from 'vscode';
 import { SquadDataProvider } from '../services/SquadDataProvider';
+import { isActiveStatus } from '../models';
 
 export class SquadStatusBar {
     private statusBarItem: vscode.StatusBarItem;
@@ -38,17 +39,25 @@ export class SquadStatusBar {
             }
 
             const totalCount = members.length;
+            const workingCount = members.filter(m => isActiveStatus(m.status)).length;
             
-            // Simple member count — no active/idle status
-            this.statusBarItem.text = `$(organization) Squad: ${totalCount} member${totalCount !== 1 ? 's' : ''}`;
+            // Show working/total member count with contextual status
+            if (workingCount > 0) {
+                this.statusBarItem.text = `$(organization) Squad: ${workingCount}/${totalCount} working`;
+            } else {
+                this.statusBarItem.text = `$(organization) Squad: ${totalCount} member${totalCount !== 1 ? 's' : ''}`;
+            }
             
-            // Build tooltip with member list
+            // Build tooltip with member list and status
             const tooltip = new vscode.MarkdownString();
             tooltip.appendMarkdown(`**Squad**\n\n`);
-            tooltip.appendMarkdown(`Members: ${totalCount}\n\n`);
+            tooltip.appendMarkdown(`Members: ${totalCount} · Working: ${workingCount}\n\n`);
             
             for (const member of members) {
-                tooltip.appendMarkdown(`- ${member.name} — ${member.role}\n`);
+                const statusIndicator = member.activityContext
+                    ? member.activityContext.shortLabel
+                    : '—';
+                tooltip.appendMarkdown(`- ${member.name} — ${member.role} · ${statusIndicator}\n`);
             }
 
             this.statusBarItem.tooltip = tooltip;

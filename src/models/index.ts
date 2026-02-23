@@ -5,10 +5,34 @@
 
 /**
  * Status of a squad member in the current session.
- * - 'working': Currently executing a task
+ * - 'working-on-issue': Actively working on a GitHub issue
+ * - 'reviewing-pr': Reviewing a pull request
+ * - 'waiting-review': Waiting for a review from another member
+ * - 'working': Currently executing a task (generic)
  * - 'idle': Available, no active task
  */
-export type MemberStatus = 'working' | 'idle';
+export type MemberStatus = 'working-on-issue' | 'reviewing-pr' | 'waiting-review' | 'working' | 'idle';
+
+/**
+ * Returns true if the status represents an active (non-idle) state.
+ */
+export function isActiveStatus(status: MemberStatus): boolean {
+    return status !== 'idle';
+}
+
+/**
+ * Rich context about what a squad member is currently doing.
+ */
+export interface ActivityContext {
+    /** Human-readable summary of the current activity */
+    description: string;
+    /** Short label for tree view (e.g., "⚙️ Issue #42") */
+    shortLabel: string;
+    /** Related issue number, if any */
+    issueNumber?: number;
+    /** Related PR number, if any */
+    prNumber?: number;
+}
 
 /**
  * Status of a task in the workflow.
@@ -56,6 +80,9 @@ export interface SquadMember {
 
     /** Current working status */
     status: MemberStatus;
+
+    /** Rich context about what the member is currently doing */
+    activityContext?: ActivityContext;
 
     /** The task currently being worked on, if any */
     currentTask?: Task;
@@ -374,6 +401,10 @@ export interface TeamMemberOverview {
     role: string;
     /** Current status */
     status: MemberStatus;
+    /** Short status label for display (e.g., "⚙️ Issue #42") */
+    statusLabel?: string;
+    /** Rich activity context */
+    activityContext?: { description: string; shortLabel: string };
     /** Special icon type (scribe, ralph, copilot, or undefined for regular members) */
     iconType?: 'scribe' | 'ralph' | 'copilot';
     /** Number of open issues assigned */

@@ -3,7 +3,7 @@
  */
 
 import * as vscode from 'vscode';
-import { SquadMember, Task, GitHubIssue, Skill, DecisionEntry, IGitHubIssuesService } from '../models';
+import { SquadMember, Task, GitHubIssue, Skill, DecisionEntry, IGitHubIssuesService, isActiveStatus } from '../models';
 import { SquadDataProvider } from '../services/SquadDataProvider';
 import { SkillCatalogService } from '../services/SkillCatalogService';
 import { DecisionService } from '../services/DecisionService';
@@ -120,13 +120,23 @@ export class TeamTreeProvider implements vscode.TreeDataProvider<SquadTreeItem> 
                 : lowerName === 'ralph' ? 'eye'
                 : isCopilot ? 'robot'
                 : undefined;
-            item.iconPath = new vscode.ThemeIcon(specialIcon ?? 'person');
+
+            // Active members get a spinning icon, idle get person (unless special)
+            const memberActive = isActiveStatus(member.status);
+            if (!specialIcon) {
+                item.iconPath = memberActive
+                    ? new vscode.ThemeIcon('sync~spin', new vscode.ThemeColor('charts.green'))
+                    : new vscode.ThemeIcon('person');
+            } else {
+                item.iconPath = new vscode.ThemeIcon(specialIcon);
+            }
             
-            // Build description with role and issue count
+            // Build description with role, status context, and issue count
             const issueCount = await this.getIssueCount(member.name);
             const issueText = issueCount > 0 ? ` • ${issueCount} issue${issueCount > 1 ? 's' : ''}` : '';
+            const statusText = member.activityContext ? ` • ${member.activityContext.shortLabel}` : '';
             
-            item.description = `${member.role}${issueText}`;
+            item.description = `${member.role}${statusText}${issueText}`;
             item.tooltip = this.getMemberTooltip(member);
 
             if (!isCopilot) {
@@ -273,7 +283,13 @@ export class TeamTreeProvider implements vscode.TreeDataProvider<SquadTreeItem> 
     private getMemberTooltip(member: SquadMember): vscode.MarkdownString {
         const md = new vscode.MarkdownString();
         md.appendMarkdown(`**${stripMarkdownLinks(member.name)}**\n\n`);
-        md.appendMarkdown(`Role: ${member.role}`);
+        md.appendMarkdown(`Role: ${member.role}\n\n`);
+        if (member.activityContext) {
+            md.appendMarkdown(`Status: ${member.activityContext.shortLabel}\n\n`);
+            md.appendMarkdown(`${member.activityContext.description}`);
+        } else {
+            md.appendMarkdown(`Status: —`);
+        }
         return md;
     }
 

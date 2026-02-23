@@ -286,7 +286,7 @@ suite('SquadDataProvider', () => {
             
             for (const member of members) {
                 assert.ok(member.name, 'Member should have name');
-                assert.ok(['working', 'idle'].includes(member.status), 'Member should have valid status');
+                assert.ok(['working', 'working-on-issue', 'reviewing-pr', 'waiting-review', 'idle'].includes(member.status), 'Member should have valid status');
             }
         });
 
