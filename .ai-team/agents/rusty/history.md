@@ -35,6 +35,15 @@ The SquadUI extension emerged from initial scaffolding through a rapid sequence 
 - **Key file:** `src/views/StandupReportWebview.ts` — all standup report rendering
 📌 Team update (2026-02-23): Issue number linkification in AI summaries — `#N` patterns in executive summary and decisions summary are now clickable links. Velocity chart legend moved from canvas overlay to centered HTML row below chart. — decided by Rusty
 
+### Feature Roadmap & Assignments (2026-02-24)
+📌 Team update (2026-02-23): Feature roadmap defined — 10 features across v1.0/v1.1/v1.2. See decisions.md.
+   - P0 features assigned: Active Status Redesign (#73)
+   - P1 features assigned: Decision Search & Filter (#69), Charter Editor (#72), Issue Backlog View (#71), Member Drill-down (#76), Multi-Workspace Dashboard (#78)
+   - v1.0 ship target with focus on real-time status, decision search, charter editor
+   - v1.1 enables project management workflow (backlog triage, member analytics)
+   - v1.2 scales to multi-workspace orgs
+   - Roadmap session logged to .ai-team/log/2026-02-23-feature-roadmap.md
+
 
 ### Team Update: 2026-02-23 - Standup Report Enhancements & Fork-Aware Issues
  **Team update (2026-02-23):** Two decisions merged: (1) Standup report issue linkification (#N in AI summaries become clickable GitHub links) with escape-then-linkify pipeline to prevent injection; (2) Velocity chart legend repositioning below canvas for better viewport + accessibility. Fork-aware issue fetching auto-detects upstream repos via GitHub API, with manual override via team.md.  decided by @copilot + Rusty

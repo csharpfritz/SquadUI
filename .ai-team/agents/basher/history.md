@@ -292,3 +292,11 @@
  Standup Report feature review — expanded tests from 14 to 39 cases. Identified XSS concern: StandupReportWebview renders issue titles without HTML escaping. Recommended escapeHtml() utility for user-sourced strings. Decided by Basher
  Test Strategy for Status Override Logic  use synthetic OrchestrationLogEntry objects instead of temp files for unit tests. Integration tests still use disk when file parsing is the behavior under test. Decided by Basher
 
+
+### Feature Roadmap & Test Planning (2026-02-24)
+ Team update (2026-02-23): Feature roadmap defined  10 features across v1.0/v1.1/v1.2. See decisions.md.
+   - P2 feature: Health Check Command (#70)  may support test coverage
+   - 10 feature releases planned across three milestones
+   - v1.0 ship target with focus on feature validation and release readiness
+   - Recommend test planning for P0/P1 features as implementation begins
+   - Roadmap session logged to .ai-team/log/2026-02-23-feature-roadmap.md

@@ -67,3 +67,54 @@
 - **Race condition:** `updateContent()` does initial panel null check, then 5+ sequential awaits. Panel dispose during loads crashes both the assignment and the error handler. All async webview methods need post-await null guards.
 - **HTML injection risk:** `JSON.stringify()` in htmlTemplate.ts doesn't escape `</` — decision content with `</script>` breaks the entire dashboard. Must sanitize interpolated JSON.
 - **Convention established:** All new code touching squad folder paths MUST use the injected `squadFolder` parameter, never hardcode `.ai-team` or `.squad` — this is the root cause of most "content not loading" bugs.
+
+### Feature Roadmap Analysis (2026-02-24)
+**SquadUI at v0.9.1 — V1.0 Readiness Assessment**
+
+**Current State:**
+- Feature-complete for v1.0 MVP: team visualization, activity tracking, GitHub integration, skills, decisions, standup reports, init wizard
+- Known gaps: real-time agent status (#67 parked), decision searchability, charter editing, diagnostic tooling
+- Architecture is solid: service layer decoupled, file watcher pattern proven, webview lifecycle well-managed
+
+**Roadmap (10 features across 3 milestones):**
+
+| Feature | Size | Priority | Milestone |
+|---------|------|----------|-----------|
+| Active Status Redesign (replaces #67 badges) | M | P0 | v1.0 |
+| Decision Search & Filter | S | P1 | v1.0 |
+| Markdown Charter Editor | S | P1 | v1.0 |
+| Health Check Command | S | P2 | v1.0 |
+| Issue Backlog View | M | P1 | v1.1 |
+| Dashboard Member Drill-down | M | P1 | v1.1 |
+| **Copilot Chat Integration** | L | P0 | v1.1 |
+| Milestone Burndown Template | M | P1 | v1.1 |
+| Skill Usage Metrics | M | P2 | v1.2 |
+| Multi-Workspace Dashboard | L | P2 | v1.2 |
+
+**Architectural Decisions:**
+- **Active Status (#1):** Extend `MemberStatus` enum to rich context (working-on-issue, reviewing-pr, waiting-review). Tree badges truncated; tooltip shows full. Dashboard member card shows expanded context.
+- **Decision Search (#2):** Add `DecisionService.search(query)` for full-text search across both decisions.md and individual .md files. Location-agnostic, no data schema changes.
+- **Copilot Chat (#6):** Critical P0 feature but faces risk — no public API for message interception. Start with manual trigger (`/ask-squad`); plan for v1.1.1 when GitHub opens plugin API.
+- **Issue Backlog (#3):** Extend `GitHubIssuesService` to support backlog queries; paginate + cache (5-min TTL) to handle rate limits on large repos.
+- **Multi-Workspace (#10):** Redesign dashboard data flow to accept multiple roots in parallel; defer to v1.2 (low priority, few orgs run multiple squads).
+
+**V1.0 Hard Requirements:**
+- [ ] #1 Active Status Redesign (closes #67)
+- [ ] #2 Decision Search & Filter (scalability)
+- [ ] #4 Markdown Charter Editor (team composition UX)
+- [ ] #9 Health Check Command (self-service diagnostics)
+
+**Risks & Mitigations:**
+- API change to `MemberStatus` — mitigate with TypeScript compile checks, incremental view updates
+- Copilot Chat no public API — start manual; wait for GitHub plugin API
+- GitHub API rate limiting — paginate, cache, warn users
+- Multi-workspace refactoring — defer to v1.2; not blocking v1.0
+
+**Key Insight:** #67 (idle status false positives) is solved by pivoting from simple emoji badges to rich contextual status strings. Current active/idle binary model insufficient for real-world use; teams need to see *what* agents are working on, not just *whether* they're active.
+
+### Feature Roadmap Analysis (2026-02-24) - Extended
+📌 Team update (2026-02-23): Feature roadmap defined — 10 features across v1.0/v1.1/v1.2. See decisions.md.
+   - P0 features: Active Status Redesign (#73), Copilot Chat Integration (#77)
+   - P1 features assigned to Rusty and Linus; implementation planning underway
+   - v1.0 ship target with focus on real-time status, decision search, charter editor, health check
+   - Roadmap session logged to .ai-team/log/2026-02-23-feature-roadmap.md

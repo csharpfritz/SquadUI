@@ -2339,3 +2339,172 @@ Or leave it out  SquadUI will auto-detect if the repo is a fork.
 The velocity chart legend was moved from an in-canvas overlay (top-right corner) to a centered HTML <div class="chart-legend"> row below the canvas element.
 
 **Rationale:** The in-canvas legend overlapped with bar chart data, especially on narrow viewports. An HTML legend is also more accessible and respects VS Code theme colors via CSS variables.
+
+
+---
+
+
+# SquadUI Feature Roadmap Analysis
+
+**Author:** Danny (Lead)  
+**Date:** 2026-02-24  
+**Issue:** Feature planning for v1.0 release and beyond  
+
+---
+
+## Executive Summary
+
+SquadUI is at v0.9.1 with strong foundational features: team visualization, activity tracking, GitHub integration, skills catalog, decisions browser, and standup reports. The extension is **feature-complete for v1.0** but lacks polish, observability, and collaboration depth needed for production teams.
+
+This document proposes 10 feature ideas across three milestones (v1.0, v1.1, v1.2), organized by category:
+- **User experience polish** (addressing rough edges)
+- **Observability** (helping teams understand agent activity and decisions)
+- **Integration depth** (deeper GitHub + Copilot CLI connection)
+- **Collaboration** (multi-workspace, team-wide features)
+- **Developer workflow** (making SquadUI indispensable to daily work)
+
+---
+
+## Feature Ideas (Prioritized)
+
+| # | Title | Description | Size | Priority | Agent | Category |
+|---|-------|-------------|------|----------|-------|----------|
+| 1 | **Active Status Redesign** | Replace parked idle/active badges with real-time Copilot Chat detection and active-work marker integration. Show "⚙️ Working on Issue #42" instead of idle/active emoji. Richer context without false positives. | M | P0 | Rusty | Observability |
+| 2 | **Decision Search & Filter** | Add searchable decision list in sidebar with filters (by author, date, topic). Quick-search as user types. Decisions tree grows with large repos; search makes it navigable. | S | P1 | Rusty | User Experience |
+| 3 | **Issue Backlog View** | New tree view tab showing all `squad:{member}` issues grouped by member and priority. Separate "open", "in-progress", "blocked" buckets. One-click triage + bulk assignment. | M | P1 | Rusty | Developer Workflow |
+| 4 | **Markdown Charter Editor** | Right-click "Edit Charter" to open charter.md in editor (not preview). Add inline guidance UI (tooltips on optional sections). Simple but powerful for team composition changes. | S | P1 | Rusty | Collaboration |
+| 5 | **Dashboard Member Drill-down** | Click a member card in dashboard to see member-specific metrics: tasks completed this period, current blockers, skill usage trend. Contextualize team velocity by individual contribution. | M | P1 | Rusty | Observability |
+| 6 | **Copilot Chat Integration** | Intercept `/@squad` mentions in Copilot Chat to surface team context (active members, skills, recent decisions). Show a preview popover with "Ask @squad about..." suggestions. | L | P0 | Rusty + Linus | Integration Depth |
+| 7 | **Skill Usage Metrics** | Dashboard widget showing which skills are actually used in logs (parsed from decision/log notes mentioning skill names). Red flag unused skills; identify missing skills. | M | P2 | Linus | Observability |
+| 8 | **Milestone Burndown Template** | Quick-start template in init wizard: select a GitHub milestone, auto-populate burndown goals for standup reports. Tie squad metrics to actual GitHub release planning. | M | P1 | Linus | Integration Depth |
+| 9 | **Health Check Command** | Diagnostic tool: `Squad: Health Check` validates team.md, agents/ structure, GitHub connectivity, log parsing, decisions.md format. Color-coded report for quick troubleshooting. | S | P2 | Basher | User Experience |
+| 10 | **Multi-Workspace Dashboard** | Allow users with multiple Squad projects to open a unified dashboard showing all squads side-by-side or with a workspace picker. Compare velocity across teams. | L | P2 | Rusty | Collaboration |
+
+---
+
+## Milestone Grouping
+
+### v1.0 — Shipping Quality (Required for Release)
+Planned for immediate release; addresses gaps blocking v1.0 maturity.
+
+**Features:**
+- **#1 Active Status Redesign** (P0) — Fixes parked #67 issue; real-time agent visibility is table-stakes for v1.0
+- **#2 Decision Search & Filter** (P1) — Low friction, high value; scalability issue for growing projects
+- **#4 Markdown Charter Editor** (P1) — Team composition is a common ask; edit-in-place reduces friction
+- **#9 Health Check Command** (P2) — Self-service troubleshooting reduces support burden; optional but recommended
+
+**Rationale:** These features solve usability pain points (navigation, searchability, real-time status) and reduce support friction without major architecture changes. #1 is critical for competitive parity with other AI team tools.
+
+### v1.1 — Team Intelligence (3–4 weeks out)
+Features expanding observability and making the dashboard indispensable.
+
+**Features:**
+- **#3 Issue Backlog View** (P1) — Shifts SquadUI from read-only observer to active project management tool
+- **#5 Dashboard Member Drill-down** (P1) — Unlocks per-member analytics; teams want to understand individual velocity
+- **#6 Copilot Chat Integration** (P0) — Deep integration with GitHub Copilot; makes SquadUI a natural context hub
+- **#8 Milestone Burndown Template** (P1) — Ties squad metrics to GitHub release planning; bridges gap between agent work and product roadmap
+
+**Rationale:** These features shift SquadUI from a visualization tool to an active management dashboard. The Copilot Chat integration (#6) is particularly high-impact — it puts Squad context directly where developers are working.
+
+### v1.2+ — Operational Excellence (Post-release)
+Advanced features for mature teams running larger squads.
+
+**Features:**
+- **#7 Skill Usage Metrics** (P2) — Helps teams evolve their skill catalog over time
+- **#10 Multi-Workspace Dashboard** (P2) — Scales to orgs running multiple AI teams
+
+**Rationale:** These are polish and scale features; deferred until core loop is solid and user feedback is in.
+
+---
+
+## Architectural Considerations
+
+### Active Status Redesign (#1)
+**Key decision:** This closes issue #67 but shifts from a badge-based model to rich contextual status strings.
+
+- **Current:** Simple emoji badges (🟢 active, 📋 idle) with insufficient signal
+- **Proposed:** Status like "⚙️ Working on Issue #42" or "🔄 Reviewing PR #15" with clickable context
+- **Implementation:**
+  - Extend `MemberStatus` enum to include new status types (working-on-issue, reviewing-pr, waiting-review, idle, monitoring)
+  - Enhance `SquadDataProvider.getMemberStatus()` to return rich object: `{ type, current: { linkType, id, title } }`
+  - Tree view badges show truncated version; hover tooltip shows full context
+  - Dashboard member card shows status + context in larger space
+- **Risk:** API change to MemberStatus requires updates across tree views and status bar; mitigate with TypeScript types
+
+### Decision Search (#2)
+**Key consideration:** Decisions currently stored in two locations (decisions.md file OR individual .md files). Search must be location-agnostic.
+
+- **Implementation:** Add `DecisionService.search(query)` that:
+  - Full-text searches both decisions.md content AND individual decision files
+  - Returns ranked results (title match > body match > metadata)
+  - Caches results during 2-sec idle (user typing in search field)
+- **No data changes needed** — purely a service-layer addition
+
+### Copilot Chat Integration (#6)
+**Critical architectural constraint:** Requires parsing Copilot Chat context at runtime. This is **complex and may require GitHub API access**.
+
+- **Risk:** No public API for intercepting Copilot Chat messages or monitoring Copilot context
+- **Mitigation:** Start with "manual trigger" — `/ask-squad "topic"` command in chat, or right-click in chat to "Explain to Squad"
+- **Future:** If GitHub opens Copilot Chat plugin API, expand to automatic context suggestion
+- **Note:** This is a **long-pole feature** — may need to defer to v1.1.1 or later
+
+### Issue Backlog View (#3)
+**Implementation note:** Requires fetching ALL `squad:{member}` issues (not just assigned to current user). This scales with repo size.
+
+- **Optimization:** Paginate issues, load on-demand, add filters to reduce payload
+- **Cache:** Store results in `SquadDataProvider` with 5-min TTL to avoid hammering GitHub API
+- **Security:** Already have `GitHubIssuesService` — extend it to support backlog queries
+
+### Multi-Workspace Dashboard (#10)
+**Architecture impact:** Requires redesigning dashboard data flow to support multiple roots simultaneously.
+
+- **Current:** `SquadDataProvider` binds to a single root; dashboard queries it
+- **Proposed:** Dashboard accepts array of `{ root, folder }` pairs; queries them in parallel; UI shows unified view with workspace selector or tabs
+- **Deferred:** Low priority (few orgs run multiple squads); defer to v1.2
+
+---
+
+## V1.0 Readiness Checklist
+
+✅ **Core features shipping:**
+- Team visualization (tree view with roles, status, tasks)
+- Dashboard (velocity, activity, decisions)
+- Standup reports (daily/weekly, AI summaries)
+- Skills catalog (browse, add, remove)
+- GitHub integration (issues, fork-aware fetching)
+- Init wizard + upgrade command
+- Status bar health indicator
+
+⚠️ **Gaps to close before v1.0:**
+- [ ] Real-time agent status (#1 — Active Status Redesign)
+- [ ] Decision navigation scalability (#2 — Decision Search)
+- [ ] Charter editing (#4 — Markdown Editor)
+- [ ] Diagnostic tooling (#9 — Health Check)
+
+✅ **Known limitations (acceptable for v1.0):**
+- No Copilot Chat integration (deferred to v1.1)
+- No multi-workspace support (deferred to v1.2)
+- No offline mode (acceptable — requires GitHub connectivity)
+- No team member activity feed beyond logs (sufficient for MVP)
+
+---
+
+## Risk Assessment
+
+| Feature | Risk | Mitigation |
+|---------|------|-----------|
+| #1 Active Status | API change to `MemberStatus` enum; impacts tree/status bar | Add new enum values; update views incrementally; add TypeScript compile checks |
+| #6 Copilot Chat | No public API for message interception | Start with manual trigger (`/ask-squad`); plan for API when GitHub releases it |
+| #10 Multi-Workspace | Significant data flow refactoring | Defer to v1.2; not blocking v1.0 |
+| #3 Issue Backlog | GitHub API rate limiting on large repos | Paginate; cache; warn users about rate limits |
+
+---
+
+## Next Steps
+
+1. **Validate with Jeffrey & team:** Does this roadmap align with v1.0 ship target and community feedback?
+2. **Assign implementation:** P0 features (#1, #6) → Rusty + Linus pairing for cross-layer work
+3. **Scope v1.0.0 release:** Finalize which features are hard requirements vs. nice-to-have
+4. **Backlog grooming:** Create GitHub issues for each feature with acceptance criteria
+5. **Schedule:** Estimate v1.0 ship date based on feature scope
+

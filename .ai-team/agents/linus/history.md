@@ -126,3 +126,12 @@
 
 ### Team Update: 2026-02-23 - Fork-Aware Issue Fetching
  **Team update (2026-02-23):** Fork-aware issue fetching shipped: when repo is a fork, SquadUI auto-detects upstream via GitHub API (GET /repos/{owner}/{repo}  parent), with manual override via team.md **Upstream** | owner/repo. All issue queries (open, closed, milestones) use upstream. Fallback to configured repo if not a fork. No breaking changes  repos without forks behave identically.  decided by @copilot
+
+### Feature Roadmap & Assignments (2026-02-24)
+📌 Team update (2026-02-23): Feature roadmap defined — 10 features across v1.0/v1.1/v1.2. See decisions.md.
+   - P1 features assigned: Decision Search & Filter (#69), Health Check (#70), Milestone Burndown Template (#75)
+   - P2 features assigned: Skill Usage Metrics (#74)
+   - v1.0 ship target with focus on decision search service, diagnostic tooling
+   - v1.1 enables observability (skills usage, burndown metrics)
+   - Key implementation: DecisionService.search() and HealthCheck diagnostic command
+   - Roadmap session logged to .ai-team/log/2026-02-23-feature-roadmap.md
