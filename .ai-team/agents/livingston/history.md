@@ -11,6 +11,22 @@
 
 <!-- Append learnings below this line -->
 
+### 2026-02-23: Release v0.9.1 — squadFolder Propagation Fix
+
+**Release process executed successfully:**
+- Committed history update: `docs(ai-team): update livingston history` (commit 9f3762a)
+- Bumped version: `0.9.0` → `0.9.1` in `package.json`
+- Updated `CHANGELOG.md`: Added v0.9.1 section with fix for `squadFolder` propagation to `GitHubIssuesService` for `.squad` workspace support (PR #68)
+- Committed: `chore: release v0.9.1` (commit 8ac8322)
+- Tagged: `git tag v0.9.1` and pushed with `git push origin main --follow-tags`
+- Tag verified: `v0.9.1` confirmed in origin remote
+- Release workflow will trigger automatically via GitHub Actions on tag push (v* pattern matches v0.9.1)
+
+**Release summary:**
+- Patch release addressing critical fix for workspace folder propagation
+- Single fix targeting `.squad` workspace detection in GitHubIssuesService
+- Release notes auto-generated with v0.9.0 comparison link
+
 ### 2025-01-XX — GitHub Actions CI Pipeline (#22)
 
 - **CI workflow location:** `.github/workflows/ci.yml`
