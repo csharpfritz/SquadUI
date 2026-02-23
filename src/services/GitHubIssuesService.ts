@@ -50,6 +50,9 @@ export interface GitHubIssuesServiceOptions {
 
     /** GitHub API base URL (default: https://api.github.com) */
     apiBaseUrl?: string;
+
+    /** Squad folder name (default: '.ai-team') */
+    squadFolder?: '.squad' | '.ai-team';
 }
 
 /**
@@ -67,7 +70,7 @@ export class GitHubIssuesService {
     private effectiveConfigCache: IssueSourceConfig | null = null;
 
     constructor(options: GitHubIssuesServiceOptions = {}) {
-        this.teamMdService = new TeamMdService();
+        this.teamMdService = new TeamMdService(options.squadFolder);
         this.cacheTtlMs = options.cacheTtlMs ?? DEFAULT_CACHE_TTL_MS;
         this.token = options.token;
         this.apiBaseUrl = (options.apiBaseUrl ?? 'https://api.github.com').replace(/\/+$/, '');

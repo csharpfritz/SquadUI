@@ -81,7 +81,7 @@ export function activate(context: vscode.ExtensionContext): void {
     const decisionsProvider = new DecisionsTreeProvider(dataProvider, squadFolderName);
 
     // Wire up GitHub Issues service
-    const issuesService = new GitHubIssuesService();
+    const issuesService = new GitHubIssuesService({ squadFolder: squadFolderName });
     teamProvider.setIssuesService(issuesService);
 
     // Create dashboard webview
