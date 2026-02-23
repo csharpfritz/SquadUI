@@ -5,6 +5,26 @@ All notable changes to the SquadUI extension will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.0] - 2026-02-24
+
+### Added
+- **Standup Report Dashboard**: New dashboard button for quick access to report generation
+- **Milestone Burndown Chart**: Visual burndown tracking within standup reports
+- **AI Executive Summary**: AI-powered executive summary of work completed and status in reports
+- **AI Decisions Summary**: AI-powered summary of decisions made with direct links to decision documents
+- **Velocity Chart Enhancement**: Side-by-side velocity chart and burndown chart in standup reports
+- **Issue Number Links**: AI summaries now include direct links to referenced GitHub issues
+- **Fork-Aware Issue Fetching**: Intelligently fetch issues from upstream repositories for teams using forks
+
+### Changed
+- Velocity legend repositioned for improved layout in standup reports
+
+### Fixed
+- **XSS Security Fix**: Implemented Content Security Policy (CSP) headers for standup report webview to prevent XSS attacks
+
+### Tests
+- 1053 total tests passing (up from ~1038)
+
 ## [0.8.0] - 2026-02-22
 
 ### Added
