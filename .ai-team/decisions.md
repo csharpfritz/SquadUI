@@ -1638,32 +1638,6 @@ Issue #26 will be marked as superseded by #41 in a follow-up comment.
 
 ---
 
-
-**Date:** 2026-02-16
-**Author:** Linus
-
-## Context
-
-Some projects (e.g. aspire-minecraft) use a different decisions.md format where each decision is an H1 heading with a `Decision:` prefix, followed by `**Date:**`, `**Author:**`, and optional `**Issue:**` metadata. Subsections like `## Context`, `## Decision`, `## Rationale` appear inside the H1 block.
-
-## Decision
-
-`parseDecisionsMd()` now handles both formats:
-- **H1 format:** `# Decision: {title}` — section boundary is next H1 or EOF. Inner H2/H3 subsections are content, not separate decisions.
-- **H2/H3 format:** unchanged — original logic remains untouched.
-
-The H1 check runs first in the loop. If it matches, it consumes the entire block (advancing `i` to `sectionEnd`) and `continue`s, so the H2/H3 logic never sees the subsections.
-
-## Rationale
-
-- Additive change — zero risk to existing parsing
-- The `continue` + skip pattern is the cleanest way to prevent subsection re-parsing without restructuring the loop
-- Non-decision H1 headings (like `# Decisions`) are explicitly skipped to avoid false positives
-
-
-
----
-
 # Decision: Init & Upgrade Welcome View Pattern
 
 **Author:** Rusty (Extension Dev)
@@ -1826,31 +1800,6 @@ The init wizard's `terminal.sendText()` now sends two chained commands via `&&`:
 
 **Author:** Linus  
 **Date:** 2026-02-16  
-
----
-
-### Context
-
-SquadDataProvider.getSquadMembers() relies on parsing team.md to discover team members. However, many users have teams allocated with agent folders on disk but team.md parsing fails due to different heading formats or malformed tables. The current fallback to orchestration log participants is unreliable (only works after sessions have been logged).
-
-### Decision
-
-Added a second-level fallback in SquadDataProvider.getSquadMembers() that scans .ai-team/agents/ subdirectories to discover team members when team.md parsing returns empty. Detection chain is now:
-1. Parse team.md for Members table
-2. **[NEW]** Scan .ai-team/agents/ subdirectories and read charter.md to extract role from the - **Role:** {role} line
-3. Fall back to orchestration log participants
-
-Special folders _alumni and scribe are skipped during scanning.
-
-### Rationale
-
-Many users have teams allocated but team.md doesn't parse correctly due to different heading formats or missing tables. The agents ARE present as folders on disk, so scanning them provides a reliable middle-ground fallback before falling back to orchestration log participants (which is less accurate and only works after sessions have been logged).
-
-### Impact
-
-- Team detection is now more resilient to team.md formatting issues
-- Agent folders become a trusted source of truth for team composition
-- Scribe and alumni folders are correctly excluded from member discovery
 
 ---
 

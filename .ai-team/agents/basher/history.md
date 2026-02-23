@@ -286,3 +286,9 @@
 - **What's solid:** Core filtering logic (period, blocking, priority) is correct and well-tested. The service is stateless and pure-functional, making it highly testable.
 - **What's fragile:** The webview HTML generation in `StandupReportWebview.ts` injects issue titles directly into HTML without escaping — XSS vector if a malicious issue title is crafted. Recommend sanitization.
 
+
+
+### 2026-02-23: Team Updates
+ Standup Report feature review — expanded tests from 14 to 39 cases. Identified XSS concern: StandupReportWebview renders issue titles without HTML escaping. Recommended escapeHtml() utility for user-sourced strings. Decided by Basher
+ Test Strategy for Status Override Logic  use synthetic OrchestrationLogEntry objects instead of temp files for unit tests. Integration tests still use disk when file parsing is the behavior under test. Decided by Basher
+

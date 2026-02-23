@@ -154,3 +154,8 @@
 - **Key pattern:** When parking a feature, strip the UI layer only — leave the data pipeline intact so re-enabling is a clean diff.
 📌 Team update (2026-02-23): Status indicators parked — all visible active/idle/working indicators removed from tree view, dashboard, status bar, and work details webview. Data infrastructure (MemberStatus, OrchestrationLogService, SquadDataProvider status computation) preserved for future re-enablement. — decided by Jeffrey T. Fritz
 
+
+
+### 2026-02-23: Team Updates
+ Park Status Indicators feature  removed all active/idle status UI indicators from tree view, dashboard, status bar, and work details webview. Infrastructure preserved for future re-enablement. Test files updated (8 total). Decided by Rusty
+
