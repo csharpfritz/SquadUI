@@ -221,4 +221,280 @@ suite('StandupReportService', () => {
             assert.ok(markdown.includes('# Weekly Standup Report'));
         });
     });
+
+    // ─── Edge Cases: Empty & Missing Data ──────────────────────────────────
+
+    suite('Edge Cases — empty & missing data', () => {
+        test('closed issues without closedAt are excluded', () => {
+            const closedIssues = [
+                createIssue({ number: 1, closedAt: undefined }),
+                createIssue({ number: 2, closedAt: new Date().toISOString() }),
+            ];
+            const report = service.generateReport([], closedIssues, [], [], 'week');
+            assert.strictEqual(report.closedIssues.length, 1);
+            assert.strictEqual(report.closedIssues[0].number, 2);
+        });
+
+        test('decisions without date are excluded', () => {
+            const decisions = [
+                createDecision({ title: 'No date', date: undefined }),
+                createDecision({ title: 'Has date', date: new Date().toISOString().split('T')[0] }),
+            ];
+            const report = service.generateReport([], [], decisions, [], 'week');
+            assert.strictEqual(report.recentDecisions.length, 1);
+            assert.strictEqual(report.recentDecisions[0].title, 'Has date');
+        });
+
+        test('log entries with unparseable date are excluded', () => {
+            const logs = [
+                createLogEntry({ date: 'not-a-date', topic: 'bad' }),
+                createLogEntry({ date: new Date().toISOString().split('T')[0], topic: 'good' }),
+            ];
+            const report = service.generateReport([], [], [], logs, 'week');
+            assert.strictEqual(report.recentLogs.length, 1);
+            assert.strictEqual(report.recentLogs[0].topic, 'good');
+        });
+
+        test('all arrays empty produces a complete report shape', () => {
+            const report = service.generateReport([], [], [], [], 'day');
+            assert.ok(report.summary);
+            assert.ok(report.summary.periodStart instanceof Date);
+            assert.ok(report.summary.periodEnd instanceof Date);
+            assert.strictEqual(report.closedIssues.length, 0);
+            assert.strictEqual(report.newIssues.length, 0);
+            assert.strictEqual(report.blockingIssues.length, 0);
+            assert.strictEqual(report.recentDecisions.length, 0);
+            assert.strictEqual(report.suggestedNextSteps.length, 0);
+            assert.strictEqual(report.recentLogs.length, 0);
+        });
+
+        test('open issues with no labels do not crash blocking check', () => {
+            const openIssues = [createIssue({ number: 1, labels: [] })];
+            const report = service.generateReport(openIssues, [], [], [], 'day');
+            assert.strictEqual(report.blockingIssues.length, 0);
+            assert.strictEqual(report.suggestedNextSteps.length, 1);
+        });
+    });
+
+    // ─── Edge Cases: Date Boundaries ───────────────────────────────────────
+
+    suite('Edge Cases — date boundaries', () => {
+        test('issue closed exactly 24h ago is included in day report', () => {
+            const exactly24hAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+            const closedIssues = [createIssue({ number: 1, closedAt: exactly24hAgo })];
+            const report = service.generateReport([], closedIssues, [], [], 'day');
+            assert.strictEqual(report.closedIssues.length, 1);
+        });
+
+        test('issue closed just past 24h ago is excluded from day report', () => {
+            const justPast24h = new Date(Date.now() - 24 * 60 * 60 * 1000 - 1000).toISOString();
+            const closedIssues = [createIssue({ number: 1, closedAt: justPast24h })];
+            const report = service.generateReport([], closedIssues, [], [], 'day');
+            assert.strictEqual(report.closedIssues.length, 0);
+        });
+
+        test('issue closed exactly 7 days ago is included in week report', () => {
+            const exactly7d = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+            const closedIssues = [createIssue({ number: 1, closedAt: exactly7d })];
+            const report = service.generateReport([], closedIssues, [], [], 'week');
+            assert.strictEqual(report.closedIssues.length, 1);
+        });
+
+        test('default period is day', () => {
+            const report = service.generateReport([], [], [], []);
+            assert.strictEqual(report.period, 'day');
+        });
+    });
+
+    // ─── Edge Cases: parseDate() ───────────────────────────────────────────
+
+    suite('Edge Cases — parseDate()', () => {
+        test('parses YYYY-MM-DD format', () => {
+            const parseDate = (service as any).parseDate.bind(service);
+            const d = parseDate('2026-01-15');
+            assert.ok(d instanceof Date);
+            assert.strictEqual(d!.getFullYear(), 2026);
+            assert.strictEqual(d!.getMonth(), 0); // January
+            assert.strictEqual(d!.getDate(), 15);
+        });
+
+        test('parses ISO 8601 strings', () => {
+            const parseDate = (service as any).parseDate.bind(service);
+            const d = parseDate('2026-02-18T10:30:00Z');
+            assert.ok(d instanceof Date);
+            assert.strictEqual(d!.getFullYear(), 2026);
+        });
+
+        test('returns null for garbage strings', () => {
+            const parseDate = (service as any).parseDate.bind(service);
+            const d = parseDate('hello-world');
+            assert.strictEqual(d, null);
+        });
+
+        test('returns null for empty string', () => {
+            const parseDate = (service as any).parseDate.bind(service);
+            const d = parseDate('');
+            assert.strictEqual(d, null);
+        });
+
+        test('handles YYYY-MM-DD embedded in longer text', () => {
+            const parseDate = (service as any).parseDate.bind(service);
+            const d = parseDate('Date: 2026-03-10 was the deadline');
+            assert.ok(d instanceof Date);
+            assert.strictEqual(d!.getFullYear(), 2026);
+            assert.strictEqual(d!.getMonth(), 2); // March
+        });
+    });
+
+    // ─── Edge Cases: Priority Sorting ──────────────────────────────────────
+
+    suite('Edge Cases — priority sorting', () => {
+        test('issues with no priority label sort after prioritized issues', () => {
+            const openIssues = [
+                createIssue({ number: 1, title: 'No label', labels: [] }),
+                createIssue({ number: 2, title: 'P2', labels: [{ name: 'p2' }] }),
+            ];
+            const report = service.generateReport(openIssues, [], [], [], 'day');
+            assert.strictEqual(report.suggestedNextSteps[0].title, 'P2');
+            assert.strictEqual(report.suggestedNextSteps[1].title, 'No label');
+        });
+
+        test('all PRIORITY_ORDER labels are recognized', () => {
+            const labelNames = ['p0', 'priority:critical', 'urgent', 'p1', 'priority:high', 'high',
+                               'p2', 'priority:medium', 'medium', 'p3', 'priority:low', 'low'];
+            // Each issue gets one priority label — all should get a priority < 99
+            const openIssues = labelNames.map((name, i) =>
+                createIssue({ number: i + 1, title: name, labels: [{ name }] })
+            );
+            const report = service.generateReport(openIssues, [], [], [], 'day');
+            // suggestedNextSteps is capped at 5; first 5 should be p0/critical/urgent tier
+            const topTitles = report.suggestedNextSteps.map(i => i.title);
+            for (const t of topTitles) {
+                assert.ok(['p0', 'priority:critical', 'urgent'].includes(t) || 
+                           ['p1', 'priority:high', 'high'].includes(t),
+                           `Expected high-priority issue, got: ${t}`);
+            }
+        });
+
+        test('issues with multiple labels use first matching priority', () => {
+            const openIssues = [
+                createIssue({ number: 1, title: 'MultiLabel', labels: [{ name: 'enhancement' }, { name: 'p1' }, { name: 'p3' }] }),
+            ];
+            const report = service.generateReport(openIssues, [], [], [], 'day');
+            // Should be included and treated as p1 (first matching)
+            assert.strictEqual(report.suggestedNextSteps.length, 1);
+        });
+    });
+
+    // ─── Edge Cases: Blocking Labels ───────────────────────────────────────
+
+    suite('Edge Cases — blocking labels', () => {
+        test('all four blocking labels are recognized', () => {
+            const openIssues = BLOCKING_LABEL_VARIANTS.map((name, i) =>
+                createIssue({ number: i + 1, labels: [{ name }] })
+            );
+            const report = service.generateReport(openIssues, [], [], [], 'day');
+            assert.strictEqual(report.blockingIssues.length, 4);
+        });
+
+        test('impediment label is case-insensitive', () => {
+            const openIssues = [createIssue({ number: 1, labels: [{ name: 'IMPEDIMENT' }] })];
+            const report = service.generateReport(openIssues, [], [], [], 'day');
+            assert.strictEqual(report.blockingIssues.length, 1);
+        });
+    });
+
+    // ─── Edge Cases: Large Datasets ────────────────────────────────────────
+
+    suite('Edge Cases — large datasets', () => {
+        test('handles 500 open issues without errors', () => {
+            const openIssues = Array.from({ length: 500 }, (_, i) =>
+                createIssue({ number: i + 1, title: `Issue ${i + 1}`, createdAt: new Date().toISOString() })
+            );
+            const report = service.generateReport(openIssues, [], [], [], 'day');
+            assert.strictEqual(report.summary.newCount, 500);
+            assert.strictEqual(report.suggestedNextSteps.length, 5);
+        });
+
+        test('handles 500 closed issues without errors', () => {
+            const closedIssues = Array.from({ length: 500 }, (_, i) =>
+                createIssue({ number: i + 1, closedAt: new Date().toISOString() })
+            );
+            const report = service.generateReport([], closedIssues, [], [], 'day');
+            assert.strictEqual(report.summary.closedCount, 500);
+        });
+    });
+
+    // ─── formatAsMarkdown() — additional coverage ──────────────────────────
+
+    suite('formatAsMarkdown() — edge cases', () => {
+        test('empty report omits blockers and decisions sections', () => {
+            const report: StandupReport = {
+                period: 'day',
+                summary: { closedCount: 0, newCount: 0, blockingCount: 0,
+                    periodStart: new Date(), periodEnd: new Date() },
+                closedIssues: [],
+                newIssues: [],
+                blockingIssues: [],
+                recentDecisions: [],
+                suggestedNextSteps: [],
+                recentLogs: [],
+            };
+            const md = service.formatAsMarkdown(report);
+            assert.ok(!md.includes('## 🚫 Blockers'), 'Blockers section should be absent');
+            assert.ok(!md.includes('## 📌 Recent Decisions'), 'Decisions section should be absent');
+        });
+
+        test('issue without assignee has no @ mention', () => {
+            const report: StandupReport = {
+                period: 'day',
+                summary: { closedCount: 0, newCount: 0, blockingCount: 0,
+                    periodStart: new Date(), periodEnd: new Date() },
+                closedIssues: [],
+                newIssues: [],
+                blockingIssues: [],
+                recentDecisions: [],
+                suggestedNextSteps: [createIssue({ number: 1, title: 'No assignee', assignee: undefined })],
+                recentLogs: [],
+            };
+            const md = service.formatAsMarkdown(report);
+            assert.ok(md.includes('No assignee'));
+            assert.ok(!md.includes('@undefined'));
+        });
+
+        test('decision without author has no parenthetical', () => {
+            const report: StandupReport = {
+                period: 'day',
+                summary: { closedCount: 0, newCount: 0, blockingCount: 0,
+                    periodStart: new Date(), periodEnd: new Date() },
+                closedIssues: [],
+                newIssues: [],
+                blockingIssues: [],
+                recentDecisions: [createDecision({ title: 'Anonymous Decision', author: undefined })],
+                suggestedNextSteps: [],
+                recentLogs: [],
+            };
+            const md = service.formatAsMarkdown(report);
+            assert.ok(md.includes('Anonymous Decision'));
+            assert.ok(!md.includes('(undefined)'));
+        });
+
+        test('blocker labels are listed in markdown', () => {
+            const report: StandupReport = {
+                period: 'day',
+                summary: { closedCount: 0, newCount: 0, blockingCount: 1,
+                    periodStart: new Date(), periodEnd: new Date() },
+                closedIssues: [],
+                newIssues: [],
+                blockingIssues: [createIssue({ number: 99, title: 'Stuck', labels: [{ name: 'blocked' }, { name: 'p0' }] })],
+                recentDecisions: [],
+                suggestedNextSteps: [],
+                recentLogs: [],
+            };
+            const md = service.formatAsMarkdown(report);
+            assert.ok(md.includes('blocked, p0'));
+        });
+    });
 });
+
+const BLOCKING_LABEL_VARIANTS = ['blocked', 'blocker', 'blocking', 'impediment'];
