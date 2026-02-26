@@ -1,45 +1,35 @@
-# Project Context
+# Linus  Search Service & Health Check
 
-- **Owner:** Jeffrey T. Fritz (csharpfritz@users.noreply.github.com)
-- **Project:** VS Code extension for visualizing Squad team members and their tasks
-- **Stack:** TypeScript, VS Code Extension API, potentially GitHub Copilot integration
-- **Created:** 2026-02-13
+**Role:** Infrastructure & Observability  
+**Current Focus:** v1.0 features  Decision Search (#69), Health Check (#70)
 
-## Learnings Summary
+## v1.0 Batch 1 (2026-02-23)
 
-### v0.1v0.2: Core Data Pipeline Foundation
-- OrchestrationLogService, TeamMdService, SquadDataProvider, FileWatcherService, GitHubIssuesService with test fixtures
-- Two-tier member resolution: team.md + log overlay
-- Dual-directory log discovery (orchestration-log/ + log/)
-- Multi-format participant extraction (inline, table, agent-routed fields)
-- Prose + issue-based task extraction with deterministic task IDs ({date}-{agent-slug})
-- Flexible GitHub issue matching: labels, assignees, any-label strategies
+**#69 Decision Search Service**
+- Full-text search with relevance ranking and date/author filtering
+- 37 new tests added
+- PR #79 merged to squad/v1.0-features
+- Status: Complete
 
-### GitHubIssuesService Architecture
-- IGitHubIssuesService interface enables graceful degradation and late binding
-- Issues use $(issues) codicon with theme color tinting (green open, purple closed)
-- Squad labels filtered from display to avoid redundancy
-- Default matching strategy: ['labels', 'assignees'] when no config present
-- Member Aliases table parsed from team.md Issue Source section
-- Separate closedCache for closed issues; fetch max 50, sorted by updated_at descending
+**v1.0 Roadmap Assignments**
+- P1: Decision Search & Filter (#69) 
+- P1: Health Check (#70) — in progress (Batch 2)
+- P1: Milestone Burndown Template (#75)
+- P2: Skill Usage Metrics (#74)
 
-### SkillCatalogService & Log Parsing
-- Fetches from awesome-copilot + skills.sh using Node's https module
-- All methods swallow network errors and return empty arrays (graceful degradation)
-- Deduplicates toward awesome-copilot version
-- No npm dependencies
+**#70 Health Check Diagnostic Command**
+- `HealthCheckService` — pure TypeScript, no VS Code dependency, 4 checks: team.md, agent charters, log parse health, GitHub token
+- Each check returns `HealthCheckResult { name, status: 'pass'|'fail'|'warn', message, fix? }`
+- `runAll()` parallel execution, `formatResults()` human-readable output with icons
+- `squadui.healthCheck` command wired to VS Code output channel (minimal extension.ts touch)
+- Squad folder passed as parameter everywhere — never hardcoded
+- 17 tests in `healthCheckService.test.ts`
+- PR #81 → closes #70
+- Status: Complete
 
-### Log Summary Extraction Priority Chain
-1. ## Summary section
-2. | **Outcome** | value | table field
-3. Heading title after em dash
-4. First prose paragraph (prevents table markdown leakage)
+## Historical Summaries
 
-### OrchestrationLogService Features
-- Filename regex handles both YYYY-MM-DD-topic.md and YYYY-MM-DDThhmm-topic.md formats
-- Agent Routed table field fallback: | **Agent routed** | Fury (Lead) |  extracts agent name, strips role suffix and pipes
-- Who Worked table format parsing: xtractTableFirstColumn() helper
-- Prose task extraction: "What Was Done" section highest priority, synthetic fallback per entry
+**Earlier work (v0.1v0.2, 2026-02-13 to 2026-02-18)** archived to history-archive-v1.md.
 
 ### 2026-02-15 Team Updates
  Issues Service Interface Contract  IGitHubIssuesService decouples tree view from implementation  decided by Rusty
@@ -150,3 +140,10 @@
 - 37 tests in decisionSearchService.test.ts covering all methods and edge cases
 - Service is decoupled from DecisionService - operates on DecisionEntry[], not files
 - UI integration (tree view search box, filter controls) is Rusty's follow-up
+Key milestones:
+- Core data pipeline: OrchestrationLogService, TeamMdService, SquadDataProvider
+- GitHub issues integration with graceful degradation
+- H1 decision format support
+- Test hardening patterns
+- Dashboard bugfixes (squad folder awareness, velocity chart, session log inclusion)
+- Fork-aware issue fetching (2026-02-23)

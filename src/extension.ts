@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs';
 import { GitHubIssue } from './models';
-import { SquadDataProvider, FileWatcherService, GitHubIssuesService, SquadVersionService } from './services';
+import { SquadDataProvider, FileWatcherService, GitHubIssuesService, SquadVersionService, HealthCheckService } from './services';
 import { TeamTreeProvider, SkillsTreeProvider, DecisionsTreeProvider, WorkDetailsWebview, IssueDetailWebview, SquadStatusBar, SquadDashboardWebview, StandupReportWebview } from './views';
 import { registerInitSquadCommand, registerUpgradeSquadCommand, registerAddMemberCommand, registerRemoveMemberCommand, registerAddSkillCommand } from './commands';
 import { detectSquadFolder, hasSquadTeam } from './utils/squadFolderDetection';
@@ -515,6 +515,25 @@ export function activate(context: vscode.ExtensionContext): void {
                 fs.rmSync(skillDir, { recursive: true });
                 vscode.window.showInformationMessage(`Removed skill: ${skillSlug}`);
                 skillsProvider.refresh();
+            }
+        })
+    );
+
+    // Register health check command — runs diagnostics and shows results in output channel
+    context.subscriptions.push(
+        vscode.commands.registerCommand('squadui.healthCheck', async () => {
+            const healthService = new HealthCheckService();
+            const results = await healthService.runAll(squadFolderName, currentRoot);
+            const output = vscode.window.createOutputChannel('Squad Health Check');
+            output.clear();
+            output.appendLine(healthService.formatResults(results));
+            output.show(true);
+
+            const failed = results.filter(r => r.status === 'fail').length;
+            if (failed > 0) {
+                vscode.window.showWarningMessage(`Squad Health Check: ${failed} issue(s) found. See output for details.`);
+            } else {
+                vscode.window.showInformationMessage('Squad Health Check: All checks passed.');
             }
         })
     );

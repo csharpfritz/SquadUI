@@ -140,6 +140,12 @@
         "title": "Generate Standup Report",
         "category": "Squad",
         "icon": "$(report)"
+      },
+      {
+        "command": "squadui.healthCheck",
+        "title": "Health Check",
+        "category": "Squad",
+        "icon": "$(checklist)"
       }
     ],
     "viewsWelcome": [
