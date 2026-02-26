@@ -48,3 +48,11 @@ The SquadUI extension emerged from initial scaffolding through a rapid sequence 
 ### Team Update: 2026-02-23 - Standup Report Enhancements & Fork-Aware Issues
  **Team update (2026-02-23):** Two decisions merged: (1) Standup report issue linkification (#N in AI summaries become clickable GitHub links) with escape-then-linkify pipeline to prevent injection; (2) Velocity chart legend repositioning below canvas for better viewport + accessibility. Fork-aware issue fetching auto-detects upstream repos via GitHub API, with manual override via team.md.  decided by @copilot + Rusty
 
+### Charter Editor Command (2026-02-23)
+- **Issue:** #72 — Markdown Charter Editor
+- **What:** Added `squadui.editCharter` command that opens agent charters in VS Code's text editor with markdown preview side-by-side, enabling in-place editing.
+- **Changes:** `package.json` (command + context menu + palette), `src/extension.ts` (command handler), new test file `editCharterCommand.test.ts` (3 tests).
+- **Pattern:** Command accepts both string member name and tree item object (for context menu). Uses same slug generation as `viewCharter`. Opens with `preview: false` so edits persist, then fires `markdown.showPreviewToSide` for live preview.
+- **Key difference from viewCharter:** `viewCharter` opens read-only markdown preview; `editCharter` opens the text editor (editable) + preview side-by-side.
+- **File watcher coverage:** Existing `.ai-team/` file watchers auto-refresh the tree view when charter files are saved — no additional watcher needed.
+
