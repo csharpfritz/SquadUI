@@ -15,6 +15,7 @@ import * as assert from 'assert';
 import * as path from 'path';
 import { SquadDataProvider } from '../../services/SquadDataProvider';
 import { OrchestrationLogService } from '../../services/OrchestrationLogService';
+import { isActiveStatus } from '../../models';
 
 const SENSEI_FIXTURES = path.resolve(__dirname, '../../../test-fixtures/sensei-scenario');
 const SESSION_LOG_ISSUES_FIXTURES = path.resolve(__dirname, '../../../test-fixtures/session-log-issues');
@@ -145,7 +146,7 @@ suite('Session Log Isolation: Issue reference scenario', () => {
 
         // Rusty appears in orchestration-log/2026-02-13-member-working.md
         assert.ok(rusty, 'Rusty should be in roster from team.md');
-        assert.strictEqual(rusty!.status, 'working', 'Rusty should be working (in orchestration-log)');
+        assert.ok(isActiveStatus(rusty!.status), 'Rusty should be working (in orchestration-log)');
     });
 });
 

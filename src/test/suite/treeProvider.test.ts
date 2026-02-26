@@ -205,13 +205,13 @@ suite('TeamTreeProvider Test Suite', () => {
     });
 
     suite('tree item icons', () => {
-        test('member has person icon regardless of status', async () => {
+        test('working member has sync~spin icon', async () => {
             const children = await provider.getChildren();
             const danny = children.find((c) => c.label === 'Danny');
 
             assert.ok(danny);
             assert.ok(danny.iconPath instanceof vscode.ThemeIcon);
-            assert.strictEqual((danny.iconPath as vscode.ThemeIcon).id, 'person');
+            assert.strictEqual((danny.iconPath as vscode.ThemeIcon).id, 'sync~spin');
         });
 
         test('idle member has person icon', async () => {

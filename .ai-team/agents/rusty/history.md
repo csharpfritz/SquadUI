@@ -55,4 +55,14 @@ The SquadUI extension emerged from initial scaffolding through a rapid sequence 
 - **Pattern:** Command accepts both string member name and tree item object (for context menu). Uses same slug generation as `viewCharter`. Opens with `preview: false` so edits persist, then fires `markdown.showPreviewToSide` for live preview.
 - **Key difference from viewCharter:** `viewCharter` opens read-only markdown preview; `editCharter` opens the text editor (editable) + preview side-by-side.
 - **File watcher coverage:** Existing `.ai-team/` file watchers auto-refresh the tree view when charter files are saved — no additional watcher needed.
+### Active Status Redesign (2026-02-24, Issue #73)
+- **Rich contextual status:** Replaced binary `'working' | 'idle'` with `MemberStatus` enum: `'working-on-issue' | 'reviewing-pr' | 'waiting-review' | 'working' | 'idle'`. Added `isActiveStatus()` helper and `ActivityContext` interface with `description`, `shortLabel`, `issueNumber?`, `prNumber?`.
+- **OrchestrationLogService.getMemberActivity():** New method parses log entries to derive per-member activity context. Detects issue work vs PR review vs waiting status from log content. Falls back to generic `'working'` when no specific context is available. Original `getMemberStates()` preserved for backward compat.
+- **SquadDataProvider:** Uses `getMemberActivity()` to populate `activityContext` on each `SquadMember`. GitHub-aware status now sets `'working-on-issue'` (not generic `'working'`).
+- **Tree view:** Working members get `sync~spin` icon with green color. Description shows `role • ⚙️ Issue #42` style. Tooltip shows full context description.
+- **Dashboard:** Member cards show status badge below name. "Working" summary card restored. Uses `isActiveStatus()` for counting.
+- **Status bar:** Shows `Squad: 3/5 working` when members are active, falls back to `Squad: N members` when none are working.
+- **Work details webview:** Shows member's activity context shortLabel in assigned-to card.
+- **Key files:** `src/models/index.ts` (MemberStatus, ActivityContext, isActiveStatus), `src/services/OrchestrationLogService.ts` (getMemberActivity), `src/views/SquadTreeProvider.ts` (rich status display), `src/views/dashboard/htmlTemplate.ts` (status badges).
+- **Tests:** Updated 8 test files to accept rich status values. 1093 tests passing (up from 1056).
 

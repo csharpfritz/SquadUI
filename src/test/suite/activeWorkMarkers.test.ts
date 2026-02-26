@@ -11,6 +11,7 @@ import * as assert from 'assert';
 import * as path from 'path';
 import * as fs from 'fs';
 import { SquadDataProvider } from '../../services/SquadDataProvider';
+import { isActiveStatus } from '../../models';
 
 const TEST_FIXTURES_ROOT = path.resolve(__dirname, '../../../test-fixtures');
 
@@ -387,7 +388,7 @@ suite('SquadDataProvider — Active-Work Markers', () => {
 
         const danny = members.find(m => m.name === 'Danny');
         assert.ok(danny, 'Danny should be in members');
-        assert.strictEqual(danny!.status, 'working',
+        assert.ok(isActiveStatus(danny!.status),
             'Danny should be working (from either log or marker — no conflict)');
     });
 });

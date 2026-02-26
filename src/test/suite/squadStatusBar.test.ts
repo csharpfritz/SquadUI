@@ -68,11 +68,11 @@ suite('SquadStatusBar', () => {
             await statusBar.update();
             const statusBarItem = (statusBar as any).statusBarItem;
 
-            assert.ok(statusBarItem.text.includes('1 member'), 'Should show 1 member');
-            assert.ok(!statusBarItem.text.includes('1 members'), 'Should not show "1 members"');
+            // Working member shows "1/1 working"
+            assert.ok(statusBarItem.text.includes('1/1 working'), 'Should show 1/1 working');
         });
 
-        test('does not show active/idle counts', async () => {
+        test('shows working count when members are active', async () => {
             mockProvider.setMembers([
                 { name: 'Alice', role: 'Dev', status: 'working' },
                 { name: 'Bob', role: 'Tester', status: 'working' },
@@ -83,12 +83,11 @@ suite('SquadStatusBar', () => {
             await statusBar.update();
             const statusBarItem = (statusBar as any).statusBarItem;
 
-            assert.ok(!statusBarItem.text.includes('Active'), 'Should not show Active');
             assert.ok(!statusBarItem.text.includes('🟢'), 'Should not show health icon');
             assert.ok(!statusBarItem.text.includes('🟡'), 'Should not show health icon');
             assert.ok(!statusBarItem.text.includes('🟠'), 'Should not show health icon');
             assert.ok(!statusBarItem.text.includes('⚪'), 'Should not show health icon');
-            assert.ok(statusBarItem.text.includes('4 members'), 'Should show total member count');
+            assert.ok(statusBarItem.text.includes('2/4 working'), 'Should show 2/4 working');
         });
     });
 
@@ -149,7 +148,7 @@ suite('SquadStatusBar', () => {
             await statusBar.update();
             const statusBarItem = (statusBar as any).statusBarItem;
 
-            assert.ok(statusBarItem.text.includes('3 members'), 'Should show 3 members');
+            assert.ok(statusBarItem.text.includes('2/3 working'), 'Should show 2/3 working');
         });
     });
 

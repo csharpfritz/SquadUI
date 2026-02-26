@@ -17,7 +17,7 @@ import * as path from 'path';
 import * as vscode from 'vscode';
 import { TeamTreeProvider, SquadTreeItem } from '../../views/SquadTreeProvider';
 import { SquadDataProvider } from '../../services/SquadDataProvider';
-import { WorkDetails } from '../../models';
+import { WorkDetails, isActiveStatus } from '../../models';
 
 const ACCEPTANCE_FIXTURES = path.resolve(__dirname, '../../../test-fixtures/acceptance-scenario');
 
@@ -238,11 +238,11 @@ suite('E2E MVP Validation (Issue #14)', () => {
             assert.deepStrictEqual(treeLabels, memberNames);
         });
 
-        test('working member (Carol) gets person icon (status not shown)', async () => {
+        test('working member (Carol) gets sync~spin icon (status shown)', async () => {
             const members = await treeProvider.getChildren();
             const carol = members.find(r => r.label === 'Carol')!;
             assert.ok(carol.iconPath instanceof vscode.ThemeIcon);
-            assert.strictEqual((carol.iconPath as vscode.ThemeIcon).id, 'person');
+            assert.strictEqual((carol.iconPath as vscode.ThemeIcon).id, 'sync~spin');
         });
 
         test('idle members get person icon (not spinning)', async () => {
@@ -273,7 +273,7 @@ suite('E2E MVP Validation (Issue #14)', () => {
             const alice = members.find(m => m.name === 'Alice')!;
             const bob = members.find(m => m.name === 'Bob')!;
 
-            assert.strictEqual(carol.status, 'working', 'Carol (most recent log) should be working');
+            assert.ok(isActiveStatus(carol.status), 'Carol (most recent log) should be working');
             assert.strictEqual(alice.status, 'idle', 'Alice (older log only) should be idle');
             assert.strictEqual(bob.status, 'idle', 'Bob (older log only) should be idle');
         });

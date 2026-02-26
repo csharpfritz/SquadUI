@@ -14,6 +14,7 @@ import * as path from 'path';
 import * as vscode from 'vscode';
 import { TeamTreeProvider, SquadTreeItem } from '../../views/SquadTreeProvider';
 import { SquadDataProvider } from '../../services/SquadDataProvider';
+import { isActiveStatus } from '../../models';
 
 const ACCEPTANCE_FIXTURES = path.resolve(__dirname, '../../../test-fixtures/acceptance-scenario');
 
@@ -56,7 +57,7 @@ suite('Acceptance: Orchestration Logs → Tree View', () => {
             const alice = members.find(m => m.name === 'Alice')!;
             const bob = members.find(m => m.name === 'Bob')!;
 
-            assert.strictEqual(carol.status, 'working', 'Carol (most recent log) should be working');
+            assert.ok(isActiveStatus(carol.status), 'Carol (most recent log) should be working');
             assert.strictEqual(alice.status, 'idle', 'Alice (older log) should be idle');
             assert.strictEqual(bob.status, 'idle', 'Bob (older log) should be idle');
         });
@@ -247,13 +248,15 @@ suite('Acceptance: Orchestration Logs → Tree View', () => {
     });
 
     suite('member item rendering', () => {
-        test('all members have person icon (status not shown)', async () => {
+        test('all members have appropriate icon based on status', async () => {
             const members = await treeProvider.getChildren();
             const carol = members.find(r => r.label === 'Carol');
 
             assert.ok(carol);
             assert.ok(carol.iconPath instanceof vscode.ThemeIcon);
-            assert.strictEqual((carol.iconPath as vscode.ThemeIcon).id, 'person');
+            // Working members get sync~spin, idle get person
+            const carolIcon = (carol.iconPath as vscode.ThemeIcon).id;
+            assert.ok(carolIcon === 'sync~spin' || carolIcon === 'person', `Carol icon should be sync~spin or person, got ${carolIcon}`);
         });
 
         test('idle members (Alice, Bob) have person icon', async () => {

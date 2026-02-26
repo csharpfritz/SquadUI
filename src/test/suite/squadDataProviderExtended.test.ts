@@ -10,6 +10,7 @@ import * as assert from 'assert';
 import * as path from 'path';
 import * as fs from 'fs';
 import { SquadDataProvider } from '../../services/SquadDataProvider';
+import { isActiveStatus } from '../../models';
 
 const TEST_FIXTURES_ROOT = path.resolve(__dirname, '../../../test-fixtures');
 
@@ -219,8 +220,8 @@ suite('SquadDataProvider — Extended Coverage', () => {
 
             const bob = members.find(m => m.name === 'Bob');
             assert.ok(bob, 'Should find Bob');
-            // Bob has no tasks at all, so should stay "working" (Copilot Chat scenario)
-            assert.strictEqual(bob!.status, 'working', 'Should stay working when no tasks exist');
+            // Bob has no tasks at all, so should stay active (Copilot Chat scenario)
+            assert.ok(isActiveStatus(bob!.status), 'Should stay working when no tasks exist');
         });
 
         test('member stays working when log says working and has in-progress tasks', async () => {
@@ -254,8 +255,8 @@ suite('SquadDataProvider — Extended Coverage', () => {
 
             const carol = members.find(m => m.name === 'Carol');
             assert.ok(carol, 'Should find Carol');
-            // Carol has an in-progress task, should stay "working"
-            assert.strictEqual(carol!.status, 'working', 'Should stay working with in-progress tasks');
+            // Carol has an in-progress task, should stay active
+            assert.ok(isActiveStatus(carol!.status), 'Should stay working with in-progress tasks');
         });
 
         test('member not in logs shows as idle', async () => {
@@ -322,7 +323,7 @@ suite('SquadDataProvider — Extended Coverage', () => {
 
             members = await provider.getSquadMembers();
             eve = members.find(m => m.name === 'Eve');
-            assert.strictEqual(eve!.status, 'working', 'Eve becomes working with open issues');
+            assert.strictEqual(eve!.status, 'working-on-issue', 'Eve becomes working-on-issue with open issues');
             assert.ok(eve!.currentTask, 'Eve should have currentTask from issue');
             assert.strictEqual(eve!.currentTask!.id, '#42');
             assert.strictEqual(eve!.currentTask!.title, 'Fix the widget');
@@ -415,7 +416,7 @@ suite('SquadDataProvider — Extended Coverage', () => {
             const members = await provider.getSquadMembers();
             const grace = members.find(m => m.name === 'Grace');
             
-            assert.strictEqual(grace!.status, 'working');
+            assert.strictEqual(grace!.status, 'working-on-issue');
             assert.strictEqual(grace!.currentTask!.id, '#20', 'Should pick most recent issue (#20)');
             assert.strictEqual(grace!.currentTask!.title, 'Recent issue');
         });
@@ -466,7 +467,7 @@ suite('SquadDataProvider — Extended Coverage', () => {
             const members = await provider.getSquadMembers();
             const henry = members.find(m => m.name === 'Henry');
             
-            assert.strictEqual(henry!.status, 'working');
+            assert.ok(isActiveStatus(henry!.status));
             // Should keep the log-derived task, not the GitHub issue
             // Log-derived task IDs don't have # prefix
             assert.strictEqual(henry!.currentTask!.id, '99', 'Should keep log task, not GitHub issue');
@@ -503,7 +504,7 @@ suite('SquadDataProvider — Extended Coverage', () => {
             const members = await provider.getSquadMembers();
             const isabella = members.find(m => m.name === 'Isabella');
             
-            assert.strictEqual(isabella!.status, 'working', 'Should match case-insensitively');
+            assert.strictEqual(isabella!.status, 'working-on-issue', 'Should match case-insensitively');
         });
     });
 });

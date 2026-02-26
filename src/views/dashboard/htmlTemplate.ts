@@ -388,6 +388,20 @@ export function getDashboardHtml(data: DashboardData): string {
             font-size: 0.85em;
             color: var(--vscode-descriptionForeground);
         }
+        .member-card-status {
+            font-size: 0.8em;
+            margin-top: 4px;
+            padding: 2px 6px;
+            border-radius: 3px;
+            display: inline-block;
+        }
+        .member-card-status.active {
+            background-color: var(--vscode-inputValidation-infoBackground, #063b49);
+            color: var(--vscode-inputValidation-infoForeground, #3794ff);
+        }
+        .member-card-status.idle {
+            color: var(--vscode-descriptionForeground);
+        }
         .member-card-stats {
             display: flex;
             gap: 12px;
@@ -585,6 +599,10 @@ export function getDashboardHtml(data: DashboardData): string {
                     <span class="label">Members</span>
                 </div>
                 <div class="summary-card">
+                    <span class="value" style="color: var(--vscode-charts-green);">\${summary.activeMembers}</span>
+                    <span class="label">Working</span>
+                </div>
+                <div class="summary-card">
                     <span class="value" style="color: var(--vscode-charts-blue);">\${summary.totalOpenIssues}</span>
                     <span class="label">Open Issues</span>
                 </div>
@@ -610,6 +628,10 @@ export function getDashboardHtml(data: DashboardData): string {
                     : m.iconType === 'copilot' ? '🤖'
                     : '👤';
                 const displayName = stripMarkdownLinks(m.name);
+                const hasActivity = m.activityContext && m.activityContext.shortLabel;
+                const statusHtml = hasActivity
+                    ? \`<div class="member-card-status active" title="\${escapeHtml(m.activityContext.description)}">\${escapeHtml(m.activityContext.shortLabel)}</div>\`
+                    : \`<div class="member-card-status idle">—</div>\`;
 
                 return \`
                     <div class="member-card">
@@ -618,6 +640,7 @@ export function getDashboardHtml(data: DashboardData): string {
                             <div>
                                 <div class="member-card-name" data-action="open-member" data-member-name="\${escapeHtml(displayName)}">\${escapeHtml(displayName)}</div>
                                 <div class="member-card-role">\${escapeHtml(m.role)}</div>
+                                \${statusHtml}
                             </div>
                         </div>
                         <div class="member-card-stats">

@@ -6,7 +6,7 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
-import { OrchestrationLogEntry, Task, MemberStatus } from '../models';
+import { OrchestrationLogEntry, Task, MemberStatus, ActivityContext } from '../models';
 import { normalizeEol } from '../utils/eol';
 import { parseDateAsLocal, toLocalDateKey } from '../utils/dateUtils';
 
@@ -233,6 +233,108 @@ export class OrchestrationLogService {
         }
 
         return states;
+    }
+
+    /**
+     * Derives rich activity context for each member from log entries.
+     * Returns contextual status (e.g., 'working-on-issue') plus a human-readable
+     * description of what each member is doing.
+     *
+     * @param entries - Parsed log entries
+     * @returns Map of member name to their status and optional activity context
+     */
+    getMemberActivity(entries: OrchestrationLogEntry[]): Map<string, { status: MemberStatus; context?: ActivityContext }> {
+        const activity = new Map<string, { status: MemberStatus; context?: ActivityContext }>();
+
+        if (entries.length === 0) {
+            return activity;
+        }
+
+        // Collect all unique participants (case-insensitive dedup, preserve first casing)
+        const allParticipants = new Map<string, string>();
+        for (const entry of entries) {
+            for (const p of entry.participants) {
+                const key = p.toLowerCase();
+                if (!allParticipants.has(key)) {
+                    allParticipants.set(key, p);
+                }
+            }
+        }
+
+        const sortedEntries = [...entries].sort((a, b) => b.date.localeCompare(a.date));
+        const mostRecentEntry = sortedEntries[0];
+        const mostRecentParticipants = new Set(
+            mostRecentEntry.participants.map(p => p.toLowerCase())
+        );
+
+        for (const [key, name] of allParticipants) {
+            if (!mostRecentParticipants.has(key)) {
+                activity.set(name, { status: 'idle' });
+                continue;
+            }
+
+            // Find the most recent entry where this member participated
+            const memberEntry = sortedEntries.find(e =>
+                e.participants.some(p => p.toLowerCase() === key)
+            );
+
+            if (!memberEntry) {
+                activity.set(name, { status: 'idle' });
+                continue;
+            }
+
+            // Look for per-agent work description
+            const agentWork = memberEntry.whatWasDone?.find(w =>
+                w.agent.toLowerCase() === key
+            );
+
+            const description = agentWork?.description ?? memberEntry.summary ?? '';
+            const issues = memberEntry.relatedIssues ?? [];
+
+            // Detect PR review signals
+            const isReview = /\breview(?:ing|ed)?\b.*\bPR\b|\bPR\b.*\breview/i.test(description)
+                || /\breview(?:ing|ed)?\s+(?:pull\s+request|PR\s*#?\d+)/i.test(description);
+            const isWaiting = /\bwaiting\b|\bpending\s+review\b|\bawaiting\b/i.test(description);
+
+            // Extract issue/PR numbers from description and relatedIssues
+            const prMatch = description.match(/\bPR\s*#?(\d+)/i);
+            const issueMatch = description.match(/#(\d+)/)
+                ?? (issues.length > 0 ? [`#${issues[0].replace('#', '')}`, issues[0].replace('#', '')] : null);
+
+            let status: MemberStatus;
+            let shortLabel: string;
+
+            if (isWaiting) {
+                status = 'waiting-review';
+                shortLabel = '⏳ Awaiting review';
+            } else if (isReview && prMatch) {
+                status = 'reviewing-pr';
+                shortLabel = `🔍 PR #${prMatch[1]}`;
+            } else if (issues.length > 0 || issueMatch) {
+                status = 'working-on-issue';
+                const issueNum = issueMatch?.[1] ?? issues[0]?.replace('#', '');
+                shortLabel = `⚙️ Issue #${issueNum}`;
+            } else {
+                status = 'working';
+                shortLabel = '⚡ Working';
+            }
+
+            const contextDescription = agentWork?.description
+                ?? memberEntry.summary
+                ?? memberEntry.topic.replace(/-/g, ' ');
+
+            activity.set(name, {
+                status,
+                context: {
+                    description: contextDescription,
+                    shortLabel,
+                    issueNumber: issueMatch ? parseInt(issueMatch[1], 10) : undefined,
+                    prNumber: prMatch ? parseInt(prMatch[1], 10) : undefined,
+                },
+            });
+        }
+
+        return activity;
     }
 
     /**
