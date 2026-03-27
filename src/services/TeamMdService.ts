@@ -130,7 +130,7 @@ export class TeamMdService {
 
         try {
             const result = await sdkParseTeamMarkdown(normalized);
-            members = result.agents.map(adaptParsedAgentToSquadMember);
+            members = result.agents.map(a => adaptParsedAgentToSquadMember(a));
         } catch {
             // SDK unavailable or parse error — fall back to built-in parser
             members = this.parseMembers(normalized);

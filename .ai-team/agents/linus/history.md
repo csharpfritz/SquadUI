@@ -184,3 +184,16 @@ Key milestones:
 - **Pattern that worked well:** Additive public methods + internal SDK enhancement. Existing callers see no change. New callers can opt into SDK-powered features (e.g., `checkSquadConfig()`, `getSdkVersion()`, `scanWorkspaces()`).
 - **Key files:** `src/sdk-adapter/index.ts`, `src/services/HealthCheckService.ts`, `src/services/SquadVersionService.ts`, `src/utils/squadFolderDetection.ts`
 - **Test impact:** All 1172 tests pass, 0 failures, 0 regressions.
+
+### Squad SDK Adapter — Phase 3: Data Model Harmonization (2026-03-27)
+- **Comprehensive JSDoc:** All adapter mapping functions now have full field-by-field documentation including mapping contract, lossy conversions (SDK fields SquadUI ignores), and SquadUI fields not present in SDK.
+- **Module-level type mapping tables:** Top-of-file JSDoc includes ParsedAgent→SquadMember and ParsedDecision→DecisionEntry mapping reference tables.
+- **AdaptAgentOptions / AdaptDecisionOptions:** New option interfaces for mapping customization. `defaultStatus` overrides the idle default for agents. `defaultFilePath` and `lineNumberOffset` for decisions.
+- **Bulk mapping functions:** `adaptAgentsToMembers(agents[], options?)` and `adaptDecisionsToEntries(decisions[], filePath, options?)` — convenience wrappers for mapping entire arrays. `adaptDecisionsToEntries` assigns sequential lineNumbers from array index.
+- **getSquadMetadata(workspaceRoot):** High-level integration function returning `SquadMetadata` with members, decisions, config, sdkVersion, squadFolder, and warnings. Parallel data loading with individual fault tolerance. Falls back to filesystem detection if SDK resolution unavailable.
+- **SquadMetadata interface:** Aggregated return type for `getSquadMetadata()` — single call for "give me everything about this Squad workspace."
+- **TeamMdService fix:** `.map(adaptParsedAgentToSquadMember)` → `.map(a => adaptParsedAgentToSquadMember(a))` to avoid `.map()` index parameter colliding with new optional `options` param.
+- **Integration tests:** 37 new tests in `sdkModelHarmonization.test.ts` covering bulk mapping (empty arrays, single/multiple agents, ordering, defaultStatus), round-trips (agent and decision fidelity, bulk vs individual consistency, fixture-based validation), edge cases (100 agents, special characters, Unicode, 50K body, null-like statuses, metadata extraction patterns), getSquadMetadata() integration (shape validation, fixture detection, missing workspace, missing decisions.md), and type export verification.
+- **README:** `src/sdk-adapter/README.md` documenting architecture, ESM/CJS interop, type mapping tables, usage patterns, and SDK vs native capability comparison.
+- **Key files:** `src/sdk-adapter/index.ts`, `src/sdk-adapter/README.md`, `src/services/TeamMdService.ts` (one-line fix), `src/test/suite/sdkModelHarmonization.test.ts`
+- **Test impact:** 1209 tests pass (1172 existing + 37 new), 0 failures, 0 regressions.

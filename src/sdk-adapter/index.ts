@@ -4,20 +4,71 @@
  * All SquadUI code imports SDK functionality through this module.
  * No other file should import directly from '@bradygaster/squad-sdk'.
  *
- * ESM/CJS interop: The SDK is ESM-only ("type": "module") while SquadUI
- * compiles to CommonJS. TypeScript's `module: "commonjs"` transforms
- * dynamic import() into require(), which can't load ESM packages.
- * We use `new Function('specifier', 'return import(specifier)')` to
- * bypass the transform and invoke Node.js's native ESM dynamic import.
+ * ## Architecture
+ *
+ * This module provides:
+ * 1. **SDK Type Mirrors** — local interfaces matching SDK exports to avoid ESM/CJS
+ *    type resolution issues at compile time.
+ * 2. **Parser Wrappers** — async functions that lazy-load SDK modules and delegate
+ *    to SDK parsing functions (parseTeamMarkdown, parseDecisionsMarkdown).
+ * 3. **Resolution Wrappers** — squad folder detection via SDK walk-up algorithm.
+ * 4. **Mapping Functions** — transform SDK types to SquadUI types with gap-filling
+ *    for metadata the SDK doesn't extract.
+ * 5. **Bulk Mapping Helpers** — convenience functions for mapping arrays.
+ * 6. **High-Level Integration** — `getSquadMetadata()` aggregates all SDK data
+ *    into a single SquadUI-ready bundle.
+ *
+ * ## ESM/CJS Interop
+ *
+ * The SDK is ESM-only ("type": "module") while SquadUI compiles to CommonJS.
+ * TypeScript's `module: "commonjs"` transforms `import()` → `require()`, which
+ * can't load ESM packages. We use `new Function('specifier', 'return import(specifier)')`
+ * to bypass the transform and invoke Node.js's native ESM dynamic import.
+ *
+ * ## Type Mapping Reference
+ *
+ * | SDK Type (ParsedAgent) | SquadUI Type (SquadMember) | Mapping                              |
+ * |------------------------|---------------------------|--------------------------------------|
+ * | name (string)          | name (string)             | Capitalized (kebab→proper noun)      |
+ * | role (string)          | role (string)             | Direct pass-through                  |
+ * | status? (string)       | status (MemberStatus)     | Derived: "working"/🔨 → 'working', else 'idle' |
+ * | skills (string[])      | —                         | Lossy: not in SquadMember model      |
+ * | model? (string)        | —                         | Lossy: not in SquadMember model      |
+ * | aliases? (string[])    | —                         | Lossy: not in SquadMember model      |
+ * | autoAssign? (boolean)  | —                         | Lossy: not in SquadMember model      |
+ * | —                      | activityContext?           | Defaulted: undefined (runtime-only)  |
+ * | —                      | currentTask?              | Defaulted: undefined (runtime-only)  |
+ *
+ * | SDK Type (ParsedDecision) | SquadUI Type (DecisionEntry) | Mapping                          |
+ * |--------------------------|-------------------------------|----------------------------------|
+ * | title (string)           | title (string)                | Direct pass-through              |
+ * | body (string)            | content? (string)             | Renamed: body → content          |
+ * | date? (string)           | date? (string)                | Direct or extracted from body    |
+ * | author? (string)         | author? (string)              | Direct or extracted from body    |
+ * | configRelevant (boolean) | —                             | Lossy: not in DecisionEntry      |
+ * | headingLevel? (number)   | —                             | Lossy: not in DecisionEntry      |
+ * | —                        | filePath (string)             | Caller-supplied (SDK doesn't track) |
+ * | —                        | lineNumber? (number)          | Caller-supplied (optional)       |
  */
 
-import { SquadMember, DecisionEntry } from '../models';
+import { SquadMember, DecisionEntry, MemberStatus } from '../models';
 
 // ─── SDK Type Mirrors ──────────────────────────────────────────────────────
 // Defined locally to avoid ESM/CJS type resolution issues at compile time.
 // These match the SDK's exported interfaces from @bradygaster/squad-sdk/parsers.
 
-/** Agent parsed from team.md by the SDK. */
+/**
+ * Agent parsed from team.md by the SDK.
+ *
+ * SDK extracts agents from the Members/Roster table in team.md.
+ * Names are lowercased to kebab-case by the SDK (e.g., "Danny" → "danny").
+ *
+ * **Fields not present in SquadUI's SquadMember:**
+ * - `skills` — SquadUI doesn't display agent skills (lossy)
+ * - `model` — AI model designation, not relevant to UI display (lossy)
+ * - `aliases` — used for issue matching, handled at IssueSourceConfig level (lossy)
+ * - `autoAssign` — SDK-specific routing config (lossy)
+ */
 export interface ParsedAgent {
     name: string;
     role: string;
@@ -28,7 +79,16 @@ export interface ParsedAgent {
     autoAssign?: boolean;
 }
 
-/** Decision parsed from decisions.md by the SDK. */
+/**
+ * Decision parsed from decisions.md by the SDK.
+ *
+ * SDK extracts decisions from H2/H3 headings with date prefixes and **By:** lines.
+ * SquadUI also parses **Date:** and **Author:** metadata lines that the SDK misses.
+ *
+ * **Fields not present in SquadUI's DecisionEntry:**
+ * - `configRelevant` — SDK flag for config-affecting decisions (lossy)
+ * - `headingLevel` — markdown heading depth, not used by SquadUI (lossy)
+ */
 export interface ParsedDecision {
     title: string;
     body: string;
@@ -36,6 +96,39 @@ export interface ParsedDecision {
     date?: string;
     author?: string;
     headingLevel?: number;
+}
+
+/** Options for agent-to-member mapping. */
+export interface AdaptAgentOptions {
+    /** Override the derived MemberStatus instead of auto-detecting from agent.status */
+    defaultStatus?: MemberStatus;
+}
+
+/** Options for decision-to-entry mapping. */
+export interface AdaptDecisionOptions {
+    /** Default file path when caller doesn't provide one */
+    defaultFilePath?: string;
+    /** Starting line number offset (e.g., when parsing a subset of a file) */
+    lineNumberOffset?: number;
+}
+
+/**
+ * Aggregated Squad metadata returned by {@link getSquadMetadata}.
+ * A single call returns everything SquadUI needs about a Squad workspace.
+ */
+export interface SquadMetadata {
+    /** Team roster adapted to SquadUI SquadMember[] */
+    members: SquadMember[];
+    /** Decisions adapted to SquadUI DecisionEntry[] */
+    decisions: DecisionEntry[];
+    /** SDK configuration status (null if SDK unavailable) */
+    config: SdkConfigLoadResult | null;
+    /** SDK version string (null if unavailable) */
+    sdkVersion: string | null;
+    /** Detected squad folder name ('.squad' or '.ai-team'), or null */
+    squadFolder: '.squad' | '.ai-team' | null;
+    /** Warnings from SDK parsing (team.md + decisions.md combined) */
+    warnings: string[];
 }
 
 // ─── Dynamic Import Helper ─────────────────────────────────────────────────
@@ -212,26 +305,56 @@ export async function scanWorkspacesForSquad(
 /**
  * Maps an SDK ParsedAgent to SquadUI's SquadMember model.
  *
- * The SDK's ParsedAgent has a flat status string; SquadUI uses typed MemberStatus.
- * Team.md defines configuration status — all members start as 'idle' until
- * orchestration logs or active-work markers show them working at runtime.
+ * ## Field Mapping
+ * - **name**: Capitalized from SDK kebab-case (e.g., "danny" → "Danny").
+ *   Names starting with `@` (e.g., "@copilot") are preserved as-is.
+ * - **role**: Direct pass-through from `agent.role`.
+ * - **status**: Derived from `agent.status` free-form string:
+ *   - Contains "working" or "🔨" → `'working'`
+ *   - Otherwise → `'idle'` (or `options.defaultStatus` if provided)
  *
- * Note: The SDK lowercases agent names to kebab-case for config use.
- * We capitalize the first letter for display since team.md names are proper nouns.
+ * ## Lossy Conversions (SDK data SquadUI ignores)
+ * - `skills[]` — SquadUI doesn't display agent skills
+ * - `model` — AI model designation, not relevant to UI
+ * - `aliases[]` — handled at IssueSourceConfig level, not SquadMember
+ * - `autoAssign` — SDK-specific routing config
+ *
+ * ## SquadUI Fields Not in SDK
+ * - `activityContext` — derived at runtime from orchestration logs
+ * - `currentTask` — derived at runtime from active work markers
+ *
+ * @param agent - SDK parsed agent from `parseTeamMarkdown()`
+ * @param options - Optional mapping overrides
+ * @returns SquadMember with name, role, and derived status
  */
-export function adaptParsedAgentToSquadMember(agent: ParsedAgent): SquadMember {
+export function adaptParsedAgentToSquadMember(agent: ParsedAgent, options?: AdaptAgentOptions): SquadMember {
     // SDK status is a free-form string (e.g. "Active", "Silent", "Working").
     // Map to SquadUI's MemberStatus: 'working' only if explicitly working.
     const statusText = (agent.status ?? '').toLowerCase();
-    const status = (statusText.includes('working') || statusText.includes('🔨'))
-        ? 'working' as const
-        : 'idle' as const;
+    const isWorking = statusText.includes('working') || statusText.includes('🔨');
+    const status: MemberStatus = isWorking
+        ? 'working'
+        : (options?.defaultStatus ?? 'idle');
 
     return {
         name: capitalizeAgentName(agent.name),
         role: agent.role,
         status,
     };
+}
+
+/**
+ * Bulk mapping: converts an array of SDK ParsedAgents to SquadUI SquadMembers.
+ *
+ * Convenience wrapper around {@link adaptParsedAgentToSquadMember} for
+ * mapping entire team rosters in one call.
+ *
+ * @param agents - Array of SDK parsed agents
+ * @param options - Optional mapping overrides applied to all agents
+ * @returns Array of SquadMember in the same order as input
+ */
+export function adaptAgentsToMembers(agents: ParsedAgent[], options?: AdaptAgentOptions): SquadMember[] {
+    return agents.map(agent => adaptParsedAgentToSquadMember(agent, options));
 }
 
 /**
@@ -249,21 +372,38 @@ function capitalizeAgentName(name: string): string {
 /**
  * Maps an SDK ParsedDecision to SquadUI's DecisionEntry model.
  *
- * The SDK's parseDecisionsMarkdown only extracts dates from heading prefixes
- * (e.g. "## 2026-02-14: Title") and author from **By:** lines.
- * SquadUI also expects **Date:** and **Author:** metadata lines to be parsed.
- * This adapter fills in the gaps by scanning the body for metadata the SDK missed.
+ * ## Field Mapping
+ * - **title**: Direct pass-through from `decision.title`.
+ * - **content**: Renamed from `decision.body`.
+ * - **date**: Uses SDK-provided date first. If absent, extracts from
+ *   `**Date:** YYYY-MM-DD` in the decision body. SDK only extracts dates
+ *   from heading prefixes (e.g., "## 2026-02-14: Title").
+ * - **author**: Uses SDK-provided author first. If absent, extracts from
+ *   `**Author:**` or `**By:**` lines in the body. SDK only looks for `**By:**`.
+ * - **filePath**: Caller-supplied — the SDK doesn't track file origins.
+ * - **lineNumber**: Optional caller-supplied line offset.
  *
- * @param decision - SDK parsed decision
+ * ## Lossy Conversions (SDK data SquadUI ignores)
+ * - `configRelevant` — SDK flag for config-affecting decisions
+ * - `headingLevel` — markdown heading depth
+ *
+ * @param decision - SDK parsed decision from `parseDecisionsMarkdown()`
  * @param filePath - Source file path (the SDK doesn't track this)
  * @param lineNumber - Optional line number in the source file
+ * @param options - Optional mapping overrides
+ * @returns DecisionEntry with gap-filled metadata
  */
 export function adaptParsedDecisionToDecisionEntry(
     decision: ParsedDecision,
     filePath: string,
     lineNumber?: number,
+    options?: AdaptDecisionOptions,
 ): DecisionEntry {
     let { date, author } = decision;
+    const effectiveFilePath = filePath || options?.defaultFilePath || '';
+    const effectiveLineNumber = lineNumber !== undefined
+        ? lineNumber + (options?.lineNumberOffset ?? 0)
+        : undefined;
 
     // SDK doesn't extract **Date:** metadata lines — do it here
     if (!date && decision.body) {
@@ -285,7 +425,140 @@ export function adaptParsedDecisionToDecisionEntry(
         date,
         author,
         content: decision.body,
-        filePath,
-        lineNumber,
+        filePath: effectiveFilePath,
+        lineNumber: effectiveLineNumber,
     };
+}
+
+/**
+ * Bulk mapping: converts an array of SDK ParsedDecisions to SquadUI DecisionEntries.
+ *
+ * Convenience wrapper around {@link adaptParsedDecisionToDecisionEntry} for
+ * mapping entire decision sets in one call.
+ *
+ * @param decisions - Array of SDK parsed decisions
+ * @param filePath - Source file path applied to all entries
+ * @param options - Optional mapping overrides applied to all decisions
+ * @returns Array of DecisionEntry in the same order as input
+ */
+export function adaptDecisionsToEntries(
+    decisions: ParsedDecision[],
+    filePath: string,
+    options?: AdaptDecisionOptions,
+): DecisionEntry[] {
+    return decisions.map((decision, index) =>
+        adaptParsedDecisionToDecisionEntry(decision, filePath, index, options),
+    );
+}
+
+// ─── High-Level Integration ────────────────────────────────────────────────
+
+/**
+ * Aggregates all SDK-powered Squad data for a workspace into a single bundle.
+ *
+ * This is the recommended entry point for services that need a complete picture
+ * of a Squad workspace. It:
+ * 1. Detects the squad folder (`.squad` or `.ai-team`) via SDK resolution
+ * 2. Reads and parses `team.md` → adapted SquadMember[]
+ * 3. Reads and parses `decisions.md` → adapted DecisionEntry[]
+ * 4. Loads SDK configuration status
+ * 5. Retrieves SDK version
+ *
+ * All operations are parallel where possible and individually fault-tolerant.
+ * If any step fails, its result is empty/null — the rest still populate.
+ *
+ * @param workspaceRoot - Absolute path to the workspace root
+ * @returns SquadMetadata with all available data, never throws
+ */
+export async function getSquadMetadata(workspaceRoot: string): Promise<SquadMetadata> {
+    const fs = await import('fs');
+    const path = await import('path');
+
+    const metadata: SquadMetadata = {
+        members: [],
+        decisions: [],
+        config: null,
+        sdkVersion: null,
+        squadFolder: null,
+        warnings: [],
+    };
+
+    // Step 1: Detect squad folder
+    let squadFolderPath: string | null = null;
+    try {
+        squadFolderPath = await resolveSquadPath(workspaceRoot);
+        if (squadFolderPath) {
+            const folderName = path.basename(squadFolderPath);
+            if (folderName === '.squad' || folderName === '.ai-team') {
+                metadata.squadFolder = folderName as '.squad' | '.ai-team';
+            }
+        }
+    } catch {
+        // SDK resolution unavailable — squadFolder stays null
+    }
+
+    // Fall back to filesystem detection if SDK resolution failed
+    if (!metadata.squadFolder) {
+        if (fs.existsSync(path.join(workspaceRoot, '.squad'))) {
+            metadata.squadFolder = '.squad';
+            squadFolderPath = path.join(workspaceRoot, '.squad');
+        } else if (fs.existsSync(path.join(workspaceRoot, '.ai-team'))) {
+            metadata.squadFolder = '.ai-team';
+            squadFolderPath = path.join(workspaceRoot, '.ai-team');
+        }
+    }
+
+    // Steps 2-5: Parallel data loading
+    const teamMdPath = squadFolderPath
+        ? path.join(squadFolderPath, 'team.md')
+        : path.join(workspaceRoot, metadata.squadFolder ?? '.squad', 'team.md');
+    const decisionsMdPath = squadFolderPath
+        ? path.join(squadFolderPath, 'decisions.md')
+        : path.join(workspaceRoot, metadata.squadFolder ?? '.squad', 'decisions.md');
+
+    const [teamResult, decisionsResult, configResult, versionResult] = await Promise.allSettled([
+        // Parse team.md
+        (async () => {
+            if (!fs.existsSync(teamMdPath)) { return null; }
+            const content = fs.readFileSync(teamMdPath, 'utf-8');
+            return parseTeamMarkdown(content);
+        })(),
+        // Parse decisions.md
+        (async () => {
+            if (!fs.existsSync(decisionsMdPath)) { return null; }
+            const content = fs.readFileSync(decisionsMdPath, 'utf-8');
+            return parseDecisionsMarkdown(content);
+        })(),
+        // Load config
+        loadSquadConfig(workspaceRoot),
+        // Get SDK version
+        getSquadSdkVersion(),
+    ]);
+
+    // Unpack team results
+    if (teamResult.status === 'fulfilled' && teamResult.value) {
+        metadata.members = adaptAgentsToMembers(teamResult.value.agents);
+        metadata.warnings.push(...teamResult.value.warnings);
+    }
+
+    // Unpack decision results
+    if (decisionsResult.status === 'fulfilled' && decisionsResult.value) {
+        metadata.decisions = adaptDecisionsToEntries(
+            decisionsResult.value.decisions,
+            decisionsMdPath,
+        );
+        metadata.warnings.push(...decisionsResult.value.warnings);
+    }
+
+    // Unpack config
+    if (configResult.status === 'fulfilled') {
+        metadata.config = configResult.value;
+    }
+
+    // Unpack version
+    if (versionResult.status === 'fulfilled') {
+        metadata.sdkVersion = versionResult.value;
+    }
+
+    return metadata;
 }
