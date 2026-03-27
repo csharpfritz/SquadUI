@@ -67,3 +67,13 @@ The SquadUI extension emerged from initial scaffolding through a rapid sequence 
 - **Key files:** `src/models/index.ts` (MemberStatus, ActivityContext, isActiveStatus), `src/services/OrchestrationLogService.ts` (getMemberActivity), `src/views/SquadTreeProvider.ts` (rich status display), `src/views/dashboard/htmlTemplate.ts` (status badges).
 - **Tests:** Updated 8 test files to accept rich status values. 1093 tests passing (up from 1056).
 
+### SDK Phase 3 — UI Layer Harmonization (2026-03-27)
+- **Issue:** SDK Migration Phase 3 — UI compatibility verification
+- **Audit:** All UI components (TeamTreeProvider, SkillsTreeProvider, DecisionsTreeProvider, SquadStatusBar, SquadDashboardWebview, WorkDetailsWebview, StandupReportWebview, IssueDetailWebview) consume typed interfaces (`SquadMember`, `DecisionEntry`, `Task`, `GitHubIssue`, etc.) through `SquadDataProvider` and services. No `instanceof` model checks, no hard-coded field accesses that would break with SDK-adapted data. Serialization via `postMessage` uses plain objects only — safe.
+- **SDK version in status bar tooltip:** Added `getSquadSdkVersion()` call to `SquadStatusBar.update()`. When Squad SDK is installed, tooltip footer shows `SDK v{version}`. Graceful no-op when unavailable.
+- **SDK version health check:** Added `checkSdkVersion()` to `HealthCheckService` and included it in `runAll()`. Reports pass with version string when SDK found, warn when missing.
+- **Key constraint:** No direct `@bradygaster/squad-sdk` imports — all through `src/sdk-adapter/`.
+- **Tests:** 3 new tests added (2 health check, 1 status bar). 1175 passing, 55 pending.
+- **Key files:** `src/views/SquadStatusBar.ts`, `src/services/HealthCheckService.ts`, test files updated.
+📌 Team update (2026-03-27): SDK Phase 3 UI — all UI components verified compatible with SDK-adapted data. SDK version now visible in status bar tooltip and health check diagnostics. — decided by Rusty
+
