@@ -415,6 +415,126 @@ export function getDashboardHtml(data: DashboardData): string {
             gap: 4px;
         }
 
+        /* Member Drill-down Panel */
+        .member-card.expanded {
+            grid-column: 1 / -1;
+        }
+        .member-card .drilldown-toggle {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-top: 8px;
+            padding: 4px;
+            cursor: pointer;
+            color: var(--vscode-descriptionForeground);
+            font-size: 0.8em;
+            transition: color 0.2s;
+        }
+        .member-card .drilldown-toggle:hover {
+            color: var(--vscode-textLink-foreground);
+        }
+        .member-drilldown {
+            display: none;
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid var(--vscode-panel-border);
+        }
+        .member-card.expanded .member-drilldown {
+            display: block;
+        }
+        .drilldown-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+        .drilldown-section {
+            background-color: var(--vscode-sideBar-background);
+            border: 1px solid var(--vscode-panel-border);
+            border-radius: 4px;
+            padding: 12px;
+        }
+        .drilldown-section h4 {
+            margin: 0 0 8px 0;
+            font-size: 0.9em;
+            font-weight: 600;
+        }
+        .drilldown-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            max-height: 180px;
+            overflow-y: auto;
+        }
+        .drilldown-list li {
+            padding: 4px 0;
+            font-size: 0.85em;
+            border-bottom: 1px solid var(--vscode-panel-border);
+        }
+        .drilldown-list li:last-child {
+            border-bottom: none;
+        }
+        .drilldown-empty {
+            color: var(--vscode-descriptionForeground);
+            font-style: italic;
+            font-size: 0.85em;
+        }
+        .skill-bar-mini {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 4px;
+            font-size: 0.85em;
+        }
+        .skill-bar-mini .bar {
+            flex: 1;
+            height: 6px;
+            background-color: var(--vscode-panel-border);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+        .skill-bar-mini .bar-fill {
+            height: 100%;
+            background-color: var(--vscode-progressBar-background);
+            border-radius: 3px;
+        }
+        .skill-bar-mini .bar-label {
+            min-width: 80px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .skill-bar-mini .bar-count {
+            min-width: 20px;
+            text-align: right;
+            color: var(--vscode-descriptionForeground);
+        }
+        .activity-entry {
+            display: flex;
+            gap: 8px;
+            font-size: 0.85em;
+            padding: 4px 0;
+            border-bottom: 1px solid var(--vscode-panel-border);
+        }
+        .activity-entry:last-child {
+            border-bottom: none;
+        }
+        .activity-date {
+            color: var(--vscode-descriptionForeground);
+            white-space: nowrap;
+            min-width: 80px;
+        }
+        .activity-topic {
+            font-weight: 500;
+        }
+        .blocker-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .blocker-icon {
+            color: var(--vscode-charts-red, #f44747);
+        }
+
         /* Burndown Tab */
         .burndown-container {
             display: flex;
@@ -622,7 +742,7 @@ export function getDashboardHtml(data: DashboardData): string {
                 return;
             }
 
-            cardsEl.innerHTML = members.map(m => {
+            cardsEl.innerHTML = members.map((m, idx) => {
                 const icon = m.iconType === 'scribe' ? '✏️'
                     : m.iconType === 'ralph' ? '👁️'
                     : m.iconType === 'copilot' ? '🤖'
@@ -633,8 +753,10 @@ export function getDashboardHtml(data: DashboardData): string {
                     ? \`<div class="member-card-status active" title="\${escapeHtml(m.activityContext.description)}">\${escapeHtml(m.activityContext.shortLabel)}</div>\`
                     : \`<div class="member-card-status idle">—</div>\`;
 
+                const dd = m.drilldown;
+
                 return \`
-                    <div class="member-card">
+                    <div class="member-card" id="member-card-\${idx}">
                         <div class="member-card-header">
                             <div class="member-avatar">\${icon}</div>
                             <div>
@@ -649,9 +771,70 @@ export function getDashboardHtml(data: DashboardData): string {
                             <span class="member-stat">🔄 \${m.activeTaskCount} in progress</span>
                             <span class="member-stat">📊 \${m.recentActivityCount} sessions</span>
                         </div>
+                        <div class="drilldown-toggle" data-action="toggle-drilldown" data-card-id="member-card-\${idx}">
+                            ▼ Details
+                        </div>
+                        \${dd ? renderDrilldown(dd) : ''}
                     </div>
                 \`;
             }).join('');
+        }
+
+        function renderDrilldown(dd) {
+            const completedHtml = dd.completedTasks.length > 0
+                ? \`<ul class="drilldown-list">\${dd.completedTasks.map(t =>
+                    \`<li>✅ <strong>\${escapeHtml(t.id)}</strong> \${escapeHtml(t.title)}\${t.completedDate ? \` <span style="color:var(--vscode-descriptionForeground);">(\${escapeHtml(t.completedDate.substring(0, 10))})</span>\` : ''}</li>\`
+                ).join('')}</ul>\`
+                : '<div class="drilldown-empty">No completed tasks yet</div>';
+
+            const blockersHtml = dd.blockers.length > 0
+                ? \`<ul class="drilldown-list">\${dd.blockers.map(b =>
+                    \`<li class="blocker-item"><span class="blocker-icon">🚫</span> <strong>\${escapeHtml(b.id)}</strong> \${escapeHtml(b.title)}</li>\`
+                ).join('')}</ul>\`
+                : '<div class="drilldown-empty">No blockers — all clear! 🎉</div>';
+
+            const maxSkillCount = dd.skillUsage.length > 0 ? dd.skillUsage[0].count : 1;
+            const skillsHtml = dd.skillUsage.length > 0
+                ? dd.skillUsage.map(s =>
+                    \`<div class="skill-bar-mini">
+                        <span class="bar-label">\${escapeHtml(s.name)}</span>
+                        <div class="bar"><div class="bar-fill" style="width: \${Math.round((s.count / maxSkillCount) * 100)}%"></div></div>
+                        <span class="bar-count">\${s.count}</span>
+                    </div>\`
+                ).join('')
+                : '<div class="drilldown-empty">No skill data available</div>';
+
+            const activityHtml = dd.recentActivity.length > 0
+                ? dd.recentActivity.map(a =>
+                    \`<div class="activity-entry">
+                        <span class="activity-date">\${escapeHtml(a.date)}</span>
+                        <span class="activity-topic">\${escapeHtml(a.topic)}</span>
+                    </div>\`
+                ).join('')
+                : '<div class="drilldown-empty">No recent activity</div>';
+
+            return \`
+                <div class="member-drilldown">
+                    <div class="drilldown-grid">
+                        <div class="drilldown-section">
+                            <h4>✅ Completed Tasks (\${dd.completedTasks.length})</h4>
+                            \${completedHtml}
+                        </div>
+                        <div class="drilldown-section">
+                            <h4>🚫 Blockers (\${dd.blockers.length})</h4>
+                            \${blockersHtml}
+                        </div>
+                        <div class="drilldown-section">
+                            <h4>📈 Topic Frequency</h4>
+                            \${skillsHtml}
+                        </div>
+                        <div class="drilldown-section">
+                            <h4>📋 Recent Activity</h4>
+                            \${activityHtml}
+                        </div>
+                    </div>
+                </div>
+            \`;
         }
 
         // ─── Burndown Chart ─────────────────────────────────────────────
@@ -1247,6 +1430,15 @@ export function getDashboardHtml(data: DashboardData): string {
                         memberName: target.dataset.memberName
                     });
                     break;
+                case 'toggle-drilldown': {
+                    const cardId = target.dataset.cardId;
+                    const card = document.getElementById(cardId);
+                    if (card) {
+                        const isExpanded = card.classList.toggle('expanded');
+                        target.textContent = isExpanded ? '▲ Collapse' : '▼ Details';
+                    }
+                    break;
+                }
             }
         });
 

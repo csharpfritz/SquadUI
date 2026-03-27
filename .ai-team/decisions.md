@@ -1,4 +1,4 @@
-### Context
+﻿### Context
 
 Scaffolding the VS Code extension requires establishing the foundational naming conventions and activation strategy.
 
@@ -2508,3 +2508,90 @@ Advanced features for mature teams running larger squads.
 4. **Backlog grooming:** Create GitHub issues for each feature with acceptance criteria
 5. **Schedule:** Estimate v1.0 ship date based on feature scope
 
+
+---
+
+# Decision: DecisionSearchService API Design
+
+**Date:** 2026-02-24
+**Author:** Linus
+**Issue:** #69
+
+## Context
+
+Issue #69 requires search and filtering for decisions. The existing `DecisionService` handles parsing; we need a separate service for query operations.
+
+## Decision
+
+Created `DecisionSearchService` as a pure, stateless service operating on `DecisionEntry[]`:
+
+- **`search(decisions, query)`** — full-text search with relevance ranking (title 10× > author 5× > content 3×)
+- **`filterByDate(decisions, startDate, endDate)`** — inclusive date range using YYYY-MM-DD string comparison
+- **`filterByAuthor(decisions, author)`** — case-insensitive substring match
+- **`filter(decisions, criteria)`** — chains all three: search first (preserves ranking), then date, then author
+
+Exported types: `DecisionSearchCriteria`, `ScoredDecision`.
+
+## Rationale
+
+- Separation from `DecisionService` keeps parsing and querying decoupled — each can evolve independently
+- Pure functions on arrays = trivially testable, no file I/O or VS Code deps
+- Search-first chaining preserves relevance ordering through subsequent filters
+- String comparison on YYYY-MM-DD avoids timezone issues that plague Date object comparisons
+
+## Impact
+
+- Rusty can consume `DecisionSearchService` from tree view code to wire up the search UI
+- The `filter()` method accepts a `DecisionSearchCriteria` object — Rusty should bind UI inputs to this interface
+- No changes to `DecisionEntry` model or `DecisionService` were needed
+ 
+---
+
+# Decision: HealthCheckService is a pure-TypeScript service
+
+**Date:** 2026-02-23  
+**Author:** Linus  
+**Issue:** #70  
+
+## Context
+The health check command needs to validate team configuration (team.md, agent charters, orchestration logs, GitHub token). This could be implemented directly in the command handler or as a standalone service.
+
+## Decision
+Created `HealthCheckService` as a pure TypeScript service with no VS Code API dependencies. Each check method accepts `squadFolder` and `workspaceRoot` as parameters. The command handler in `extension.ts` is minimal — just wires the service to an output channel.
+
+## Rationale
+- Testable in isolation (Mocha tests without VS Code test runner complexity)
+- Follows existing service patterns (TeamMdService, OrchestrationLogService)
+- Keeps service layer decoupled from VS Code UI (Linus/Rusty boundary)
+- `HealthCheckResult` interface enables structured consumption by future UI (tree view, dashboard tab)
+ 
+---
+
+# Rich Status Redesign
+
+**Author:** Rusty
+**Date:** 2026-02-24
+**Issue:** #73 — Active Status Redesign
+
+## Decision
+
+Replaced binary `'working' | 'idle'` MemberStatus with rich contextual statuses:
+
+- `'working-on-issue'` — agent is working on a GitHub issue (shows `⚙️ Issue #N`)
+- `'reviewing-pr'` — agent is reviewing a pull request (shows `🔍 PR #N`)
+- `'waiting-review'` — agent is waiting for a review (shows `⏳ Awaiting review`)
+- `'working'` — generic active state when no specific context available (shows `⚡ Working`)
+- `'idle'` — no recent activity (shows `—`)
+
+Added `isActiveStatus()` helper — use this instead of `=== 'working'` to check if a member is active.
+
+Added `ActivityContext` interface: `{ description, shortLabel, issueNumber?, prNumber? }` on `SquadMember` and `TeamMemberOverview`.
+
+New `OrchestrationLogService.getMemberActivity()` method derives rich context from log entries.
+
+## Impact
+
+- **All code checking member status** should use `isActiveStatus(member.status)` instead of `member.status === 'working'`.
+- **Tree view** now shows spinning icons for active members and contextual text in descriptions.
+- **Dashboard** member cards show status badge. "Working" summary card restored.
+- **Status bar** shows working/total count when members are active.

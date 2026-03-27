@@ -1,6 +1,6 @@
 # Project Context
 
-- **Owner:** Jeffrey T. Fritz (csharpfritz@users.noreply.github.com)
+- **Owner:** Jeffrey T. Fritz
 - **Project:** VS Code extension for visualizing Squad team members and their tasks
 - **Stack:** TypeScript, VS Code Extension API, potentially GitHub Copilot integration
 - **Created:** 2026-02-13
@@ -58,6 +58,7 @@ The SquadUI extension emerged from initial scaffolding through a rapid sequence 
 ### Active Status Redesign (2026-02-24, Issue #73)
 - **Rich contextual status:** Replaced binary `'working' | 'idle'` with `MemberStatus` enum: `'working-on-issue' | 'reviewing-pr' | 'waiting-review' | 'working' | 'idle'`. Added `isActiveStatus()` helper and `ActivityContext` interface with `description`, `shortLabel`, `issueNumber?`, `prNumber?`.
 - **OrchestrationLogService.getMemberActivity():** New method parses log entries to derive per-member activity context. Detects issue work vs PR review vs waiting status from log content. Falls back to generic `'working'` when no specific context is available. Original `getMemberStates()` preserved for backward compat.
+- **Decision merged (2026-03-27):** Rich Status Redesign formally merged to decisions.md — codifies that status display should show contextual information (⚙️ Issue #N, 🔍 PR #N, ⏳ Awaiting review, ⚡ Working, —) rather than simple active/idle indicators. — decided by Rusty
 - **SquadDataProvider:** Uses `getMemberActivity()` to populate `activityContext` on each `SquadMember`. GitHub-aware status now sets `'working-on-issue'` (not generic `'working'`).
 - **Tree view:** Working members get `sync~spin` icon with green color. Description shows `role • ⚙️ Issue #42` style. Tooltip shows full context description.
 - **Dashboard:** Member cards show status badge below name. "Working" summary card restored. Uses `isActiveStatus()` for counting.
@@ -66,3 +67,12 @@ The SquadUI extension emerged from initial scaffolding through a rapid sequence 
 - **Key files:** `src/models/index.ts` (MemberStatus, ActivityContext, isActiveStatus), `src/services/OrchestrationLogService.ts` (getMemberActivity), `src/views/SquadTreeProvider.ts` (rich status display), `src/views/dashboard/htmlTemplate.ts` (status badges).
 - **Tests:** Updated 8 test files to accept rich status values. 1093 tests passing (up from 1056).
 
+### Dashboard Member Drill-down (2026-03-27, Issue #76)
+- **What:** Added clickable member cards in the dashboard that expand to show per-member metrics: completed tasks, current blockers, topic frequency (skill usage proxy), and recent activity timeline.
+- **Model:** New `MemberDrilldownData` interface added to `TeamMemberOverview` as optional `drilldown` field. Contains completedTasks, blockers, skillUsage (topic frequency from logs), and recentActivity arrays.
+- **DashboardDataBuilder:** New `buildMemberDrilldown()` private method computes drill-down data from closed issues, open issues (filtered for blocker labels), log entries (topic frequency + recent participation), and completed tasks.
+- **HTML template:** Member cards now have a "▼ Details" toggle. Clicking expands the card to full-width with a 2×2 grid: Completed Tasks, Blockers, Topic Frequency (mini bar chart), and Recent Activity timeline. CSS uses VS Code theme variables throughout.
+- **Event delegation:** Added `toggle-drilldown` action to the existing click delegation system. Card toggles `expanded` class, which shows/hides the `.member-drilldown` div and spans the card to full grid width.
+- **Key files:** `src/models/index.ts` (MemberDrilldownData), `src/views/dashboard/DashboardDataBuilder.ts` (buildMemberDrilldown), `src/views/dashboard/htmlTemplate.ts` (drill-down CSS, HTML, toggle logic).
+- **Tests:** No new tests needed — drill-down data is optional on TeamMemberOverview. 1146 passing, 9 pre-existing timing failures unchanged.
+📌 Team update (2026-03-27): Dashboard member drill-down added — click member cards to see completed tasks, blockers, topic frequency, and recent activity. — decided by Rusty
