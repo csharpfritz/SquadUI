@@ -244,6 +244,29 @@
         "key": "ctrl+shift+d",
         "mac": "cmd+shift+d"
       }
+    ],
+    "chatParticipants": [
+      {
+        "id": "squadui.squad",
+        "fullName": "Squad",
+        "name": "squad",
+        "description": "Ask about your AI team — roster, decisions, and work status",
+        "isSticky": true,
+        "commands": [
+          {
+            "name": "team",
+            "description": "Show the team roster with roles and status"
+          },
+          {
+            "name": "decisions",
+            "description": "Show recent team decisions"
+          },
+          {
+            "name": "status",
+            "description": "Show current work status and activity"
+          }
+        ]
+      }
     ]
   },
   "scripts": {

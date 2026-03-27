@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs';
 import { GitHubIssue } from './models';
-import { SquadDataProvider, FileWatcherService, GitHubIssuesService, SquadVersionService, HealthCheckService } from './services';
+import { SquadDataProvider, FileWatcherService, GitHubIssuesService, SquadVersionService, HealthCheckService, registerSquadChatParticipant } from './services';
 import { TeamTreeProvider, SkillsTreeProvider, DecisionsTreeProvider, WorkDetailsWebview, IssueDetailWebview, SquadStatusBar, SquadDashboardWebview, StandupReportWebview } from './views';
 import { registerInitSquadCommand, registerUpgradeSquadCommand, registerAddMemberCommand, registerRemoveMemberCommand, registerAddSkillCommand } from './commands';
 import { detectSquadFolder, hasSquadTeam } from './utils/squadFolderDetection';
@@ -556,6 +556,12 @@ export function activate(context: vscode.ExtensionContext): void {
             teamView.message = undefined;
         }
     });
+
+    // Register @squad Copilot Chat participant (graceful — skips if API unavailable)
+    const chatParticipant = registerSquadChatParticipant(dataProvider, squadFolderName);
+    if (chatParticipant) {
+        context.subscriptions.push(chatParticipant);
+    }
 
     // Register URI handler for deep-link API (vscode://csharpfritz.squadui/...)
     const uriHandler: vscode.UriHandler = {
