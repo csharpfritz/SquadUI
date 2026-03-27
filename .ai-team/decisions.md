@@ -1723,6 +1723,80 @@ The init wizard no longer invokes the Copilot agent via CLI in the terminal. Ins
 - `completeInit()` calls `vscode.commands.executeCommand('workbench.action.chat.open', chatPrompt)` after `onInitComplete()`.
 - Removed: `copilotPrompt`, `copilotFlags`, `copilotCmd`, `process.platform` check, `&&` chaining.
 
+---
+
+## Copilot Chat Integration Architecture
+
+**Date:** 2026-03-27
+**Author:** Danny
+**Status:** Implemented (PR #84)
+
+### Decision
+
+Implement the @squad Copilot Chat participant as a thin routing layer over the existing SquadDataProvider service rather than creating a new data pipeline. The participant uses runtime API detection for graceful degradation and keyword-based routing for freeform prompts.
+
+### Key Choices
+
+1. **No new data layer** — Reuses SquadDataProvider.getSquadMembers(), .getDecisions(), .getLogEntries() directly. Zero data duplication.
+2. **Keyword routing over LLM routing** — Simple matchesAny() for freeform prompt classification. Deterministic, fast, no token cost.
+3. **Runtime API detection** — Checks vscode.chat existence before registration rather than requiring engine version bumps.
+4. **isSticky: true** — Chat participant stays selected across messages for conversational flow.
+5. **Followup provider** — Suggests commands the user hasn't tried yet, guiding discovery.
+
+### Rationale
+
+The chat participant is a read-only context surface — all intelligence comes from the existing service layer. Adding a new data pipeline would duplicate logic and create maintenance burden. The keyword routing is sufficient because the three slash commands cover all use cases cleanly; freeform is just a convenience fallback.
+
+---
+
+## Decision: Backlog Tree View Architecture
+
+**Date:** 2026-03-27  
+**Author:** Rusty  
+**Issue:** #71
+
+### Context
+
+SquadUI needed to shift from read-only team visualization to active project management. The Issue Backlog view is the first step, showing squad-labeled issues grouped by member and priority.
+
+### Decision
+
+- **Reuse existing `GitHubIssuesService`** rather than creating a new service. The `getIssuesByMember()` method already handles pagination, caching, fork detection, and rate limiting.
+- **Priority detection via label matching** — supports `p0`, `P1`, `priority:p2`, `priority: p3` formats. Issues without priority labels fall into an "Unprioritized" bucket.
+- **Per-render caching** in the tree provider. Cache is cleared on explicit refresh only (not on file watcher events), since GitHub issues don't change when local files change.
+- **`BacklogTreeItem`** as a separate class from `SquadTreeItem` to avoid coupling the backlog view's node structure to the team tree.
+
+### Impact
+
+- Backlog view is now a peer of Team, Skills, and Decisions in the sidebar
+- Future enhancements (drag-to-reprioritize, inline triage) can build on this tree structure
+- Rate limit handling pattern (warn + fallback) should be reused in future GitHub-dependent views
+
+---
+
+## Member Drill-down: Inline Expansion Pattern
+
+**Author:** Rusty
+**Date:** 2026-03-27
+**Issue:** #76
+
+### Decision
+
+Member drill-down uses an inline card expansion pattern (toggle open/close within the existing grid) rather than a separate panel or navigation. Data is pre-computed and embedded in the team data JSON payload — no message-passing round-trips needed.
+
+### Rationale
+
+- Keeps the member card context visible while showing details
+- Avoids async complexity of on-demand data fetching in the webview
+- The expanded card spans the full grid width for a clean 2×2 detail layout
+- Consistent with VS Code's preference for inline disclosure over modal patterns
+
+### Impact
+
+- `TeamMemberOverview` now has an optional `drilldown` field — backward compatible
+- Topic frequency from log entries serves as a proxy for skill usage per member
+- Blocker detection uses label matching (blocked, blocker, waiting, needs-review)
+
 ## Impact
 
 - No changes to extension API signatures or test contracts.

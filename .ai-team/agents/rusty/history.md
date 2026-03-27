@@ -67,3 +67,8 @@ The SquadUI extension emerged from initial scaffolding through a rapid sequence 
 - **Key files:** `src/models/index.ts` (MemberStatus, ActivityContext, isActiveStatus), `src/services/OrchestrationLogService.ts` (getMemberActivity), `src/views/SquadTreeProvider.ts` (rich status display), `src/views/dashboard/htmlTemplate.ts` (status badges).
 - **Tests:** Updated 8 test files to accept rich status values. 1093 tests passing (up from 1056).
 
+### v1.1 Feature Sprint Completion (2026-03-27)
+📌 Team update (2026-03-27): Issue Backlog View shipped (PR #85) — new SquadBacklogTreeProvider with GitHub issues grouped by member and priority. Reuses GitHubIssuesService; priority detection via label matching (p0, P1, priority:p2, etc.). Per-render caching with explicit refresh. 20 new tests. — decided by Rusty
+
+📌 Team update (2026-03-27): Dashboard Member Drill-down shipped (PR #87) — inline card expansion pattern with per-member metrics: completed tasks, blockers, topic frequency (skill proxy), recent activity. Data pre-computed in team JSON (no webview async). Backward-compatible optional drilldown field. — decided by Rusty
+

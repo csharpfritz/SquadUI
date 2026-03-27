@@ -161,3 +161,8 @@ Key milestones:
 
 ### Decision Merges (2026-03-27)
 📌 Team update (2026-03-27): Three decisions merged from inbox: (1) DecisionSearchService API design — pure stateless service for search/filter on DecisionEntry[], ranking by title > author > content; (2) HealthCheckService is pure-TypeScript with no VS Code deps, each check accepts squadFolder/workspaceRoot as params, validates team.md/charters/logs/token; (3) Rich Status Redesign shifts from binary working/idle to contextual statuses (working-on-issue, reviewing-pr, waiting-review, working, idle) with ActivityContext interface for issue/PR numbers. — decided by Linus & Rusty
+
+### v1.1 Feature Sprint Completion (2026-03-27)
+📌 Team update (2026-03-27): Milestone Burndown Template shipped (PR #83) — milestone selector dropdown in standup report. Burndown chart shows open issues over milestone duration. X-axis: milestone dates; Y-axis: open issues remaining. Graceful fallback when no milestones. All tests passing. — decided by Linus
+
+📌 Team update (2026-03-27): Skill Usage Metrics shipped (PR #86) — SkillUsageService computes per-member skill frequencies from logs. Skills dashboard tab with bar chart (usage by member), trend chart (30-day rolling adoption), unused skills list. Backward-compatible. 20 new tests. — decided by Linus
