@@ -265,5 +265,8 @@
     "glob": "^13.0.3",
     "mocha": "^11.7.5",
     "typescript": "^5.3.2"
+  },
+  "dependencies": {
+    "@bradygaster/squad-sdk": "0.9.1"
   }
 }

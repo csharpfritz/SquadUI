@@ -8,6 +8,10 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
+import { resolveSquadPath } from '../sdk-adapter';
+
+// Cache for SDK-resolved results to avoid repeated async lookups
+let _sdkResolvedCache: Map<string, '.squad' | '.ai-team'> = new Map();
 
 /**
  * Detects which squad folder structure exists in the workspace.
@@ -19,6 +23,12 @@ import * as path from 'path';
  * @returns '.squad' if new structure exists, '.ai-team' if legacy exists, or '.squad' as default
  */
 export function detectSquadFolder(workspaceRoot: string): '.squad' | '.ai-team' {
+    // Check sync cache from SDK resolution
+    const cached = _sdkResolvedCache.get(workspaceRoot);
+    if (cached) {
+        return cached;
+    }
+
     const newFolder = path.join(workspaceRoot, '.squad');
     const legacyFolder = path.join(workspaceRoot, '.ai-team');
     
@@ -34,6 +44,33 @@ export function detectSquadFolder(workspaceRoot: string): '.squad' | '.ai-team' 
     
     // Default to new structure for new installations
     return '.squad';
+}
+
+/**
+ * Detects the squad folder using the Squad SDK's resolveSquad() walk-up algorithm.
+ * Falls back to the built-in detectSquadFolder() if the SDK call fails.
+ *
+ * The SDK resolves by walking up from the given directory to the .git boundary,
+ * supporting worktrees and nested project structures.
+ *
+ * @param workspaceRoot - Root directory of the workspace
+ * @returns '.squad' or '.ai-team'
+ */
+export async function detectSquadFolderWithSdk(workspaceRoot: string): Promise<'.squad' | '.ai-team'> {
+    try {
+        const resolved = await resolveSquadPath(workspaceRoot);
+        if (resolved) {
+            const folderName = path.basename(resolved) as '.squad' | '.ai-team';
+            if (folderName === '.squad' || folderName === '.ai-team') {
+                _sdkResolvedCache.set(workspaceRoot, folderName);
+                return folderName;
+            }
+        }
+    } catch {
+        // SDK unavailable — fall through to built-in detection
+    }
+
+    return detectSquadFolder(workspaceRoot);
 }
 
 /**
