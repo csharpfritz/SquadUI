@@ -3,9 +3,10 @@ import * as path from 'path';
 import * as fs from 'fs';
 import { GitHubIssue } from './models';
 import { SquadDataProvider, FileWatcherService, GitHubIssuesService, SquadVersionService, HealthCheckService } from './services';
-import { TeamTreeProvider, SkillsTreeProvider, DecisionsTreeProvider, WorkDetailsWebview, IssueDetailWebview, SquadStatusBar, SquadDashboardWebview, StandupReportWebview } from './views';
+import { TeamTreeProvider, SkillsTreeProvider, DecisionsTreeProvider, WorkDetailsWebview, IssueDetailWebview, SquadStatusBar, SquadDashboardWebview, StandupReportWebview, RoutingRulesTreeProvider } from './views';
 import { registerInitSquadCommand, registerUpgradeSquadCommand, registerAddMemberCommand, registerRemoveMemberCommand, registerAddSkillCommand } from './commands';
 import { detectSquadFolder, hasSquadTeam } from './utils/squadFolderDetection';
+import { getSquadMetadata } from './sdk-adapter';
 
 let fileWatcher: FileWatcherService | undefined;
 let webview: WorkDetailsWebview | undefined;
@@ -62,6 +63,7 @@ export function activate(context: vscode.ExtensionContext): void {
         teamProvider.refresh();
         skillsProvider.refresh();
         decisionsProvider.refresh();
+        routingProvider.refresh();
         statusBar?.update();
         const teamExists = hasSquadTeam(currentRoot, squadFolderName);
         vscode.commands.executeCommand('setContext', 'squadui.hasTeam', teamExists);
@@ -79,6 +81,7 @@ export function activate(context: vscode.ExtensionContext): void {
     const teamProvider = new TeamTreeProvider(dataProvider, squadFolderName);
     const skillsProvider = new SkillsTreeProvider(dataProvider, squadFolderName);
     const decisionsProvider = new DecisionsTreeProvider(dataProvider, squadFolderName);
+    const routingProvider = new RoutingRulesTreeProvider(workspaceRoot, squadFolderName);
 
     // Wire up GitHub Issues service
     const issuesService = new GitHubIssuesService({ squadFolder: squadFolderName });
@@ -99,7 +102,11 @@ export function activate(context: vscode.ExtensionContext): void {
     const decisionsView = vscode.window.createTreeView('squadDecisions', {
         treeDataProvider: decisionsProvider
     });
-    context.subscriptions.push(teamView, skillsView, decisionsView);
+    const routingView = vscode.window.createTreeView('squadRouting', {
+        treeDataProvider: routingProvider,
+        showCollapseAll: true
+    });
+    context.subscriptions.push(teamView, skillsView, decisionsView, routingView);
 
     // Create status bar
     statusBar = new SquadStatusBar(dataProvider);
@@ -144,6 +151,7 @@ export function activate(context: vscode.ExtensionContext): void {
             teamProvider.refresh();
             skillsProvider.refresh();
             decisionsProvider.refresh();
+            routingProvider.refresh();
             statusBar?.update();
             // During init, don't clear spinner — let finishAllocationIfReady handle it
             if (initInProgress) {
@@ -305,6 +313,7 @@ export function activate(context: vscode.ExtensionContext): void {
                 teamProvider.refresh();
                 skillsProvider.refresh();
                 decisionsProvider.refresh();
+                routingProvider.refresh();
                 statusBar?.update();
                 vscode.commands.executeCommand('setContext', 'squadui.hasTeam', true);
                 teamView.message = 'Allocating team members…';
@@ -320,6 +329,7 @@ export function activate(context: vscode.ExtensionContext): void {
                     teamProvider.refresh();
                     skillsProvider.refresh();
                     decisionsProvider.refresh();
+                    routingProvider.refresh();
                     statusBar?.update();
                     finishAllocationIfReady();
                 }, 3000);
@@ -332,6 +342,7 @@ export function activate(context: vscode.ExtensionContext): void {
                 teamProvider.refresh();
                 skillsProvider.refresh();
                 decisionsProvider.refresh();
+                routingProvider.refresh();
                 statusBar?.update();
                 // Always stop the progress bar when terminal closes
                 stopAllocationProgress();
@@ -352,6 +363,7 @@ export function activate(context: vscode.ExtensionContext): void {
             teamProvider.refresh();
             skillsProvider.refresh();
             decisionsProvider.refresh();
+            routingProvider.refresh();
             statusBar?.update();
             vscode.commands.executeCommand('setContext', 'squadui.hasTeam', true);
             // Reset upgrade state and re-check after upgrade
@@ -519,6 +531,112 @@ export function activate(context: vscode.ExtensionContext): void {
         })
     );
 
+    // Register show routing rules command — reveals the routing tree view
+    context.subscriptions.push(
+        vscode.commands.registerCommand('squadui.showRoutingRules', async () => {
+            routingProvider.refresh();
+            await vscode.commands.executeCommand('squadRouting.focus');
+        })
+    );
+
+    // Register quick status command — shows team overview in a QuickPick
+    context.subscriptions.push(
+        vscode.commands.registerCommand('squadui.quickStatus', async () => {
+            const quickPick = vscode.window.createQuickPick();
+            quickPick.title = 'Squad Quick Status';
+            quickPick.placeholder = 'Loading team status…';
+            quickPick.busy = true;
+            quickPick.show();
+
+            try {
+                const metadata = await getSquadMetadata(currentRoot);
+                const items: vscode.QuickPickItem[] = [];
+
+                // Header: SDK info
+                if (metadata.sdkVersion) {
+                    items.push({
+                        label: '$(package) SDK',
+                        description: `v${metadata.sdkVersion}`,
+                        kind: vscode.QuickPickItemKind.Separator,
+                    });
+                }
+
+                // Team members section
+                items.push({
+                    label: 'Team Members',
+                    kind: vscode.QuickPickItemKind.Separator,
+                });
+
+                if (metadata.members.length === 0) {
+                    items.push({
+                        label: '$(info) No team members found',
+                        description: 'Run Squad init to set up your team',
+                    });
+                } else {
+                    for (const member of metadata.members) {
+                        const statusIcon = member.status === 'idle' ? '$(circle-outline)' : '$(circle-filled)';
+                        items.push({
+                            label: `${statusIcon} ${member.name}`,
+                            description: member.role,
+                            detail: member.activityContext?.description,
+                        });
+                    }
+                }
+
+                // Decisions section
+                items.push({
+                    label: 'Recent Decisions',
+                    kind: vscode.QuickPickItemKind.Separator,
+                });
+
+                const recentDecisions = metadata.decisions.slice(0, 5);
+                if (recentDecisions.length === 0) {
+                    items.push({
+                        label: '$(info) No decisions recorded',
+                        description: 'Decisions will appear as the team works',
+                    });
+                } else {
+                    for (const decision of recentDecisions) {
+                        items.push({
+                            label: `$(note) ${decision.title}`,
+                            description: decision.date ? `${decision.date}` : undefined,
+                            detail: decision.author ? `By ${decision.author}` : undefined,
+                        });
+                    }
+                    if (metadata.decisions.length > 5) {
+                        items.push({
+                            label: `$(ellipsis) ${metadata.decisions.length - 5} more decisions…`,
+                            description: 'Open dashboard for full list',
+                        });
+                    }
+                }
+
+                // Warnings section
+                if (metadata.warnings.length > 0) {
+                    items.push({
+                        label: 'Warnings',
+                        kind: vscode.QuickPickItemKind.Separator,
+                    });
+                    for (const warning of metadata.warnings) {
+                        items.push({
+                            label: `$(warning) ${warning}`,
+                        });
+                    }
+                }
+
+                quickPick.items = items;
+                quickPick.busy = false;
+                quickPick.placeholder = `${metadata.members.length} member(s) · ${metadata.decisions.length} decision(s)`;
+            } catch {
+                quickPick.items = [{ label: '$(error) Failed to load squad status' }];
+                quickPick.busy = false;
+                quickPick.placeholder = 'Error loading status';
+            }
+
+            quickPick.onDidHide(() => quickPick.dispose());
+        })
+    );
+
     // Register health check command — runs diagnostics and shows results in output channel
     context.subscriptions.push(
         vscode.commands.registerCommand('squadui.healthCheck', async () => {
@@ -543,6 +661,7 @@ export function activate(context: vscode.ExtensionContext): void {
         teamProvider.refresh();
         skillsProvider.refresh();
         decisionsProvider.refresh();
+        routingProvider.refresh();
         statusBar?.update();
         const teamExists = hasSquadTeam(currentRoot, squadFolderName);
         // During init, never reset hasTeam to false — the init wizard already set it true

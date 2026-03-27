@@ -77,3 +77,21 @@ The SquadUI extension emerged from initial scaffolding through a rapid sequence 
 - **Key files:** `src/views/SquadStatusBar.ts`, `src/services/HealthCheckService.ts`, test files updated.
 📌 Team update (2026-03-27): SDK Phase 3 UI — all UI components verified compatible with SDK-adapted data. SDK version now visible in status bar tooltip and health check diagnostics. — decided by Rusty
 
+### SDK Phase 4 — SDK-Enabled Features (2026-03-27)
+- **Issue:** SDK Migration Phase 4 — Optional SDK Enhancements
+- **Features implemented:** Routing Rules Viewer (Option A) and Quick Status command (Option C).
+- **Routing Rules Viewer:**
+  - Added `parseRoutingRules()` and `adaptRoutingRules()` to `src/sdk-adapter/index.ts` — wraps SDK's `parseRoutingRulesMarkdown()` from `@bradygaster/squad-sdk/parsers`.
+  - Added `ParsedRoutingRule` SDK type mirror and `RoutingRule` UI model in `src/models/index.ts`.
+  - Created `RoutingRulesTreeProvider` in `src/views/RoutingRulesTreeProvider.ts` — shows work types as collapsible nodes with agent and example children.
+  - Registered `squadRouting` tree view in `package.json` under the `squadui` sidebar container. Appears when `squadui.hasTeam` is true.
+  - Registered `squadui.showRoutingRules` command that focuses the routing tree view.
+  - Tree view refreshes on file changes and manual refresh alongside other providers.
+- **Quick Status Command:**
+  - Registered `squadui.quickStatus` command that uses `getSquadMetadata()` from sdk-adapter.
+  - Shows VS Code QuickPick with team members (with status icons), recent decisions (top 5), SDK version, and any warnings.
+  - Graceful degradation — shows error message if metadata load fails. Empty workspace gets informative placeholders.
+- **Key constraint:** All SDK imports go through `src/sdk-adapter/index.ts` — no direct `@bradygaster/squad-sdk` imports.
+- **Tests:** 24 new tests (14 routing viewer, 10 quick status). 1233 passing, 57 pending.
+- **Key files:** `src/sdk-adapter/index.ts`, `src/views/RoutingRulesTreeProvider.ts`, `src/extension.ts`, `src/models/index.ts`, `package.json`, test fixtures `routing.md`.
+📌 Team update (2026-03-27): SDK Phase 4 complete — routing rules viewer (tree view with SDK parsing) and quick status command (QuickPick with getSquadMetadata) shipped. SDK migration fully complete across all 4 phases. — decided by Rusty

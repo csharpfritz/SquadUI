@@ -52,6 +52,7 @@
  */
 
 import { SquadMember, DecisionEntry, MemberStatus } from '../models';
+import type { RoutingRule } from '../models';
 
 // ─── SDK Type Mirrors ──────────────────────────────────────────────────────
 // Defined locally to avoid ESM/CJS type resolution issues at compile time.
@@ -96,6 +97,18 @@ export interface ParsedDecision {
     date?: string;
     author?: string;
     headingLevel?: number;
+}
+
+/**
+ * Routing rule parsed from routing.md by the SDK.
+ *
+ * SDK extracts routing rules from the Work Type / Route To / Examples table.
+ * SquadUI maps these to a RoutingRule display model.
+ */
+export interface ParsedRoutingRule {
+    workType: string;
+    agents: string[];
+    examples?: string[];
 }
 
 /** Options for agent-to-member mapping. */
@@ -181,6 +194,36 @@ export async function parseDecisionsMarkdown(content: string): Promise<{
 }> {
     const parsers = await loadParsers();
     return parsers.parseDecisionsMarkdown(content);
+}
+
+/**
+ * Parses routing.md content into routing rules using the SDK.
+ * Wraps SDK's parseRoutingRulesMarkdown from @bradygaster/squad-sdk/parsers.
+ *
+ * @param content - Raw routing.md markdown content
+ * @returns Parsed routing rules and any warnings
+ */
+export async function parseRoutingRules(content: string): Promise<{
+    rules: ParsedRoutingRule[];
+    warnings: string[];
+}> {
+    const parsers = await loadParsers();
+    return parsers.parseRoutingRulesMarkdown(content);
+}
+
+/**
+ * Maps SDK ParsedRoutingRules to SquadUI's RoutingRule display model.
+ * Capitalizes agent names from SDK kebab-case to display names.
+ *
+ * @param rules - Array of SDK parsed routing rules
+ * @returns Array of RoutingRule for UI display
+ */
+export function adaptRoutingRules(rules: ParsedRoutingRule[]): RoutingRule[] {
+    return rules.map(rule => ({
+        workType: rule.workType,
+        agents: rule.agents.map(a => capitalizeAgentName(a)),
+        examples: rule.examples ?? [],
+    }));
 }
 
 // ─── Resolution Wrapper ────────────────────────────────────────────────────

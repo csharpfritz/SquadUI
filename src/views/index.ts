@@ -3,6 +3,7 @@
  */
 
 export { TeamTreeProvider, SkillsTreeProvider, DecisionsTreeProvider, SquadTreeItem } from './SquadTreeProvider';
+export { RoutingRulesTreeProvider, RoutingRuleItem } from './RoutingRulesTreeProvider';
 export { WorkDetailsWebview } from './WorkDetailsWebview';
 export { IssueDetailWebview } from './IssueDetailWebview';
 export { SquadStatusBar } from './SquadStatusBar';
