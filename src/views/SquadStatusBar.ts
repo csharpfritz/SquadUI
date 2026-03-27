@@ -6,6 +6,7 @@
 import * as vscode from 'vscode';
 import { SquadDataProvider } from '../services/SquadDataProvider';
 import { isActiveStatus } from '../models';
+import { getSquadSdkVersion } from '../sdk-adapter';
 
 export class SquadStatusBar {
     private statusBarItem: vscode.StatusBarItem;
@@ -58,6 +59,16 @@ export class SquadStatusBar {
                     ? member.activityContext.shortLabel
                     : '—';
                 tooltip.appendMarkdown(`- ${member.name} — ${member.role} · ${statusIndicator}\n`);
+            }
+
+            // Append SDK version to tooltip when available
+            try {
+                const sdkVersion = await getSquadSdkVersion();
+                if (sdkVersion) {
+                    tooltip.appendMarkdown(`\n---\n*SDK v${sdkVersion}*`);
+                }
+            } catch {
+                // SDK version unavailable — non-fatal
             }
 
             this.statusBarItem.tooltip = tooltip;

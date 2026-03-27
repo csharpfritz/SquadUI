@@ -9,7 +9,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { TeamMdService } from './TeamMdService';
 import { OrchestrationLogService } from './OrchestrationLogService';
-import { parseTeamMarkdown, loadSquadConfig } from '../sdk-adapter';
+import { parseTeamMarkdown, loadSquadConfig, getSquadSdkVersion } from '../sdk-adapter';
 
 /**
  * Result of a single health check.
@@ -241,9 +241,39 @@ export class HealthCheckService {
             this.checkAgentCharters(squadFolder, workspaceRoot),
             this.checkOrchestrationLogs(squadFolder, workspaceRoot),
             this.checkGitHubConfig(),
+            this.checkSdkVersion(),
         ]);
 
         return results;
+    }
+
+    /**
+     * Checks whether the Squad SDK is available and reports its version.
+     */
+    async checkSdkVersion(): Promise<HealthCheckResult> {
+        try {
+            const version = await getSquadSdkVersion();
+            if (version) {
+                return {
+                    name: 'Squad SDK',
+                    status: 'pass',
+                    message: `Squad SDK v${version} detected`,
+                };
+            }
+            return {
+                name: 'Squad SDK',
+                status: 'warn',
+                message: 'Squad SDK version could not be determined',
+                fix: 'Ensure @bradygaster/squad-sdk is installed.',
+            };
+        } catch {
+            return {
+                name: 'Squad SDK',
+                status: 'warn',
+                message: 'Squad SDK not available',
+                fix: 'Install @bradygaster/squad-sdk to enable SDK features.',
+            };
+        }
     }
 
     /**

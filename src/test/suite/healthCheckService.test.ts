@@ -165,6 +165,24 @@ suite('HealthCheckService', () => {
         });
     });
 
+    suite('checkSdkVersion()', () => {
+        test('returns pass or warn status', async () => {
+            const result = await service.checkSdkVersion();
+            assert.ok(['pass', 'warn'].includes(result.status),
+                `SDK version check should return pass or warn, got: ${result.status}`);
+            assert.strictEqual(result.name, 'Squad SDK');
+        });
+
+        test('includes version in message when SDK is available', async () => {
+            const result = await service.checkSdkVersion();
+            if (result.status === 'pass') {
+                assert.ok(result.message.includes('v'), 'Pass message should include version');
+            } else {
+                assert.ok(result.fix, 'Warn status should include a fix suggestion');
+            }
+        });
+    });
+
     suite('checkGitHubConfig()', () => {
         test('returns pass or warn based on environment', async () => {
             const result = await service.checkGitHubConfig();
@@ -177,11 +195,12 @@ suite('HealthCheckService', () => {
     suite('runAll()', () => {
         test('returns results for all checks', async () => {
             const results = await service.runAll('.ai-team', TEST_FIXTURES_ROOT);
-            assert.strictEqual(results.length, 4);
+            assert.strictEqual(results.length, 5);
             assert.ok(results.some(r => r.name === 'team.md'));
             assert.ok(results.some(r => r.name === 'Agent Charters'));
             assert.ok(results.some(r => r.name === 'Orchestration Logs'));
             assert.ok(results.some(r => r.name === 'GitHub Config'));
+            assert.ok(results.some(r => r.name === 'Squad SDK'));
         });
 
         test('all results have valid status values', async () => {
