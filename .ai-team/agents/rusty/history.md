@@ -1,6 +1,6 @@
 # Project Context
 
-- **Owner:** Jeffrey T. Fritz (csharpfritz@users.noreply.github.com)
+- **Owner:** Jeffrey T. Fritz
 - **Project:** VS Code extension for visualizing Squad team members and their tasks
 - **Stack:** TypeScript, VS Code Extension API, potentially GitHub Copilot integration
 - **Created:** 2026-02-13
@@ -58,6 +58,7 @@ The SquadUI extension emerged from initial scaffolding through a rapid sequence 
 ### Active Status Redesign (2026-02-24, Issue #73)
 - **Rich contextual status:** Replaced binary `'working' | 'idle'` with `MemberStatus` enum: `'working-on-issue' | 'reviewing-pr' | 'waiting-review' | 'working' | 'idle'`. Added `isActiveStatus()` helper and `ActivityContext` interface with `description`, `shortLabel`, `issueNumber?`, `prNumber?`.
 - **OrchestrationLogService.getMemberActivity():** New method parses log entries to derive per-member activity context. Detects issue work vs PR review vs waiting status from log content. Falls back to generic `'working'` when no specific context is available. Original `getMemberStates()` preserved for backward compat.
+- **Decision merged (2026-03-27):** Rich Status Redesign formally merged to decisions.md — codifies that status display should show contextual information (⚙️ Issue #N, 🔍 PR #N, ⏳ Awaiting review, ⚡ Working, —) rather than simple active/idle indicators. — decided by Rusty
 - **SquadDataProvider:** Uses `getMemberActivity()` to populate `activityContext` on each `SquadMember`. GitHub-aware status now sets `'working-on-issue'` (not generic `'working'`).
 - **Tree view:** Working members get `sync~spin` icon with green color. Description shows `role • ⚙️ Issue #42` style. Tooltip shows full context description.
 - **Dashboard:** Member cards show status badge below name. "Working" summary card restored. Uses `isActiveStatus()` for counting.
@@ -66,3 +67,18 @@ The SquadUI extension emerged from initial scaffolding through a rapid sequence 
 - **Key files:** `src/models/index.ts` (MemberStatus, ActivityContext, isActiveStatus), `src/services/OrchestrationLogService.ts` (getMemberActivity), `src/views/SquadTreeProvider.ts` (rich status display), `src/views/dashboard/htmlTemplate.ts` (status badges).
 - **Tests:** Updated 8 test files to accept rich status values. 1093 tests passing (up from 1056).
 
+### v1.1 Feature Sprint Completion (2026-03-27)
+📌 Team update (2026-03-27): Issue Backlog View shipped (PR #85) — new SquadBacklogTreeProvider with GitHub issues grouped by member and priority. Reuses GitHubIssuesService; priority detection via label matching (p0, P1, priority:p2, etc.). Per-render caching with explicit refresh. 20 new tests. — decided by Rusty
+
+📌 Team update (2026-03-27): Dashboard Member Drill-down shipped (PR #87) — inline card expansion pattern with per-member metrics: completed tasks, blockers, topic frequency (skill proxy), recent activity. Data pre-computed in team JSON (no webview async). Backward-compatible optional drilldown field. — decided by Rusty
+
+### Multi-Workspace Dashboard (2026-03-27, Issue #78)
+- **What:** Added multi-workspace support for organizations running multiple Squad teams across different repos.
+- **Architecture:** New `WorkspaceScanner` service detects squad-enabled folders via `vscode.workspace.workspaceFolders`. Per-workspace `SquadDataProvider` instances created for each detected workspace.
+- **Dashboard:** Workspace selector dropdown rendered above tab navigation when multiple workspaces detected. Switching workspaces reloads all dashboard data from the selected workspace's `.ai-team/` or `.squad/` folder. Workspace name shown in Team Overview heading.
+- **Tree views:** `TeamTreeProvider` and `DecisionsTreeProvider` show workspace grouping nodes (folder icon, expanded by default) when multiple workspaces detected. Single workspace = no visual change (backward compatible).
+- **Extension wiring:** `onDidChangeWorkspaceFolders` listener re-scans for workspaces when folders are added/removed. Data providers keyed by `rootPath` in a Map for O(1) lookup.
+- **Design decision:** Started with workspace selector (as issue suggested) — not full aggregation. Each workspace is independent; no merged-view aggregation yet.
+- **Key files:** `src/services/WorkspaceScanner.ts` (new), `src/views/SquadDashboardWebview.ts`, `src/views/dashboard/htmlTemplate.ts`, `src/views/SquadTreeProvider.ts`, `src/extension.ts`.
+- **Tests:** 9 new `WorkspaceScanner` tests (scan, multi-detect, skip non-squad). 1155 tests passing total (up from 1146).
+📌 Team update (2026-03-27): Multi-workspace dashboard shipped — workspace selector dropdown, tree view grouping, per-workspace data providers. Single workspace unchanged. — decided by Rusty

@@ -1,6 +1,6 @@
 # Project Context
 
-- **Owner:** Jeffrey T. Fritz (csharpfritz@users.noreply.github.com)
+- **Owner:** Jeffrey T. Fritz
 - **Project:** VS Code extension for visualizing Squad team members and their tasks
 - **Stack:** TypeScript, VS Code Extension API, potentially GitHub Copilot integration
 - **Created:** 2026-02-13
@@ -118,3 +118,6 @@
    - P1 features assigned to Rusty and Linus; implementation planning underway
    - v1.0 ship target with focus on real-time status, decision search, charter editor, health check
    - Roadmap session logged to .ai-team/log/2026-02-23-feature-roadmap.md
+
+### v1.1 Feature Sprint Completion (2026-03-27)
+📌 Team update (2026-03-27): Copilot Chat Integration shipped (PR #84) — @squad participant implemented as thin routing layer over SquadDataProvider. Uses keyword-based routing for /team, /decisions, /status commands. Runtime API detection for graceful degradation. isSticky: true for conversational flow. No new data pipeline — zero duplication. — decided by Danny

@@ -1,4 +1,4 @@
-### Context
+﻿### Context
 
 Scaffolding the VS Code extension requires establishing the foundational naming conventions and activation strategy.
 
@@ -1723,6 +1723,80 @@ The init wizard no longer invokes the Copilot agent via CLI in the terminal. Ins
 - `completeInit()` calls `vscode.commands.executeCommand('workbench.action.chat.open', chatPrompt)` after `onInitComplete()`.
 - Removed: `copilotPrompt`, `copilotFlags`, `copilotCmd`, `process.platform` check, `&&` chaining.
 
+---
+
+## Copilot Chat Integration Architecture
+
+**Date:** 2026-03-27
+**Author:** Danny
+**Status:** Implemented (PR #84)
+
+### Decision
+
+Implement the @squad Copilot Chat participant as a thin routing layer over the existing SquadDataProvider service rather than creating a new data pipeline. The participant uses runtime API detection for graceful degradation and keyword-based routing for freeform prompts.
+
+### Key Choices
+
+1. **No new data layer** — Reuses SquadDataProvider.getSquadMembers(), .getDecisions(), .getLogEntries() directly. Zero data duplication.
+2. **Keyword routing over LLM routing** — Simple matchesAny() for freeform prompt classification. Deterministic, fast, no token cost.
+3. **Runtime API detection** — Checks vscode.chat existence before registration rather than requiring engine version bumps.
+4. **isSticky: true** — Chat participant stays selected across messages for conversational flow.
+5. **Followup provider** — Suggests commands the user hasn't tried yet, guiding discovery.
+
+### Rationale
+
+The chat participant is a read-only context surface — all intelligence comes from the existing service layer. Adding a new data pipeline would duplicate logic and create maintenance burden. The keyword routing is sufficient because the three slash commands cover all use cases cleanly; freeform is just a convenience fallback.
+
+---
+
+## Decision: Backlog Tree View Architecture
+
+**Date:** 2026-03-27  
+**Author:** Rusty  
+**Issue:** #71
+
+### Context
+
+SquadUI needed to shift from read-only team visualization to active project management. The Issue Backlog view is the first step, showing squad-labeled issues grouped by member and priority.
+
+### Decision
+
+- **Reuse existing `GitHubIssuesService`** rather than creating a new service. The `getIssuesByMember()` method already handles pagination, caching, fork detection, and rate limiting.
+- **Priority detection via label matching** — supports `p0`, `P1`, `priority:p2`, `priority: p3` formats. Issues without priority labels fall into an "Unprioritized" bucket.
+- **Per-render caching** in the tree provider. Cache is cleared on explicit refresh only (not on file watcher events), since GitHub issues don't change when local files change.
+- **`BacklogTreeItem`** as a separate class from `SquadTreeItem` to avoid coupling the backlog view's node structure to the team tree.
+
+### Impact
+
+- Backlog view is now a peer of Team, Skills, and Decisions in the sidebar
+- Future enhancements (drag-to-reprioritize, inline triage) can build on this tree structure
+- Rate limit handling pattern (warn + fallback) should be reused in future GitHub-dependent views
+
+---
+
+## Member Drill-down: Inline Expansion Pattern
+
+**Author:** Rusty
+**Date:** 2026-03-27
+**Issue:** #76
+
+### Decision
+
+Member drill-down uses an inline card expansion pattern (toggle open/close within the existing grid) rather than a separate panel or navigation. Data is pre-computed and embedded in the team data JSON payload — no message-passing round-trips needed.
+
+### Rationale
+
+- Keeps the member card context visible while showing details
+- Avoids async complexity of on-demand data fetching in the webview
+- The expanded card spans the full grid width for a clean 2×2 detail layout
+- Consistent with VS Code's preference for inline disclosure over modal patterns
+
+### Impact
+
+- `TeamMemberOverview` now has an optional `drilldown` field — backward compatible
+- Topic frequency from log entries serves as a proxy for skill usage per member
+- Blocker detection uses label matching (blocked, blocker, waiting, needs-review)
+
 ## Impact
 
 - No changes to extension API signatures or test contracts.
@@ -2508,3 +2582,90 @@ Advanced features for mature teams running larger squads.
 4. **Backlog grooming:** Create GitHub issues for each feature with acceptance criteria
 5. **Schedule:** Estimate v1.0 ship date based on feature scope
 
+
+---
+
+# Decision: DecisionSearchService API Design
+
+**Date:** 2026-02-24
+**Author:** Linus
+**Issue:** #69
+
+## Context
+
+Issue #69 requires search and filtering for decisions. The existing `DecisionService` handles parsing; we need a separate service for query operations.
+
+## Decision
+
+Created `DecisionSearchService` as a pure, stateless service operating on `DecisionEntry[]`:
+
+- **`search(decisions, query)`** — full-text search with relevance ranking (title 10× > author 5× > content 3×)
+- **`filterByDate(decisions, startDate, endDate)`** — inclusive date range using YYYY-MM-DD string comparison
+- **`filterByAuthor(decisions, author)`** — case-insensitive substring match
+- **`filter(decisions, criteria)`** — chains all three: search first (preserves ranking), then date, then author
+
+Exported types: `DecisionSearchCriteria`, `ScoredDecision`.
+
+## Rationale
+
+- Separation from `DecisionService` keeps parsing and querying decoupled — each can evolve independently
+- Pure functions on arrays = trivially testable, no file I/O or VS Code deps
+- Search-first chaining preserves relevance ordering through subsequent filters
+- String comparison on YYYY-MM-DD avoids timezone issues that plague Date object comparisons
+
+## Impact
+
+- Rusty can consume `DecisionSearchService` from tree view code to wire up the search UI
+- The `filter()` method accepts a `DecisionSearchCriteria` object — Rusty should bind UI inputs to this interface
+- No changes to `DecisionEntry` model or `DecisionService` were needed
+ 
+---
+
+# Decision: HealthCheckService is a pure-TypeScript service
+
+**Date:** 2026-02-23  
+**Author:** Linus  
+**Issue:** #70  
+
+## Context
+The health check command needs to validate team configuration (team.md, agent charters, orchestration logs, GitHub token). This could be implemented directly in the command handler or as a standalone service.
+
+## Decision
+Created `HealthCheckService` as a pure TypeScript service with no VS Code API dependencies. Each check method accepts `squadFolder` and `workspaceRoot` as parameters. The command handler in `extension.ts` is minimal — just wires the service to an output channel.
+
+## Rationale
+- Testable in isolation (Mocha tests without VS Code test runner complexity)
+- Follows existing service patterns (TeamMdService, OrchestrationLogService)
+- Keeps service layer decoupled from VS Code UI (Linus/Rusty boundary)
+- `HealthCheckResult` interface enables structured consumption by future UI (tree view, dashboard tab)
+ 
+---
+
+# Rich Status Redesign
+
+**Author:** Rusty
+**Date:** 2026-02-24
+**Issue:** #73 — Active Status Redesign
+
+## Decision
+
+Replaced binary `'working' | 'idle'` MemberStatus with rich contextual statuses:
+
+- `'working-on-issue'` — agent is working on a GitHub issue (shows `⚙️ Issue #N`)
+- `'reviewing-pr'` — agent is reviewing a pull request (shows `🔍 PR #N`)
+- `'waiting-review'` — agent is waiting for a review (shows `⏳ Awaiting review`)
+- `'working'` — generic active state when no specific context available (shows `⚡ Working`)
+- `'idle'` — no recent activity (shows `—`)
+
+Added `isActiveStatus()` helper — use this instead of `=== 'working'` to check if a member is active.
+
+Added `ActivityContext` interface: `{ description, shortLabel, issueNumber?, prNumber? }` on `SquadMember` and `TeamMemberOverview`.
+
+New `OrchestrationLogService.getMemberActivity()` method derives rich context from log entries.
+
+## Impact
+
+- **All code checking member status** should use `isActiveStatus(member.status)` instead of `member.status === 'working'`.
+- **Tree view** now shows spinning icons for active members and contextual text in descriptions.
+- **Dashboard** member cards show status badge. "Working" summary card restored.
+- **Status bar** shows working/total count when members are active.

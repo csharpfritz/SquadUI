@@ -38,3 +38,7 @@ export {
     HealthCheckService,
     type HealthCheckResult
 } from './HealthCheckService';
+export {
+    WorkspaceScanner,
+    type WorkspaceInfo
+} from './WorkspaceScanner';
