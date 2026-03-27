@@ -67,3 +67,13 @@ The SquadUI extension emerged from initial scaffolding through a rapid sequence 
 - **Key files:** `src/models/index.ts` (MemberStatus, ActivityContext, isActiveStatus), `src/services/OrchestrationLogService.ts` (getMemberActivity), `src/views/SquadTreeProvider.ts` (rich status display), `src/views/dashboard/htmlTemplate.ts` (status badges).
 - **Tests:** Updated 8 test files to accept rich status values. 1093 tests passing (up from 1056).
 
+### Dashboard Member Drill-down (2026-03-27, Issue #76)
+- **What:** Added clickable member cards in the dashboard that expand to show per-member metrics: completed tasks, current blockers, topic frequency (skill usage proxy), and recent activity timeline.
+- **Model:** New `MemberDrilldownData` interface added to `TeamMemberOverview` as optional `drilldown` field. Contains completedTasks, blockers, skillUsage (topic frequency from logs), and recentActivity arrays.
+- **DashboardDataBuilder:** New `buildMemberDrilldown()` private method computes drill-down data from closed issues, open issues (filtered for blocker labels), log entries (topic frequency + recent participation), and completed tasks.
+- **HTML template:** Member cards now have a "▼ Details" toggle. Clicking expands the card to full-width with a 2×2 grid: Completed Tasks, Blockers, Topic Frequency (mini bar chart), and Recent Activity timeline. CSS uses VS Code theme variables throughout.
+- **Event delegation:** Added `toggle-drilldown` action to the existing click delegation system. Card toggles `expanded` class, which shows/hides the `.member-drilldown` div and spans the card to full grid width.
+- **Key files:** `src/models/index.ts` (MemberDrilldownData), `src/views/dashboard/DashboardDataBuilder.ts` (buildMemberDrilldown), `src/views/dashboard/htmlTemplate.ts` (drill-down CSS, HTML, toggle logic).
+- **Tests:** No new tests needed — drill-down data is optional on TeamMemberOverview. 1150 passing, 5 pre-existing timing failures unchanged.
+📌 Team update (2026-03-27): Dashboard member drill-down added — click member cards to see completed tasks, blockers, topic frequency, and recent activity. — decided by Rusty
+
