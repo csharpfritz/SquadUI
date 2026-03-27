@@ -1,5 +1,6 @@
 /**
  * Tree data providers for displaying squad team, skills, and decisions.
+ * Supports multi-workspace scenarios where items are grouped by workspace.
  */
 
 import * as vscode from 'vscode';
@@ -8,6 +9,7 @@ import { SquadDataProvider } from '../services/SquadDataProvider';
 import { SkillCatalogService } from '../services/SkillCatalogService';
 import { DecisionService } from '../services/DecisionService';
 import { OrchestrationLogService } from '../services/OrchestrationLogService';
+import { WorkspaceInfo } from '../services/WorkspaceScanner';
 import { stripMarkdownLinks } from '../utils/markdownUtils';
 
 /**
@@ -18,10 +20,11 @@ export class SquadTreeItem extends vscode.TreeItem {
     constructor(
         public readonly label: string,
         public readonly collapsibleState: vscode.TreeItemCollapsibleState,
-        public readonly itemType: 'section' | 'member' | 'task' | 'issue' | 'skill' | 'decision' | 'log-entry',
+        public readonly itemType: 'section' | 'member' | 'task' | 'issue' | 'skill' | 'decision' | 'log-entry' | 'workspace',
         public readonly memberId?: string,
         public readonly taskId?: string,
-        public readonly logFilePath?: string
+        public readonly logFilePath?: string,
+        public readonly workspaceRootPath?: string
     ) {
         super(label, collapsibleState);
         // contextValue is set by caller or defaults to itemType
@@ -34,12 +37,15 @@ export class SquadTreeItem extends vscode.TreeItem {
 /**
  * Provides tree data for the Team view.
  * Shows squad members with their tasks and GitHub issues as children.
+ * In multi-workspace mode, groups members under workspace nodes.
  */
 export class TeamTreeProvider implements vscode.TreeDataProvider<SquadTreeItem> {
     private _onDidChangeTreeData = new vscode.EventEmitter<SquadTreeItem | undefined | null | void>();
     readonly onDidChangeTreeData = this._onDidChangeTreeData.event;
     private issuesService: IGitHubIssuesService | undefined;
     private orchestrationLogService: OrchestrationLogService;
+    private additionalProviders: Map<string, { provider: SquadDataProvider; squadFolder: '.squad' | '.ai-team' }> = new Map();
+    private workspaces: WorkspaceInfo[] = [];
 
     constructor(private dataProvider: SquadDataProvider, squadFolder: '.squad' | '.ai-team' = '.ai-team') {
         this.orchestrationLogService = new OrchestrationLogService(squadFolder);
@@ -49,8 +55,26 @@ export class TeamTreeProvider implements vscode.TreeDataProvider<SquadTreeItem> 
         this.issuesService = service;
     }
 
+    /**
+     * Configures multi-workspace support.
+     * When multiple workspaces are provided, the tree groups members under workspace nodes.
+     */
+    setWorkspaces(workspaces: WorkspaceInfo[], providers: Map<string, SquadDataProvider>): void {
+        this.workspaces = workspaces;
+        this.additionalProviders.clear();
+        for (const ws of workspaces) {
+            const provider = providers.get(ws.rootPath);
+            if (provider && ws.rootPath !== this.dataProvider.getWorkspaceRoot()) {
+                this.additionalProviders.set(ws.rootPath, { provider, squadFolder: ws.squadFolder });
+            }
+        }
+    }
+
     refresh(): void {
         this.dataProvider.refresh();
+        for (const { provider } of this.additionalProviders.values()) {
+            provider.refresh();
+        }
         this._onDidChangeTreeData.fire();
     }
 
@@ -60,37 +84,90 @@ export class TeamTreeProvider implements vscode.TreeDataProvider<SquadTreeItem> 
 
     async getChildren(element?: SquadTreeItem): Promise<SquadTreeItem[]> {
         if (!element) {
-            return this.getSquadMemberItems();
+            // Multi-workspace: show workspace grouping nodes
+            if (this.workspaces.length > 1) {
+                return this.getWorkspaceNodes();
+            }
+            return this.getSquadMemberItems(this.dataProvider);
+        }
+
+        // Workspace grouping node → show members from that workspace
+        if (element.itemType === 'workspace' && element.workspaceRootPath) {
+            const provider = this.getProviderForWorkspace(element.workspaceRootPath);
+            if (provider) {
+                return this.getSquadMemberItems(provider);
+            }
+            return [];
         }
 
         if (element.itemType === 'member' && element.memberId) {
-            const tasks = await this.getTaskItems(element.memberId);
+            const provider = element.workspaceRootPath
+                ? this.getProviderForWorkspace(element.workspaceRootPath)
+                : this.dataProvider;
+            if (!provider) { return []; }
+            const tasks = await this.getTaskItems(element.memberId, provider);
             // Collect issue numbers already shown as tasks to avoid duplicates
             const taskIssueIds = new Set(
                 tasks.map(t => t.taskId).filter((id): id is string => Boolean(id))
             );
-            const issues = await this.getIssueItems(element.memberId, taskIssueIds);
-            const closedIssues = await this.getClosedIssueItems(element.memberId, taskIssueIds);
-            const logEntries = await this.getMemberLogEntries(element.memberId);
+            const issues = await this.getIssueItems(element.memberId, taskIssueIds, provider);
+            const closedIssues = await this.getClosedIssueItems(element.memberId, taskIssueIds, provider);
+            const logEntries = await this.getMemberLogEntries(element.memberId, provider);
             return [...tasks, ...issues, ...closedIssues, ...logEntries];
         }
 
         return [];
     }
 
-    private async getSquadMemberItems(): Promise<SquadTreeItem[]> {
+    /**
+     * Returns the data provider for a given workspace root path.
+     */
+    private getProviderForWorkspace(rootPath: string): SquadDataProvider | undefined {
+        if (rootPath === this.dataProvider.getWorkspaceRoot()) {
+            return this.dataProvider;
+        }
+        return this.additionalProviders.get(rootPath)?.provider;
+    }
+
+    /**
+     * Creates workspace grouping nodes for multi-workspace mode.
+     */
+    private getWorkspaceNodes(): SquadTreeItem[] {
+        return this.workspaces
+            .filter(ws => ws.hasTeam)
+            .map(ws => {
+                const item = new SquadTreeItem(
+                    ws.name,
+                    vscode.TreeItemCollapsibleState.Expanded,
+                    'workspace',
+                    undefined,
+                    undefined,
+                    undefined,
+                    ws.rootPath
+                );
+                item.iconPath = new vscode.ThemeIcon('folder');
+                item.description = ws.squadFolder;
+                item.tooltip = `Workspace: ${ws.name}\nPath: ${ws.rootPath}\nConfig: ${ws.squadFolder}`;
+                item.contextValue = 'workspace';
+                return item;
+            });
+    }
+
+    private async getSquadMemberItems(provider?: SquadDataProvider): Promise<SquadTreeItem[]> {
+        const dp = provider ?? this.dataProvider;
         // Feed GitHub issues into data provider for status computation
         if (this.issuesService) {
             try {
-                const workspaceRoot = this.dataProvider.getWorkspaceRoot();
+                const workspaceRoot = dp.getWorkspaceRoot();
                 const openIssues = await this.issuesService.getIssuesByMember(workspaceRoot);
-                this.dataProvider.setOpenIssues(openIssues);
+                dp.setOpenIssues(openIssues);
             } catch {
                 // Issues service unavailable — proceed without GitHub-aware status
             }
         }
 
-        const members = await this.dataProvider.getSquadMembers();
+        const members = await dp.getSquadMembers();
+        const workspaceRootPath = this.workspaces.length > 1 ? dp.getWorkspaceRoot() : undefined;
         
         // Sort: regular members first, then @copilot, then infra (scribe/ralph)
         const sortOrder = (name: string): number => {
@@ -113,7 +190,10 @@ export class TeamTreeProvider implements vscode.TreeDataProvider<SquadTreeItem> 
                 displayName,
                 noChildren ? vscode.TreeItemCollapsibleState.None : vscode.TreeItemCollapsibleState.Collapsed,
                 'member',
-                member.name
+                member.name,
+                undefined,
+                undefined,
+                workspaceRootPath
             );
 
             const specialIcon = lowerName === 'scribe' ? 'edit'
@@ -132,7 +212,7 @@ export class TeamTreeProvider implements vscode.TreeDataProvider<SquadTreeItem> 
             }
             
             // Build description with role, status context, and issue count
-            const issueCount = await this.getIssueCount(member.name);
+            const issueCount = await this.getIssueCount(member.name, dp);
             const issueText = issueCount > 0 ? ` • ${issueCount} issue${issueCount > 1 ? 's' : ''}` : '';
             const statusText = member.activityContext ? ` • ${member.activityContext.shortLabel}` : '';
             
@@ -151,8 +231,9 @@ export class TeamTreeProvider implements vscode.TreeDataProvider<SquadTreeItem> 
         }));
     }
 
-    private async getTaskItems(memberId: string): Promise<SquadTreeItem[]> {
-        const tasks = await this.dataProvider.getTasksForMember(memberId);
+    private async getTaskItems(memberId: string, provider?: SquadDataProvider): Promise<SquadTreeItem[]> {
+        const dp = provider ?? this.dataProvider;
+        const tasks = await dp.getTasksForMember(memberId);
 
         return tasks.map(task => {
             const item = new SquadTreeItem(
@@ -183,13 +264,14 @@ export class TeamTreeProvider implements vscode.TreeDataProvider<SquadTreeItem> 
         });
     }
 
-    private async getIssueItems(memberId: string, excludeIssueIds?: Set<string>): Promise<SquadTreeItem[]> {
+    private async getIssueItems(memberId: string, excludeIssueIds?: Set<string>, provider?: SquadDataProvider): Promise<SquadTreeItem[]> {
         if (!this.issuesService) {
             return [];
         }
 
         try {
-            const workspaceRoot = this.dataProvider.getWorkspaceRoot();
+            const dp = provider ?? this.dataProvider;
+            const workspaceRoot = dp.getWorkspaceRoot();
             const issueMap = await this.issuesService.getIssuesByMember(workspaceRoot);
             const allIssues = issueMap.get(memberId.toLowerCase()) ?? [];
             const issues = excludeIssueIds?.size
@@ -231,13 +313,14 @@ export class TeamTreeProvider implements vscode.TreeDataProvider<SquadTreeItem> 
         }
     }
 
-    private async getClosedIssueItems(memberId: string, excludeIssueIds?: Set<string>): Promise<SquadTreeItem[]> {
+    private async getClosedIssueItems(memberId: string, excludeIssueIds?: Set<string>, provider?: SquadDataProvider): Promise<SquadTreeItem[]> {
         if (!this.issuesService) {
             return [];
         }
 
         try {
-            const workspaceRoot = this.dataProvider.getWorkspaceRoot();
+            const dp = provider ?? this.dataProvider;
+            const workspaceRoot = dp.getWorkspaceRoot();
             const issueMap = await this.issuesService.getClosedIssuesByMember(workspaceRoot);
             const allIssues = issueMap.get(memberId.toLowerCase()) ?? [];
             const issues = excludeIssueIds?.size
@@ -320,13 +403,14 @@ export class TeamTreeProvider implements vscode.TreeDataProvider<SquadTreeItem> 
     /**
      * Counts open issues assigned to a member.
      */
-    private async getIssueCount(memberId: string): Promise<number> {
+    private async getIssueCount(memberId: string, provider?: SquadDataProvider): Promise<number> {
         if (!this.issuesService) {
             return 0;
         }
 
         try {
-            const workspaceRoot = this.dataProvider.getWorkspaceRoot();
+            const dp = provider ?? this.dataProvider;
+            const workspaceRoot = dp.getWorkspaceRoot();
             const issueMap = await this.issuesService.getIssuesByMember(workspaceRoot);
             const issues = issueMap.get(memberId.toLowerCase()) ?? [];
             return issues.length;
@@ -338,8 +422,9 @@ export class TeamTreeProvider implements vscode.TreeDataProvider<SquadTreeItem> 
     /**
      * Gets recent log entries where the given member was a participant.
      */
-    private async getMemberLogEntries(memberId: string): Promise<SquadTreeItem[]> {
-        const workspaceRoot = this.dataProvider.getWorkspaceRoot();
+    private async getMemberLogEntries(memberId: string, provider?: SquadDataProvider): Promise<SquadTreeItem[]> {
+        const dp = provider ?? this.dataProvider;
+        const workspaceRoot = dp.getWorkspaceRoot();
         try {
             const entries = await this.orchestrationLogService.parseAllLogs(workspaceRoot);
             // Filter to entries where this member participated, take most recent 5
@@ -449,14 +534,34 @@ export class SkillsTreeProvider implements vscode.TreeDataProvider<SquadTreeItem
 /**
  * Provides tree data for the Decisions view.
  * Shows parsed decisions from .ai-team/decisions.md.
+ * In multi-workspace mode, groups decisions under workspace nodes.
  */
 export class DecisionsTreeProvider implements vscode.TreeDataProvider<SquadTreeItem> {
     private _onDidChangeTreeData = new vscode.EventEmitter<SquadTreeItem | undefined | null | void>();
     readonly onDidChangeTreeData = this._onDidChangeTreeData.event;
     private decisionService: DecisionService;
+    private additionalServices: Map<string, { service: DecisionService; provider: SquadDataProvider }> = new Map();
+    private workspaces: WorkspaceInfo[] = [];
 
     constructor(private dataProvider: SquadDataProvider, squadFolder: '.squad' | '.ai-team' = '.ai-team') {
         this.decisionService = new DecisionService(squadFolder);
+    }
+
+    /**
+     * Configures multi-workspace support for the decisions view.
+     */
+    setWorkspaces(workspaces: WorkspaceInfo[], providers: Map<string, SquadDataProvider>): void {
+        this.workspaces = workspaces;
+        this.additionalServices.clear();
+        for (const ws of workspaces) {
+            const provider = providers.get(ws.rootPath);
+            if (provider && ws.rootPath !== this.dataProvider.getWorkspaceRoot()) {
+                this.additionalServices.set(ws.rootPath, {
+                    service: new DecisionService(ws.squadFolder),
+                    provider,
+                });
+            }
+        }
     }
 
     refresh(): void {
@@ -469,16 +574,48 @@ export class DecisionsTreeProvider implements vscode.TreeDataProvider<SquadTreeI
 
     async getChildren(element?: SquadTreeItem): Promise<SquadTreeItem[]> {
         if (!element) {
-            return this.getDecisionItems();
+            if (this.workspaces.length > 1) {
+                return this.getWorkspaceNodes();
+            }
+            return this.getDecisionItems(this.dataProvider, this.decisionService);
+        }
+        if (element.itemType === 'workspace' && element.workspaceRootPath) {
+            const entry = this.additionalServices.get(element.workspaceRootPath);
+            if (entry) {
+                return this.getDecisionItems(entry.provider, entry.service);
+            }
+            if (element.workspaceRootPath === this.dataProvider.getWorkspaceRoot()) {
+                return this.getDecisionItems(this.dataProvider, this.decisionService);
+            }
         }
         return [];
     }
 
-    private getDecisionItems(): SquadTreeItem[] {
-        const workspaceRoot = this.dataProvider.getWorkspaceRoot();
+    private getWorkspaceNodes(): SquadTreeItem[] {
+        return this.workspaces
+            .filter(ws => ws.hasTeam)
+            .map(ws => {
+                const item = new SquadTreeItem(
+                    ws.name,
+                    vscode.TreeItemCollapsibleState.Expanded,
+                    'workspace',
+                    undefined,
+                    undefined,
+                    undefined,
+                    ws.rootPath
+                );
+                item.iconPath = new vscode.ThemeIcon('folder');
+                item.description = ws.squadFolder;
+                item.contextValue = 'workspace';
+                return item;
+            });
+    }
+
+    private getDecisionItems(provider: SquadDataProvider, service: DecisionService): SquadTreeItem[] {
+        const workspaceRoot = provider.getWorkspaceRoot();
         let decisions: DecisionEntry[];
         try {
-            decisions = this.decisionService.getDecisions(workspaceRoot);
+            decisions = service.getDecisions(workspaceRoot);
         } catch {
             return [];
         }

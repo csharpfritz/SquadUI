@@ -1,16 +1,28 @@
 /**
  * HTML template for the Squad Dashboard webview.
  * Includes tab navigation and visualization containers.
+ * Supports multi-workspace scenarios with a workspace selector dropdown.
  */
 
 import { DashboardData } from '../../models';
+import { WorkspaceInfo } from '../../services/WorkspaceScanner';
 
-export function getDashboardHtml(data: DashboardData): string {
+/**
+ * Context for multi-workspace rendering.
+ * Only provided when multiple squad-enabled workspaces are detected.
+ */
+export interface WorkspaceContext {
+    workspaces: WorkspaceInfo[];
+    selectedIndex: number;
+}
+
+export function getDashboardHtml(data: DashboardData, workspaceContext?: WorkspaceContext): string {
     const teamDataJson = JSON.stringify(data.team);
     const burndownDataJson = JSON.stringify(data.burndown);
     const velocityDataJson = JSON.stringify(data.velocity);
     const activityDataJson = JSON.stringify(data.activity);
     const decisionDataJson = JSON.stringify(data.decisions);
+    const workspaceDataJson = JSON.stringify(workspaceContext ?? null);
 
     return /* html */ `
 <!DOCTYPE html>
@@ -69,6 +81,44 @@ export function getDashboardHtml(data: DashboardData): string {
         }
         .tab.standup-btn:hover {
             opacity: 0.9;
+        }
+
+        /* Workspace Selector (multi-workspace mode) */
+        .workspace-selector-bar {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 16px;
+            background-color: var(--vscode-editorWidget-background, var(--vscode-sideBar-background));
+            border-bottom: 1px solid var(--vscode-panel-border);
+            font-size: 12px;
+        }
+        .workspace-selector-bar label {
+            color: var(--vscode-descriptionForeground);
+            white-space: nowrap;
+        }
+        .workspace-selector-bar select {
+            background-color: var(--vscode-dropdown-background);
+            color: var(--vscode-dropdown-foreground);
+            border: 1px solid var(--vscode-dropdown-border);
+            border-radius: 3px;
+            padding: 4px 8px;
+            font-size: 12px;
+            font-family: var(--vscode-font);
+            cursor: pointer;
+            min-width: 180px;
+        }
+        .workspace-selector-bar select:focus {
+            outline: 1px solid var(--vscode-focusBorder);
+        }
+        .workspace-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 10px;
+            background-color: var(--vscode-badge-background);
+            color: var(--vscode-badge-foreground);
+            font-size: 11px;
+            font-weight: 500;
         }
 
         /* Tab Content */
@@ -472,6 +522,18 @@ export function getDashboardHtml(data: DashboardData): string {
     </style>
 </head>
 <body>
+    ${workspaceContext ? `
+    <!-- Workspace Selector (multi-workspace mode) -->
+    <div class="workspace-selector-bar">
+        <label for="workspace-select">📂 Workspace:</label>
+        <select id="workspace-select">
+            ${workspaceContext.workspaces.map((ws, i) =>
+                `<option value="${i}" ${i === workspaceContext.selectedIndex ? 'selected' : ''}>${ws.name}</option>`
+            ).join('')}
+        </select>
+        <span class="workspace-badge">${workspaceContext.workspaces.length} workspaces</span>
+    </div>
+    ` : ''}
     <!-- Tab Navigation -->
     <div class="tabs">
         <button class="tab active" data-tab="team">Team</button>
@@ -484,7 +546,7 @@ export function getDashboardHtml(data: DashboardData): string {
 
     <!-- Team Tab -->
     <div class="tab-content active" id="team-tab">
-        <h2>Team Overview</h2>
+        <h2>Team Overview${workspaceContext ? ` — <span id="workspace-name-label" style="color: var(--vscode-textLink-foreground);">${workspaceContext.workspaces[workspaceContext.selectedIndex]?.name ?? ''}</span>` : ''}</h2>
         <p>Your squad at a glance — members, workload, and activity.</p>
         <div class="team-summary" id="team-summary"></div>
         <div class="member-cards" id="member-cards"></div>
@@ -554,6 +616,18 @@ export function getDashboardHtml(data: DashboardData): string {
         const velocityData = ${velocityDataJson};
         const activityData = ${activityDataJson};
         const decisionData = ${decisionDataJson};
+        const workspaceData = ${workspaceDataJson};
+
+        // Workspace selector (multi-workspace mode)
+        const workspaceSelect = document.getElementById('workspace-select');
+        if (workspaceSelect) {
+            workspaceSelect.addEventListener('change', (e) => {
+                vscode.postMessage({
+                    command: 'switchWorkspace',
+                    index: parseInt(e.target.value, 10)
+                });
+            });
+        }
 
         // Tab switching
         document.querySelectorAll('.tab').forEach(tab => {

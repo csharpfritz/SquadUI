@@ -2,7 +2,8 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs';
 import { GitHubIssue } from './models';
-import { SquadDataProvider, FileWatcherService, GitHubIssuesService, SquadVersionService, HealthCheckService } from './services';
+import { SquadDataProvider, FileWatcherService, GitHubIssuesService, SquadVersionService, HealthCheckService, WorkspaceScanner } from './services';
+import { WorkspaceInfo } from './services/WorkspaceScanner';
 import { TeamTreeProvider, SkillsTreeProvider, DecisionsTreeProvider, WorkDetailsWebview, IssueDetailWebview, SquadStatusBar, SquadDashboardWebview, StandupReportWebview } from './views';
 import { registerInitSquadCommand, registerUpgradeSquadCommand, registerAddMemberCommand, registerRemoveMemberCommand, registerAddSkillCommand } from './commands';
 import { detectSquadFolder, hasSquadTeam } from './utils/squadFolderDetection';
@@ -88,6 +89,48 @@ export function activate(context: vscode.ExtensionContext): void {
     dashboardWebview = new SquadDashboardWebview(context.extensionUri, dataProvider);
     dashboardWebview.setIssuesService(issuesService);
     context.subscriptions.push({ dispose: () => dashboardWebview?.dispose() });
+
+    // ─── Multi-workspace detection ─────────────────────────────────────
+    const workspaceScanner = new WorkspaceScanner();
+    const workspaceProviders = new Map<string, SquadDataProvider>();
+    workspaceProviders.set(workspaceRoot, dataProvider);
+
+    function detectMultiWorkspace(): void {
+        const allFolders = (vscode.workspace.workspaceFolders ?? []).map(f => f.uri.fsPath);
+        const detectedWorkspaces = workspaceScanner.scanWorkspaces(allFolders);
+
+        // Create data providers for additional workspaces
+        for (const ws of detectedWorkspaces) {
+            if (!workspaceProviders.has(ws.rootPath)) {
+                workspaceProviders.set(ws.rootPath, new SquadDataProvider(ws.rootPath, ws.squadFolder));
+            }
+        }
+
+        // Wire multi-workspace into tree providers and dashboard
+        if (workspaceScanner.isMultiWorkspace(detectedWorkspaces)) {
+            teamProvider.setWorkspaces(detectedWorkspaces, workspaceProviders);
+            decisionsProvider.setWorkspaces(detectedWorkspaces, workspaceProviders);
+            dashboardWebview?.setWorkspaces(detectedWorkspaces);
+            dashboardWebview?.onDidChangeWorkspace((ws: WorkspaceInfo) => {
+                const provider = workspaceProviders.get(ws.rootPath);
+                if (provider) {
+                    dashboardWebview?.setDataProvider(provider);
+                }
+            });
+        }
+    }
+
+    // Run initial detection
+    detectMultiWorkspace();
+
+    // Re-scan when workspace folders change (user adds/removes folders)
+    context.subscriptions.push(
+        vscode.workspace.onDidChangeWorkspaceFolders(() => {
+            detectMultiWorkspace();
+            teamProvider.refresh();
+            decisionsProvider.refresh();
+        })
+    );
 
     const teamView = vscode.window.createTreeView('squadTeam', {
         treeDataProvider: teamProvider,

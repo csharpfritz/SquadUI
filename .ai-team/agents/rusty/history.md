@@ -72,3 +72,13 @@ The SquadUI extension emerged from initial scaffolding through a rapid sequence 
 
 📌 Team update (2026-03-27): Dashboard Member Drill-down shipped (PR #87) — inline card expansion pattern with per-member metrics: completed tasks, blockers, topic frequency (skill proxy), recent activity. Data pre-computed in team JSON (no webview async). Backward-compatible optional drilldown field. — decided by Rusty
 
+### Multi-Workspace Dashboard (2026-03-27, Issue #78)
+- **What:** Added multi-workspace support for organizations running multiple Squad teams across different repos.
+- **Architecture:** New `WorkspaceScanner` service detects squad-enabled folders via `vscode.workspace.workspaceFolders`. Per-workspace `SquadDataProvider` instances created for each detected workspace.
+- **Dashboard:** Workspace selector dropdown rendered above tab navigation when multiple workspaces detected. Switching workspaces reloads all dashboard data from the selected workspace's `.ai-team/` or `.squad/` folder. Workspace name shown in Team Overview heading.
+- **Tree views:** `TeamTreeProvider` and `DecisionsTreeProvider` show workspace grouping nodes (folder icon, expanded by default) when multiple workspaces detected. Single workspace = no visual change (backward compatible).
+- **Extension wiring:** `onDidChangeWorkspaceFolders` listener re-scans for workspaces when folders are added/removed. Data providers keyed by `rootPath` in a Map for O(1) lookup.
+- **Design decision:** Started with workspace selector (as issue suggested) — not full aggregation. Each workspace is independent; no merged-view aggregation yet.
+- **Key files:** `src/services/WorkspaceScanner.ts` (new), `src/views/SquadDashboardWebview.ts`, `src/views/dashboard/htmlTemplate.ts`, `src/views/SquadTreeProvider.ts`, `src/extension.ts`.
+- **Tests:** 9 new `WorkspaceScanner` tests (scan, multi-detect, skip non-squad). 1155 tests passing total (up from 1146).
+📌 Team update (2026-03-27): Multi-workspace dashboard shipped — workspace selector dropdown, tree view grouping, per-workspace data providers. Single workspace unchanged. — decided by Rusty

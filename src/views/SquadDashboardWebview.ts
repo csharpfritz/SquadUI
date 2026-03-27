@@ -1,6 +1,7 @@
 /**
  * Webview panel for the Squad Dashboard.
  * Hosts three tabs: Velocity, Activity Timeline, and Decision Browser.
+ * Supports multi-workspace scenarios with a workspace selector dropdown.
  */
 
 import * as vscode from 'vscode';
@@ -10,15 +11,19 @@ import { DashboardData, IGitHubIssuesService, MilestoneBurndown } from '../model
 import { DashboardDataBuilder } from './dashboard/DashboardDataBuilder';
 import { getDashboardHtml } from './dashboard/htmlTemplate';
 import { SquadDataProvider } from '../services';
+import { WorkspaceInfo } from '../services/WorkspaceScanner';
 
 export class SquadDashboardWebview {
     public static readonly viewType = 'squadui.dashboard';
 
     private panel: vscode.WebviewPanel | undefined;
     private readonly extensionUri: vscode.Uri;
-    private readonly dataProvider: SquadDataProvider;
+    private dataProvider: SquadDataProvider;
     private readonly dataBuilder: DashboardDataBuilder;
     private issuesService: IGitHubIssuesService | undefined;
+    private workspaces: WorkspaceInfo[] = [];
+    private selectedWorkspaceIndex: number = 0;
+    private onWorkspaceChanged: ((workspace: WorkspaceInfo) => void) | undefined;
 
     constructor(extensionUri: vscode.Uri, dataProvider: SquadDataProvider) {
         this.extensionUri = extensionUri;
@@ -28,6 +33,28 @@ export class SquadDashboardWebview {
 
     setIssuesService(service: IGitHubIssuesService): void {
         this.issuesService = service;
+    }
+
+    /**
+     * Sets the available workspaces for multi-workspace support.
+     * When multiple workspaces exist, the dashboard shows a workspace selector.
+     */
+    setWorkspaces(workspaces: WorkspaceInfo[]): void {
+        this.workspaces = workspaces;
+    }
+
+    /**
+     * Registers a callback invoked when the user selects a different workspace.
+     */
+    onDidChangeWorkspace(callback: (workspace: WorkspaceInfo) => void): void {
+        this.onWorkspaceChanged = callback;
+    }
+
+    /**
+     * Updates the data provider (used when switching workspaces).
+     */
+    setDataProvider(provider: SquadDataProvider): void {
+        this.dataProvider = provider;
     }
 
     /**
@@ -88,6 +115,9 @@ export class SquadDashboardWebview {
                 case 'openStandup':
                     await vscode.commands.executeCommand('squadui.generateStandup');
                     break;
+                case 'switchWorkspace':
+                    await this.handleSwitchWorkspace(message.index);
+                    break;
             }
         }, undefined, []);
 
@@ -141,8 +171,11 @@ export class SquadDashboardWebview {
                 velocityTasks
             );
 
-            // Render HTML
-            this.panel.webview.html = getDashboardHtml(dashboardData);
+            // Render HTML with workspace context
+            const workspaceContext = this.workspaces.length > 1
+                ? { workspaces: this.workspaces, selectedIndex: this.selectedWorkspaceIndex }
+                : undefined;
+            this.panel.webview.html = getDashboardHtml(dashboardData, workspaceContext);
         } catch (error) {
             const errorMessage = error instanceof Error ? error.message : 'Unknown error';
             if (this.panel) {
@@ -170,6 +203,21 @@ export class SquadDashboardWebview {
         } catch {
             return [];
         }
+    }
+
+    /**
+     * Handles workspace switching from the dashboard dropdown.
+     */
+    private async handleSwitchWorkspace(index: number): Promise<void> {
+        if (index < 0 || index >= this.workspaces.length) {
+            return;
+        }
+        this.selectedWorkspaceIndex = index;
+        const workspace = this.workspaces[index];
+        if (this.onWorkspaceChanged) {
+            this.onWorkspaceChanged(workspace);
+        }
+        await this.updateContent();
     }
 
     private async handleOpenLogEntry(date: string, topic: string): Promise<void> {
