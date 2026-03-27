@@ -38,3 +38,4 @@ export {
     HealthCheckService,
     type HealthCheckResult
 } from './HealthCheckService';
+export { SkillUsageService } from './SkillUsageService';

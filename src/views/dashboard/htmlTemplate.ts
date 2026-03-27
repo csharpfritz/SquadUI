@@ -11,6 +11,7 @@ export function getDashboardHtml(data: DashboardData): string {
     const velocityDataJson = JSON.stringify(data.velocity);
     const activityDataJson = JSON.stringify(data.activity);
     const decisionDataJson = JSON.stringify(data.decisions);
+    const skillsDataJson = JSON.stringify(data.skills ?? { metrics: [], unusedSkills: [], totalLogsScanned: 0 });
 
     return /* html */ `
 <!DOCTYPE html>
@@ -415,6 +416,126 @@ export function getDashboardHtml(data: DashboardData): string {
             gap: 4px;
         }
 
+        /* Member Drill-down Panel */
+        .member-card.expanded {
+            grid-column: 1 / -1;
+        }
+        .member-card .drilldown-toggle {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-top: 8px;
+            padding: 4px;
+            cursor: pointer;
+            color: var(--vscode-descriptionForeground);
+            font-size: 0.8em;
+            transition: color 0.2s;
+        }
+        .member-card .drilldown-toggle:hover {
+            color: var(--vscode-textLink-foreground);
+        }
+        .member-drilldown {
+            display: none;
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid var(--vscode-panel-border);
+        }
+        .member-card.expanded .member-drilldown {
+            display: block;
+        }
+        .drilldown-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+        .drilldown-section {
+            background-color: var(--vscode-sideBar-background);
+            border: 1px solid var(--vscode-panel-border);
+            border-radius: 4px;
+            padding: 12px;
+        }
+        .drilldown-section h4 {
+            margin: 0 0 8px 0;
+            font-size: 0.9em;
+            font-weight: 600;
+        }
+        .drilldown-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            max-height: 180px;
+            overflow-y: auto;
+        }
+        .drilldown-list li {
+            padding: 4px 0;
+            font-size: 0.85em;
+            border-bottom: 1px solid var(--vscode-panel-border);
+        }
+        .drilldown-list li:last-child {
+            border-bottom: none;
+        }
+        .drilldown-empty {
+            color: var(--vscode-descriptionForeground);
+            font-style: italic;
+            font-size: 0.85em;
+        }
+        .skill-bar-mini {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 4px;
+            font-size: 0.85em;
+        }
+        .skill-bar-mini .bar {
+            flex: 1;
+            height: 6px;
+            background-color: var(--vscode-panel-border);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+        .skill-bar-mini .bar-fill {
+            height: 100%;
+            background-color: var(--vscode-progressBar-background);
+            border-radius: 3px;
+        }
+        .skill-bar-mini .bar-label {
+            min-width: 80px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .skill-bar-mini .bar-count {
+            min-width: 20px;
+            text-align: right;
+            color: var(--vscode-descriptionForeground);
+        }
+        .activity-entry {
+            display: flex;
+            gap: 8px;
+            font-size: 0.85em;
+            padding: 4px 0;
+            border-bottom: 1px solid var(--vscode-panel-border);
+        }
+        .activity-entry:last-child {
+            border-bottom: none;
+        }
+        .activity-date {
+            color: var(--vscode-descriptionForeground);
+            white-space: nowrap;
+            min-width: 80px;
+        }
+        .activity-topic {
+            font-weight: 500;
+        }
+        .blocker-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .blocker-icon {
+            color: var(--vscode-charts-red, #f44747);
+        }
+
         /* Burndown Tab */
         .burndown-container {
             display: flex;
@@ -469,6 +590,24 @@ export function getDashboardHtml(data: DashboardData): string {
             text-align: center;
             padding: 40px;
         }
+
+        /* Skills Tab */
+        .skills-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+        @media (max-width: 700px) { .skills-grid { grid-template-columns: 1fr; } }
+        .skill-bar-container { margin-bottom: 10px; }
+        .skill-bar-label { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; font-size: 0.9em; }
+        .skill-bar-name { font-weight: 600; }
+        .skill-bar-count { color: var(--vscode-descriptionForeground); font-size: 0.85em; }
+        .skill-bar-track { height: 20px; background-color: var(--vscode-input-background); border-radius: 4px; overflow: hidden; }
+        .skill-bar-fill { height: 100%; background-color: var(--vscode-charts-blue, #3794ff); border-radius: 4px; transition: width 0.4s ease; min-width: 2px; }
+        .skill-bar-fill.unused { background-color: var(--vscode-charts-red, #f44747); min-width: 0; }
+        .unused-skill-list { list-style: none; padding: 0; margin: 8px 0 0 0; }
+        .unused-skill-list li { padding: 8px 12px; margin-bottom: 4px; border-radius: 4px; background-color: var(--vscode-input-background); border-left: 3px solid var(--vscode-charts-orange, #d18616); font-size: 0.9em; }
+        .skills-empty { color: var(--vscode-descriptionForeground); font-style: italic; text-align: center; padding: 40px; }
+        .skills-summary { display: flex; gap: 24px; margin-bottom: 20px; }
+        .skills-stat { background-color: var(--vscode-editor-background); border: 1px solid var(--vscode-panel-border); border-radius: 4px; padding: 12px 20px; text-align: center; }
+        .skills-stat .value { font-size: 1.6em; font-weight: 700; display: block; }
+        .skills-stat .label { font-size: 0.8em; color: var(--vscode-descriptionForeground); }
     </style>
 </head>
 <body>
@@ -479,6 +618,7 @@ export function getDashboardHtml(data: DashboardData): string {
         <button class="tab" data-tab="velocity">Velocity</button>
         <button class="tab" data-tab="activity">Activity</button>
         <button class="tab" data-tab="decisions">Decisions</button>
+        <button class="tab" data-tab="skills">Skills</button>
         <button class="tab standup-btn" id="open-standup-btn" title="Generate Standup Report">📊 Standup</button>
     </div>
 
@@ -544,6 +684,28 @@ export function getDashboardHtml(data: DashboardData): string {
         <div id="decision-list" class="decision-list"></div>
     </div>
 
+    <!-- Skills Tab -->
+    <div class="tab-content" id="skills-tab">
+        <h2>Skill Usage</h2>
+        <p>Track which skills are referenced in orchestration logs and identify gaps.</p>
+        <div class="skills-summary" id="skills-summary"></div>
+        <div class="skills-grid">
+            <div class="chart-container">
+                <div class="chart-title">Skill Reference Frequency</div>
+                <div id="skill-bars"></div>
+            </div>
+            <div class="chart-container">
+                <div class="chart-title">Skill Usage Trend</div>
+                <canvas id="skill-trend-chart"></canvas>
+            </div>
+        </div>
+        <div class="chart-container" style="margin-top: 24px;" id="unused-skills-section">
+            <div class="chart-title">⚠️ Unused Skills</div>
+            <p style="margin: 0 0 8px 0; color: var(--vscode-descriptionForeground); font-size: 0.85em;">Installed skills with zero references in orchestration logs.</p>
+            <ul class="unused-skill-list" id="unused-skill-list"></ul>
+        </div>
+    </div>
+
     <script>
         // VS Code webview API
         const vscode = acquireVsCodeApi();
@@ -554,6 +716,7 @@ export function getDashboardHtml(data: DashboardData): string {
         const velocityData = ${velocityDataJson};
         const activityData = ${activityDataJson};
         const decisionData = ${decisionDataJson};
+        const skillsData = ${skillsDataJson};
 
         // Tab switching
         document.querySelectorAll('.tab').forEach(tab => {
@@ -574,6 +737,8 @@ export function getDashboardHtml(data: DashboardData): string {
                     requestAnimationFrame(() => renderBurndownChart());
                 } else if (targetTab === 'velocity') {
                     requestAnimationFrame(() => renderVelocityChart());
+                } else if (targetTab === 'skills') {
+                    requestAnimationFrame(() => renderSkillTrendChart());
                 }
             });
         });
@@ -622,7 +787,7 @@ export function getDashboardHtml(data: DashboardData): string {
                 return;
             }
 
-            cardsEl.innerHTML = members.map(m => {
+            cardsEl.innerHTML = members.map((m, idx) => {
                 const icon = m.iconType === 'scribe' ? '✏️'
                     : m.iconType === 'ralph' ? '👁️'
                     : m.iconType === 'copilot' ? '🤖'
@@ -633,8 +798,10 @@ export function getDashboardHtml(data: DashboardData): string {
                     ? \`<div class="member-card-status active" title="\${escapeHtml(m.activityContext.description)}">\${escapeHtml(m.activityContext.shortLabel)}</div>\`
                     : \`<div class="member-card-status idle">—</div>\`;
 
+                const dd = m.drilldown;
+
                 return \`
-                    <div class="member-card">
+                    <div class="member-card" id="member-card-\${idx}">
                         <div class="member-card-header">
                             <div class="member-avatar">\${icon}</div>
                             <div>
@@ -649,9 +816,70 @@ export function getDashboardHtml(data: DashboardData): string {
                             <span class="member-stat">🔄 \${m.activeTaskCount} in progress</span>
                             <span class="member-stat">📊 \${m.recentActivityCount} sessions</span>
                         </div>
+                        <div class="drilldown-toggle" data-action="toggle-drilldown" data-card-id="member-card-\${idx}">
+                            ▼ Details
+                        </div>
+                        \${dd ? renderDrilldown(dd) : ''}
                     </div>
                 \`;
             }).join('');
+        }
+
+        function renderDrilldown(dd) {
+            const completedHtml = dd.completedTasks.length > 0
+                ? \`<ul class="drilldown-list">\${dd.completedTasks.map(t =>
+                    \`<li>✅ <strong>\${escapeHtml(t.id)}</strong> \${escapeHtml(t.title)}\${t.completedDate ? \` <span style="color:var(--vscode-descriptionForeground);">(\${escapeHtml(t.completedDate.substring(0, 10))})</span>\` : ''}</li>\`
+                ).join('')}</ul>\`
+                : '<div class="drilldown-empty">No completed tasks yet</div>';
+
+            const blockersHtml = dd.blockers.length > 0
+                ? \`<ul class="drilldown-list">\${dd.blockers.map(b =>
+                    \`<li class="blocker-item"><span class="blocker-icon">🚫</span> <strong>\${escapeHtml(b.id)}</strong> \${escapeHtml(b.title)}</li>\`
+                ).join('')}</ul>\`
+                : '<div class="drilldown-empty">No blockers — all clear! 🎉</div>';
+
+            const maxSkillCount = dd.skillUsage.length > 0 ? dd.skillUsage[0].count : 1;
+            const skillsHtml = dd.skillUsage.length > 0
+                ? dd.skillUsage.map(s =>
+                    \`<div class="skill-bar-mini">
+                        <span class="bar-label">\${escapeHtml(s.name)}</span>
+                        <div class="bar"><div class="bar-fill" style="width: \${Math.round((s.count / maxSkillCount) * 100)}%"></div></div>
+                        <span class="bar-count">\${s.count}</span>
+                    </div>\`
+                ).join('')
+                : '<div class="drilldown-empty">No skill data available</div>';
+
+            const activityHtml = dd.recentActivity.length > 0
+                ? dd.recentActivity.map(a =>
+                    \`<div class="activity-entry">
+                        <span class="activity-date">\${escapeHtml(a.date)}</span>
+                        <span class="activity-topic">\${escapeHtml(a.topic)}</span>
+                    </div>\`
+                ).join('')
+                : '<div class="drilldown-empty">No recent activity</div>';
+
+            return \`
+                <div class="member-drilldown">
+                    <div class="drilldown-grid">
+                        <div class="drilldown-section">
+                            <h4>✅ Completed Tasks (\${dd.completedTasks.length})</h4>
+                            \${completedHtml}
+                        </div>
+                        <div class="drilldown-section">
+                            <h4>🚫 Blockers (\${dd.blockers.length})</h4>
+                            \${blockersHtml}
+                        </div>
+                        <div class="drilldown-section">
+                            <h4>📈 Topic Frequency</h4>
+                            \${skillsHtml}
+                        </div>
+                        <div class="drilldown-section">
+                            <h4>📋 Recent Activity</h4>
+                            \${activityHtml}
+                        </div>
+                    </div>
+                </div>
+            \`;
         }
 
         // ─── Burndown Chart ─────────────────────────────────────────────
@@ -1198,6 +1426,139 @@ export function getDashboardHtml(data: DashboardData): string {
         // Initialize decisions after function is defined
         renderDecisions();
 
+        // ─── Skills Usage ──────────────────────────────────────────────
+
+        function renderSkillUsage() {
+            const summaryEl = document.getElementById('skills-summary');
+            const barsEl = document.getElementById('skill-bars');
+            const unusedEl = document.getElementById('unused-skill-list');
+            const unusedSection = document.getElementById('unused-skills-section');
+            const metrics = skillsData.metrics || [];
+            const unusedSkills = skillsData.unusedSkills || [];
+
+            if (metrics.length === 0) {
+                barsEl.innerHTML = '<div class="skills-empty">No skills found.<br><br>Install skills in <code>.ai-team/skills/</code> to track usage.</div>';
+                summaryEl.innerHTML = '';
+                unusedSection.style.display = 'none';
+                return;
+            }
+
+            const usedSkills = metrics.filter(m => m.totalReferences > 0);
+            const totalRefs = metrics.reduce((sum, m) => sum + m.totalReferences, 0);
+
+            summaryEl.innerHTML = \`
+                <div class="skills-stat"><span class="value">\${metrics.length}</span><span class="label">Total Skills</span></div>
+                <div class="skills-stat"><span class="value">\${usedSkills.length}</span><span class="label">Active Skills</span></div>
+                <div class="skills-stat"><span class="value">\${unusedSkills.length}</span><span class="label">Unused Skills</span></div>
+                <div class="skills-stat"><span class="value">\${totalRefs}</span><span class="label">Total References</span></div>
+                <div class="skills-stat"><span class="value">\${skillsData.totalLogsScanned}</span><span class="label">Logs Scanned</span></div>
+            \`;
+
+            const maxRefs = Math.max(...metrics.map(m => m.totalReferences), 1);
+            barsEl.innerHTML = metrics.map(m => {
+                const pct = (m.totalReferences / maxRefs) * 100;
+                const isUnused = m.totalReferences === 0;
+                const lastUsedStr = m.lastUsed ? \` · Last: \${m.lastUsed}\` : '';
+                const installedTag = m.isInstalled ? '' : ' <span style="opacity:0.6">(not installed)</span>';
+                return \`<div class="skill-bar-container"><div class="skill-bar-label"><span class="skill-bar-name">\${escapeHtml(m.skillName)}\${installedTag}</span><span class="skill-bar-count">\${m.totalReferences} ref\${m.totalReferences !== 1 ? 's' : ''}\${lastUsedStr}</span></div><div class="skill-bar-track"><div class="skill-bar-fill\${isUnused ? ' unused' : ''}" style="width: \${isUnused ? 0 : Math.max(pct, 2)}%"></div></div></div>\`;
+            }).join('');
+
+            if (unusedSkills.length === 0) {
+                unusedSection.style.display = 'none';
+            } else {
+                unusedSection.style.display = 'block';
+                unusedEl.innerHTML = unusedSkills.map(name => \`<li>📦 \${escapeHtml(name)}</li>\`).join('');
+            }
+        }
+
+        function renderSkillTrendChart() {
+            const canvas = document.getElementById('skill-trend-chart');
+            if (!canvas || canvas.offsetWidth === 0) return;
+            const ctx = canvas.getContext('2d');
+            const metrics = (skillsData.metrics || []).filter(m => m.totalReferences > 0);
+            const lineColors = ['#3794ff', '#89d185', '#d18616', '#c586c0', '#4ec9b0', '#ce9178', '#569cd6', '#dcdcaa'];
+            const axisColor = resolveColor('--vscode-panel-border', '#444');
+            const labelColor = resolveColor('--vscode-foreground', '#ccc');
+            const mutedColor = resolveColor('--vscode-descriptionForeground', '#999');
+
+            canvas.width = canvas.offsetWidth;
+            canvas.height = 250;
+
+            if (metrics.length === 0) {
+                ctx.fillStyle = mutedColor;
+                ctx.font = '14px sans-serif';
+                ctx.fillText('No skill usage data to chart.', 20, 100);
+                return;
+            }
+
+            const allDatesSet = new Set();
+            for (const m of metrics) { for (const pt of m.trend) { allDatesSet.add(pt.date); } }
+            const allDates = Array.from(allDatesSet).sort();
+            if (allDates.length === 0) { ctx.fillStyle = mutedColor; ctx.font = '14px sans-serif'; ctx.fillText('No trend data available.', 20, 100); return; }
+
+            const topSkills = metrics.slice(0, 8);
+            const series = topSkills.map(m => {
+                const dateMap = new Map();
+                for (const pt of m.trend) { dateMap.set(pt.date, pt.count); }
+                return allDates.map(d => dateMap.get(d) || 0);
+            });
+            const maxVal = Math.max(...series.flat(), 1);
+
+            const paddingLeft = 45, paddingRight = 20, paddingTop = 20, paddingBottom = 50;
+            const width = canvas.width - paddingLeft - paddingRight;
+            const height = canvas.height - paddingTop - paddingBottom;
+            const stepX = allDates.length > 1 ? width / (allDates.length - 1) : width;
+
+            ctx.strokeStyle = axisColor; ctx.lineWidth = 1; ctx.beginPath();
+            ctx.moveTo(paddingLeft, paddingTop); ctx.lineTo(paddingLeft, paddingTop + height);
+            ctx.lineTo(paddingLeft + width, paddingTop + height); ctx.stroke();
+
+            ctx.fillStyle = labelColor; ctx.font = '11px sans-serif'; ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+            [0, Math.round(maxVal / 2), maxVal].forEach(val => {
+                const y = paddingTop + height - (val / maxVal) * height;
+                ctx.fillText(String(val), paddingLeft - 8, y);
+            });
+
+            ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+            const labelCount = Math.min(6, allDates.length);
+            const labelStep = Math.max(1, Math.floor((allDates.length - 1) / (labelCount - 1)));
+            for (let i = 0; i < allDates.length; i += labelStep) {
+                const x = paddingLeft + i * stepX;
+                const parts = allDates[i].split('-');
+                ctx.fillText(parts[1] + '/' + parts[2], x, paddingTop + height + 8);
+            }
+
+            for (let s = 0; s < series.length; s++) {
+                ctx.strokeStyle = lineColors[s % lineColors.length]; ctx.lineWidth = 2; ctx.beginPath();
+                for (let i = 0; i < series[s].length; i++) {
+                    const x = paddingLeft + i * stepX;
+                    const y = paddingTop + height - (series[s][i] / maxVal) * height;
+                    if (i === 0) { ctx.moveTo(x, y); } else { ctx.lineTo(x, y); }
+                }
+                ctx.stroke();
+                ctx.fillStyle = lineColors[s % lineColors.length];
+                for (let i = 0; i < series[s].length; i++) {
+                    const x = paddingLeft + i * stepX;
+                    const y = paddingTop + height - (series[s][i] / maxVal) * height;
+                    ctx.beginPath(); ctx.arc(x, y, 3, 0, Math.PI * 2); ctx.fill();
+                }
+            }
+
+            ctx.font = '11px sans-serif'; ctx.textAlign = 'left';
+            let legendX = paddingLeft; const legendY = paddingTop + height + 30;
+            for (let s = 0; s < topSkills.length; s++) {
+                ctx.fillStyle = lineColors[s % lineColors.length];
+                ctx.fillRect(legendX, legendY, 10, 10);
+                ctx.fillStyle = labelColor;
+                const name = topSkills[s].skillName.length > 12 ? topSkills[s].skillName.substring(0, 11) + '…' : topSkills[s].skillName;
+                ctx.fillText(name, legendX + 14, legendY + 9);
+                legendX += ctx.measureText(name).width + 28;
+                if (legendX > canvas.width - 60) break;
+            }
+        }
+
+        renderSkillUsage();
+
         // Helper to escape HTML
         function escapeHtml(text) {
             return text
@@ -1247,6 +1608,15 @@ export function getDashboardHtml(data: DashboardData): string {
                         memberName: target.dataset.memberName
                     });
                     break;
+                case 'toggle-drilldown': {
+                    const cardId = target.dataset.cardId;
+                    const card = document.getElementById(cardId);
+                    if (card) {
+                        const isExpanded = card.classList.toggle('expanded');
+                        target.textContent = isExpanded ? '▲ Collapse' : '▼ Details';
+                    }
+                    break;
+                }
             }
         });
 

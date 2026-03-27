@@ -10,6 +10,7 @@ import { DashboardData, IGitHubIssuesService, MilestoneBurndown } from '../model
 import { DashboardDataBuilder } from './dashboard/DashboardDataBuilder';
 import { getDashboardHtml } from './dashboard/htmlTemplate';
 import { SquadDataProvider } from '../services';
+import { SkillUsageService } from '../services/SkillUsageService';
 
 export class SquadDashboardWebview {
     public static readonly viewType = 'squadui.dashboard';
@@ -18,12 +19,14 @@ export class SquadDashboardWebview {
     private readonly extensionUri: vscode.Uri;
     private readonly dataProvider: SquadDataProvider;
     private readonly dataBuilder: DashboardDataBuilder;
+    private readonly skillUsageService: SkillUsageService;
     private issuesService: IGitHubIssuesService | undefined;
 
     constructor(extensionUri: vscode.Uri, dataProvider: SquadDataProvider) {
         this.extensionUri = extensionUri;
         this.dataProvider = dataProvider;
         this.dataBuilder = new DashboardDataBuilder();
+        this.skillUsageService = new SkillUsageService();
     }
 
     setIssuesService(service: IGitHubIssuesService): void {
@@ -125,6 +128,15 @@ export class SquadDashboardWebview {
             // Build milestone burndown data
             const milestoneBurndowns = await this.buildBurndowns(workspaceRoot);
 
+            // Build skill usage metrics
+            let skillUsageData;
+            try {
+                const squadFolder = this.dataProvider.getSquadFolder();
+                skillUsageData = this.skillUsageService.buildSkillUsageData(
+                    workspaceRoot, squadFolder, logEntries
+                );
+            } catch { /* skill metrics optional */ }
+
             // Panel may have been closed during async data fetching
             if (!this.panel) { return; }
 
@@ -138,7 +150,8 @@ export class SquadDashboardWebview {
                 closedIssues,
                 milestoneBurndowns,
                 allClosedIssues,
-                velocityTasks
+                velocityTasks,
+                skillUsageData
             );
 
             // Render HTML

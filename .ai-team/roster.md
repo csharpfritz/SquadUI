@@ -1,6 +1,6 @@
 # Team Roster
 
-> VS Code extension for visualizing Squad team members and their tasks
+> {One-line project description}
 
 ## Coordinator
 
@@ -12,15 +12,12 @@
 
 | Name | Role | Charter | Status |
 |------|------|---------|--------|
-| Danny | Lead | `.ai-team/agents/danny/charter.md` | ✅ Active |
-| Rusty | Extension Dev | `.ai-team/agents/rusty/charter.md` | ✅ Active |
-| Linus | Backend Dev | `.ai-team/agents/linus/charter.md` | ✅ Active |
-| Basher | Tester | `.ai-team/agents/basher/charter.md` | ✅ Active |
-| Livingston | DevOps / CI | `.ai-team/agents/livingston/charter.md` | ✅ Active |
-| Virgil | VS Extension Dev (VS 2026) | `.ai-team/agents/virgil/charter.md` | ✅ Active |
-| Turk | VS Extension Dev (VS 2026 UI) | `.ai-team/agents/turk/charter.md` | ✅ Active |
-| Scribe | Session Logger | `.ai-team/agents/scribe/charter.md` | 📋 Silent |
-| Ralph | Work Monitor | `.ai-team/agents/ralph/charter.md` | 🔄 Monitor |
+| {Name} | {Role} | `.squad/agents/{name}/charter.md` | ✅ Active |
+| {Name} | {Role} | `.squad/agents/{name}/charter.md` | ✅ Active |
+| {Name} | {Role} | `.squad/agents/{name}/charter.md` | ✅ Active |
+| {Name} | {Role} | `.squad/agents/{name}/charter.md` | ✅ Active |
+| Scribe | Session Logger | `.squad/agents/scribe/charter.md` | 📋 Silent |
+| Ralph | Work Monitor | — | 🔄 Monitor |
 
 ## Coding Agent
 
@@ -55,18 +52,9 @@
 - Performance-critical paths requiring benchmarking
 - Changes requiring cross-team discussion
 
-## Issue Source
-
-| Field | Value |
-|-------|-------|
-| **Repository** | csharpfritz/SquadUI |
-| **Connected** | 2026-02-13 |
-| **Filters** | all open |
-
 ## Project Context
 
-- **Owner:** Jeffrey T. Fritz
-- **Stack:** TypeScript, VS Code Extension API, potentially GitHub Copilot integration
-- **Description:** VS Code extension to visualize Squad team members and their tasks, potentially integrated with GitHub Copilot
-- **Repository:** github.com/csharpfritz/SquadUI
-- **Created:** 2026-02-13
+- **Owner:** {user name}
+- **Stack:** {languages, frameworks, tools}
+- **Description:** {what the project does, in one sentence}
+- **Created:** {timestamp}

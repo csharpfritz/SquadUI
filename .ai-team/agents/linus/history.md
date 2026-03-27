@@ -147,3 +147,26 @@ Key milestones:
 - Test hardening patterns
 - Dashboard bugfixes (squad folder awareness, velocity chart, session log inclusion)
 - Fork-aware issue fetching (2026-02-23)
+
+## Learnings
+
+### Staleness Filter Time-Bomb Fix (2026-03-27)
+- **Root cause:** `getActiveTasks()` staleness filter used `Date.now()` as reference, causing test fixtures with hardcoded Feb 2026 dates to fail once those dates aged past the 30-day threshold
+- **Fix:** Changed staleness to use newest-entry-relative comparison — tasks are stale only if >30 days older than the newest entry in the batch, not the wall clock
+- **Pattern:** Never use `Date.now()` for staleness in methods that operate on dataset batches with potentially historical dates. Use the dataset's own temporal context instead.
+- **Key files:** `src/services/OrchestrationLogService.ts` (staleness filter at end of `getActiveTasks()`), `src/test/suite/orchestrationTaskPipeline.test.ts` (staleness test updated to use relative reference)
+- **Staleness test:** Now includes both old and recent entries to establish a relative reference point. The assertion is unchanged — old task (#99) is still expected to be filtered
+- **Impact:** 11 tests fixed, 0 regressions, all 1112 tests pass
+- 📌 Architecture note: `STALE_THRESHOLD_MS` constant (30 days) remains, but is now applied against newest-entry date, not Date.now()
+
+### Decision Merges (2026-03-27)
+📌 Team update (2026-03-27): Three decisions merged from inbox: (1) DecisionSearchService API design — pure stateless service for search/filter on DecisionEntry[], ranking by title > author > content; (2) HealthCheckService is pure-TypeScript with no VS Code deps, each check accepts squadFolder/workspaceRoot as params, validates team.md/charters/logs/token; (3) Rich Status Redesign shifts from binary working/idle to contextual statuses (working-on-issue, reviewing-pr, waiting-review, working, idle) with ActivityContext interface for issue/PR numbers. — decided by Linus & Rusty
+
+### Skill Usage Metrics (2026-03-27)
+- **Issue:** #74  Skill Usage Metrics for dashboard
+- **PR:** #86
+- **Pattern:** SkillUsageService follows same pure-TypeScript, no-VS-Code-deps pattern as HealthCheckService and DecisionSearchService
+- **Skill detection:** Multi-strategy regex matching  slug word-boundary, display name, `skill:` prefix, SKILL.md file reference. Short names (<3 chars) skipped to avoid false positives. Each log entry counted at most once per skill via Set dedup.
+- **Dashboard integration:** Optional `skills?: SkillUsageData` field on DashboardData for backward compatibility. HTML template uses Canvas API for trend line chart with requestAnimationFrame + offsetWidth guard for tab visibility.
+- **Key files:** `src/services/SkillUsageService.ts`, `src/views/dashboard/htmlTemplate.ts` (Skills tab), `src/models/index.ts` (SkillUsageData interfaces)
+- **Testing:** 20 tests covering discovery, frequency, trends, unused skills, edge cases. Test fixtures in `test-fixtures/skills-scenario/`

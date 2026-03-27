@@ -341,6 +341,48 @@ export interface IGitHubIssuesService {
     getMilestones(workspaceRoot: string): Promise<GitHubMilestone[]>;
 }
 
+// ─── Skill Usage Metrics Models ─────────────────────────────────────────────
+
+/**
+ * A single data point tracking skill usage on a specific date.
+ */
+export interface SkillUsageDataPoint {
+    /** Date in YYYY-MM-DD format */
+    date: string;
+    /** Number of references on this date */
+    count: number;
+}
+
+/**
+ * Usage metrics for a single skill across orchestration logs.
+ */
+export interface SkillUsageMetric {
+    /** Skill name (display name from SKILL.md or directory slug) */
+    skillName: string;
+    /** Directory slug (filesystem name) */
+    slug: string;
+    /** Total number of references across all logs */
+    totalReferences: number;
+    /** Daily usage data points for trend visualization */
+    trend: SkillUsageDataPoint[];
+    /** Date of most recent reference (YYYY-MM-DD), or undefined if never used */
+    lastUsed?: string;
+    /** Whether this skill exists in the skills/ directory */
+    isInstalled: boolean;
+}
+
+/**
+ * Complete skill usage data for the dashboard.
+ */
+export interface SkillUsageData {
+    /** Per-skill usage metrics, sorted by totalReferences descending */
+    metrics: SkillUsageMetric[];
+    /** Skills that exist in skills/ but are never referenced in logs */
+    unusedSkills: string[];
+    /** Total log entries scanned */
+    totalLogsScanned: number;
+}
+
 // ─── Dashboard Models ───────────────────────────────────────────────────────
 
 /**
@@ -504,4 +546,6 @@ export interface DashboardData {
         /** All parsed decision entries */
         entries: DecisionEntry[];
     };
+    /** Skill usage metrics tab data (optional for backward compat) */
+    skills?: SkillUsageData;
 }
