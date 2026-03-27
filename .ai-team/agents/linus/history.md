@@ -147,3 +147,53 @@ Key milestones:
 - Test hardening patterns
 - Dashboard bugfixes (squad folder awareness, velocity chart, session log inclusion)
 - Fork-aware issue fetching (2026-02-23)
+
+## Learnings
+
+### Staleness Filter Time-Bomb Fix (2026-03-27)
+- **Root cause:** `getActiveTasks()` staleness filter used `Date.now()` as reference, causing test fixtures with hardcoded Feb 2026 dates to fail once those dates aged past the 30-day threshold
+- **Fix:** Changed staleness to use newest-entry-relative comparison — tasks are stale only if >30 days older than the newest entry in the batch, not the wall clock
+- **Pattern:** Never use `Date.now()` for staleness in methods that operate on dataset batches with potentially historical dates. Use the dataset's own temporal context instead.
+- **Key files:** `src/services/OrchestrationLogService.ts` (staleness filter at end of `getActiveTasks()`), `src/test/suite/orchestrationTaskPipeline.test.ts` (staleness test updated to use relative reference)
+- **Staleness test:** Now includes both old and recent entries to establish a relative reference point. The assertion is unchanged — old task (#99) is still expected to be filtered
+- **Impact:** 11 tests fixed, 0 regressions, all 1112 tests pass
+- 📌 Architecture note: `STALE_THRESHOLD_MS` constant (30 days) remains, but is now applied against newest-entry date, not Date.now()
+
+### Decision Merges (2026-03-27)
+📌 Team update (2026-03-27): Three decisions merged from inbox: (1) DecisionSearchService API design — pure stateless service for search/filter on DecisionEntry[], ranking by title > author > content; (2) HealthCheckService is pure-TypeScript with no VS Code deps, each check accepts squadFolder/workspaceRoot as params, validates team.md/charters/logs/token; (3) Rich Status Redesign shifts from binary working/idle to contextual statuses (working-on-issue, reviewing-pr, waiting-review, working, idle) with ActivityContext interface for issue/PR numbers. — decided by Linus & Rusty
+
+### Squad SDK Adapter — Phase 1 (2026-03-27)
+- **ESM/CJS interop:** The SDK (`@bradygaster/squad-sdk@0.9.1`) is ESM-only (`"type": "module"`) while SquadUI compiles to CommonJS (`"module": "commonjs"`). TypeScript transforms `import()` → `require()` in CJS mode, which can't load ESM. Solution: `new Function('specifier', 'return import(specifier)')` bypasses TypeScript's transform and uses Node.js's native ESM dynamic import from CJS.
+- **Adapter pattern:** `src/sdk-adapter/index.ts` is the **single integration point** for all SDK access. No other SquadUI file imports from `@bradygaster/squad-sdk`. The adapter lazy-loads SDK modules on first call and caches them. All wrapper functions are `async` due to dynamic import.
+- **Adapter exports:** `parseTeamMarkdown()`, `parseDecisionsMarkdown()`, `resolveSquadPath()`, `adaptParsedAgentToSquadMember()`, `adaptParsedDecisionToDecisionEntry()`, and type mirrors (`ParsedAgent`, `ParsedDecision`).
+- **SDK limitation — name casing:** SDK's `parseTeamMarkdown()` lowercases agent names to kebab-case (e.g., `Danny` → `danny`). SquadUI needs display names. The adapter capitalizes the first letter via `capitalizeAgentName()`. Names starting with `@` (e.g., `@copilot`) are left as-is.
+- **SDK limitation — decision metadata:** SDK's `parseDecisionsMarkdown()` only extracts dates from heading prefixes and author from `**By:**` lines. It misses `**Date:**` and `**Author:**` metadata lines. The adapter's `adaptParsedDecisionToDecisionEntry()` fills these gaps by scanning the decision body.
+- **Migration strategy:** Both old (sync, built-in parser) and new (async, SDK-powered) paths coexist. `parseContent()` / `getDecisions()` remain sync and use built-in parsers. `parseContentWithSdk()` / `getDecisionsWithSdk()` use the SDK with fallback. `parseTeamMd()` uses SDK by default with fallback. `detectSquadFolderWithSdk()` is the async SDK variant of `detectSquadFolder()`.
+- **Key files:** `src/sdk-adapter/index.ts`, `src/services/TeamMdService.ts`, `src/services/DecisionService.ts`, `src/utils/squadFolderDetection.ts`
+- **Test impact:** All 1172 tests pass. Pre-existing adapter test suite (`sdkAdapter.test.ts`) validates mapping correctness.
+
+### Squad SDK Adapter — Phase 2: Wrapper Adapters (2026-03-27)
+- **Adapter additions:** `getSquadSdkVersion()` (wraps SDK `VERSION` constant with package.json fallback), `loadSquadConfig()` (wraps SDK `loadConfig()` for config file discovery/validation), `scanWorkspacesForSquad()` (batch workspace scanning via SDK `resolveSquad()`), `SdkConfigLoadResult` interface.
+- **SDK main module loader:** Added `loadSdkMain()` that lazy-loads `@bradygaster/squad-sdk` barrel export via the existing `dynamicImport` mechanism. Cached in `_sdkMain`. This is the third SDK module cache (alongside `_parsers` and `_resolution`).
+- **HealthCheckService:** Enhanced `checkTeamMd()` to run supplementary SDK structural validation via `parseTeamMarkdown()` — if SDK finds warnings, they're appended to the pass message. Added `checkSquadConfig()` as an additive public method (not in `runAll()`) for validating squad.config.ts/.js/.json files. Public API of `runAll()` unchanged (still 4 checks).
+- **SDK `loadConfig()` for HealthCheck:** The SDK's `loadConfig()` searches for squad.config.ts/.js/.json files and validates them. Most Squad projects don't have these yet, so `checkSquadConfig()` is opt-in. When no config file exists, SDK returns `isDefault: true` — health check reports "using SDK defaults" (pass).
+- **SquadVersionService:** Added `sdkVersion?: string` to `UpgradeCheckResult` (backward-compatible optional field). `forceCheck()` now fetches SDK version in parallel with CLI version and latest release checks. Added public `getSdkVersion()` method that delegates to adapter's `getSquadSdkVersion()`.
+- **SDK `VERSION` export:** SDK barrel exports `VERSION` as a string constant (`0.9.1`). The adapter tries this first, falls back to reading SDK's `package.json` from node_modules.
+- **squadFolderDetection (WorkspaceScanner):** Added `scanWorkspaces()` function that takes an array of workspace roots and returns `WorkspaceScanResult[]`. Uses SDK's `resolveSquad()` (via adapter's `scanWorkspacesForSquad()`) with fallback to built-in `detectSquadFolder()`. Also checks for `team.md` presence. Exported `WorkspaceScanResult` interface.
+- **SDK value per service:** (1) HealthCheck — `parseTeamMarkdown` useful for extra warning detection; `loadConfig` useful but most projects don't have config files yet. (2) Version — `VERSION` constant is simple and reliable. (3) WorkspaceScanner — `resolveSquad()` walk-up algorithm is strictly better than manual `fs.existsSync`, handles worktrees and nested projects.
+- **Pattern that worked well:** Additive public methods + internal SDK enhancement. Existing callers see no change. New callers can opt into SDK-powered features (e.g., `checkSquadConfig()`, `getSdkVersion()`, `scanWorkspaces()`).
+- **Key files:** `src/sdk-adapter/index.ts`, `src/services/HealthCheckService.ts`, `src/services/SquadVersionService.ts`, `src/utils/squadFolderDetection.ts`
+- **Test impact:** All 1172 tests pass, 0 failures, 0 regressions.
+
+### Squad SDK Adapter — Phase 3: Data Model Harmonization (2026-03-27)
+- **Comprehensive JSDoc:** All adapter mapping functions now have full field-by-field documentation including mapping contract, lossy conversions (SDK fields SquadUI ignores), and SquadUI fields not present in SDK.
+- **Module-level type mapping tables:** Top-of-file JSDoc includes ParsedAgent→SquadMember and ParsedDecision→DecisionEntry mapping reference tables.
+- **AdaptAgentOptions / AdaptDecisionOptions:** New option interfaces for mapping customization. `defaultStatus` overrides the idle default for agents. `defaultFilePath` and `lineNumberOffset` for decisions.
+- **Bulk mapping functions:** `adaptAgentsToMembers(agents[], options?)` and `adaptDecisionsToEntries(decisions[], filePath, options?)` — convenience wrappers for mapping entire arrays. `adaptDecisionsToEntries` assigns sequential lineNumbers from array index.
+- **getSquadMetadata(workspaceRoot):** High-level integration function returning `SquadMetadata` with members, decisions, config, sdkVersion, squadFolder, and warnings. Parallel data loading with individual fault tolerance. Falls back to filesystem detection if SDK resolution unavailable.
+- **SquadMetadata interface:** Aggregated return type for `getSquadMetadata()` — single call for "give me everything about this Squad workspace."
+- **TeamMdService fix:** `.map(adaptParsedAgentToSquadMember)` → `.map(a => adaptParsedAgentToSquadMember(a))` to avoid `.map()` index parameter colliding with new optional `options` param.
+- **Integration tests:** 37 new tests in `sdkModelHarmonization.test.ts` covering bulk mapping (empty arrays, single/multiple agents, ordering, defaultStatus), round-trips (agent and decision fidelity, bulk vs individual consistency, fixture-based validation), edge cases (100 agents, special characters, Unicode, 50K body, null-like statuses, metadata extraction patterns), getSquadMetadata() integration (shape validation, fixture detection, missing workspace, missing decisions.md), and type export verification.
+- **README:** `src/sdk-adapter/README.md` documenting architecture, ESM/CJS interop, type mapping tables, usage patterns, and SDK vs native capability comparison.
+- **Key files:** `src/sdk-adapter/index.ts`, `src/sdk-adapter/README.md`, `src/services/TeamMdService.ts` (one-line fix), `src/test/suite/sdkModelHarmonization.test.ts`
+- **Test impact:** 1209 tests pass (1172 existing + 37 new), 0 failures, 0 regressions.

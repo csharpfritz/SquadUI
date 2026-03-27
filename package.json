@@ -45,6 +45,11 @@
           "id": "squadDecisions",
           "name": "Decisions",
           "when": "squadui.hasTeam"
+        },
+        {
+          "id": "squadRouting",
+          "name": "Routing Rules",
+          "when": "squadui.hasTeam"
         }
       ]
     },
@@ -146,6 +151,18 @@
         "title": "Health Check",
         "category": "Squad",
         "icon": "$(checklist)"
+      },
+      {
+        "command": "squadui.showRoutingRules",
+        "title": "Show Routing Rules",
+        "category": "Squad",
+        "icon": "$(arrow-swap)"
+      },
+      {
+        "command": "squadui.quickStatus",
+        "title": "Quick Status",
+        "category": "Squad",
+        "icon": "$(info)"
       }
     ],
     "viewsWelcome": [
@@ -180,6 +197,11 @@
         {
           "command": "squadui.upgradeSquad",
           "when": "view == squadTeam && squadui.hasTeam && squadui.upgradeAvailable",
+          "group": "navigation"
+        },
+        {
+          "command": "squadui.showRoutingRules",
+          "when": "view == squadRouting && squadui.hasTeam",
           "group": "navigation"
         }
       ],
@@ -265,5 +287,8 @@
     "glob": "^13.0.3",
     "mocha": "^11.7.5",
     "typescript": "^5.3.2"
+  },
+  "dependencies": {
+    "@bradygaster/squad-sdk": "0.9.1"
   }
 }

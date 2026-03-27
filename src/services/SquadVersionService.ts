@@ -1,10 +1,13 @@
 import * as https from 'https';
 import { execSync } from 'child_process';
+import { getSquadSdkVersion } from '../sdk-adapter';
 
 export interface UpgradeCheckResult {
     available: boolean;
     currentVersion?: string;
     latestVersion?: string;
+    /** Squad SDK package version (from @bradygaster/squad-sdk) */
+    sdkVersion?: string;
 }
 
 export class SquadVersionService {
@@ -26,16 +29,17 @@ export class SquadVersionService {
      */
     async forceCheck(): Promise<UpgradeCheckResult> {
         try {
-            const [latest, current] = await Promise.all([
+            const [latest, current, sdkVer] = await Promise.all([
                 this.getLatestVersion(),
-                this.getInstalledVersion()
+                this.getInstalledVersion(),
+                this.getSdkVersion(),
             ]);
 
             if (!latest || !current) {
-                this.lastResult = { available: false, currentVersion: current, latestVersion: latest };
+                this.lastResult = { available: false, currentVersion: current, latestVersion: latest, sdkVersion: sdkVer ?? undefined };
             } else {
                 const available = this.isNewer(latest, current);
-                this.lastResult = { available, currentVersion: current, latestVersion: latest };
+                this.lastResult = { available, currentVersion: current, latestVersion: latest, sdkVersion: sdkVer ?? undefined };
             }
         } catch {
             this.lastResult = { available: false };
@@ -143,5 +147,17 @@ export class SquadVersionService {
             if (l < c) { return false; }
         }
         return false;
+    }
+
+    /**
+     * Returns the Squad SDK version from @bradygaster/squad-sdk.
+     * Fetches via the SDK adapter; returns null if unavailable.
+     */
+    async getSdkVersion(): Promise<string | null> {
+        try {
+            return await getSquadSdkVersion();
+        } catch {
+            return null;
+        }
     }
 }

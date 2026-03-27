@@ -7,6 +7,10 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { SquadMember, TeamRoster } from '../models';
 import { normalizeEol } from '../utils/eol';
+import {
+    parseTeamMarkdown as sdkParseTeamMarkdown,
+    adaptParsedAgentToSquadMember,
+} from '../sdk-adapter';
 
 /**
  * Represents the @copilot capability profile parsed from team.md.
@@ -71,11 +75,12 @@ export class TeamMdService {
         }
 
         const content = normalizeEol(await fs.promises.readFile(teamMdPath, 'utf-8'));
-        return this.parseContent(content);
+        return this.parseContentWithSdk(content);
     }
 
     /**
      * Parses the content of a team.md file.
+     * Synchronous variant — uses built-in parser. Async variant below uses SDK.
      * 
      * @param content - Raw markdown content
      * @returns Parsed team roster
@@ -84,6 +89,53 @@ export class TeamMdService {
         // Normalize line endings for cross-platform compatibility (Windows CRLF → LF)
         const normalized = normalizeEol(content);
         const members = this.parseMembers(normalized);
+        const repository = this.extractRepository(normalized);
+        const owner = this.extractOwner(normalized);
+        const copilotCapabilities = this.extractCopilotCapabilities(normalized);
+        const issueMatching = this.extractIssueMatching(normalized);
+        const memberAliases = this.extractMemberAliases(normalized);
+        const upstream = this.extractUpstream(normalized);
+
+        const roster: ExtendedTeamRoster = {
+            members,
+            repository,
+            owner,
+            copilotCapabilities,
+        };
+
+        if (issueMatching) {
+            roster.issueMatching = issueMatching;
+        }
+        if (memberAliases && memberAliases.size > 0) {
+            roster.memberAliases = memberAliases;
+        }
+        if (upstream) {
+            roster.upstream = upstream;
+        }
+
+        return roster;
+    }
+
+    /**
+     * Parses team.md using the Squad SDK for member extraction.
+     * Falls back to the built-in parser if the SDK call fails.
+     *
+     * The SDK handles member table parsing; SquadUI-specific extensions
+     * (copilot capabilities, issue matching, aliases, upstream) are still
+     * extracted by local methods.
+     */
+    async parseContentWithSdk(content: string): Promise<ExtendedTeamRoster> {
+        const normalized = normalizeEol(content);
+        let members: SquadMember[];
+
+        try {
+            const result = await sdkParseTeamMarkdown(normalized);
+            members = result.agents.map(a => adaptParsedAgentToSquadMember(a));
+        } catch {
+            // SDK unavailable or parse error — fall back to built-in parser
+            members = this.parseMembers(normalized);
+        }
+
         const repository = this.extractRepository(normalized);
         const owner = this.extractOwner(normalized);
         const copilotCapabilities = this.extractCopilotCapabilities(normalized);

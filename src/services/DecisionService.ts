@@ -7,6 +7,10 @@ import * as path from 'path';
 import { DecisionEntry } from '../models';
 import { normalizeEol } from '../utils/eol';
 import { toLocalDateKey } from '../utils/dateUtils';
+import {
+    parseDecisionsMarkdown as sdkParseDecisionsMarkdown,
+    adaptParsedDecisionToDecisionEntry,
+} from '../sdk-adapter';
 
 export class DecisionService {
     private squadFolder: '.squad' | '.ai-team';
@@ -32,6 +36,26 @@ export class DecisionService {
         }
 
         // Sort by date descending (newest first)
+        return decisions.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+    }
+
+    /**
+     * Parse decisions using the Squad SDK for decisions.md parsing.
+     * Falls back to built-in parser on SDK failure.
+     * Directory scanning is always done locally (SDK only parses single-file content).
+     */
+    async getDecisionsWithSdk(workspaceRoot: string): Promise<DecisionEntry[]> {
+        const decisions: DecisionEntry[] = [];
+
+        // Parse canonical decisions.md with SDK
+        await this.parseDecisionsMdWithSdk(workspaceRoot, decisions);
+
+        // Directory scanning is always local — SDK only parses content strings
+        const decisionsDir = path.join(workspaceRoot, this.squadFolder, 'decisions');
+        if (fs.existsSync(decisionsDir)) {
+            this.scanDirectory(decisionsDir, decisions);
+        }
+
         return decisions.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
     }
 
@@ -201,6 +225,29 @@ export class DecisionService {
             }
 
             i++;
+        }
+    }
+
+    /**
+     * Parses decisions.md using the Squad SDK.
+     * Falls back to built-in parser on any failure.
+     */
+    private async parseDecisionsMdWithSdk(workspaceRoot: string, decisions: DecisionEntry[]): Promise<void> {
+        const filePath = path.join(workspaceRoot, this.squadFolder, 'decisions.md');
+        if (!fs.existsSync(filePath)) {
+            return;
+        }
+
+        const fileContent = normalizeEol(fs.readFileSync(filePath, 'utf-8'));
+
+        try {
+            const result = await sdkParseDecisionsMarkdown(fileContent);
+            for (const parsed of result.decisions) {
+                decisions.push(adaptParsedDecisionToDecisionEntry(parsed, filePath));
+            }
+        } catch {
+            // SDK unavailable or parse error — fall back to built-in
+            this.parseDecisionsMd(workspaceRoot, decisions);
         }
     }
 

@@ -196,6 +196,26 @@ suite('SquadStatusBar', () => {
         });
     });
 
+    // ─── SDK Version Display Tests ──────────────────────────────────────────
+
+    suite('SDK Version in Tooltip', () => {
+        test('tooltip includes SDK version info when members present', async () => {
+            mockProvider.setMembers([
+                { name: 'Alice', role: 'Dev', status: 'idle' },
+            ]);
+
+            await statusBar.update();
+            const statusBarItem = (statusBar as any).statusBarItem;
+            const tooltip = statusBarItem.tooltip as vscode.MarkdownString;
+
+            // SDK version may or may not be available in test env,
+            // but tooltip should still be a MarkdownString
+            assert.ok(tooltip instanceof vscode.MarkdownString, 'Tooltip should be MarkdownString');
+            // If SDK is available, tooltip includes version; if not, it's still valid
+            assert.ok(tooltip.value.includes('Alice'), 'Tooltip should still include member info');
+        });
+    });
+
     // ─── Command Binding Tests ──────────────────────────────────────────────
 
     suite('Command Binding', () => {

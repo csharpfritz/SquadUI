@@ -172,6 +172,21 @@ export interface DecisionEntry {
     lineNumber?: number;
 }
 
+// ─── Routing Rule Models ───────────────────────────────────────────────────
+
+/**
+ * Represents a routing rule parsed from routing.md.
+ * Determines which agent handles which types of work.
+ */
+export interface RoutingRule {
+    /** Work type or category (e.g., "Feature Dev", "Bug Fix") */
+    workType: string;
+    /** Agent names this work routes to (display names) */
+    agents: string[];
+    /** Example descriptions of matching work */
+    examples: string[];
+}
+
 // ─── Skill Catalog Models ──────────────────────────────────────────────────
 
 /**

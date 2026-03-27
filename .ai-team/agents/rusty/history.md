@@ -1,6 +1,6 @@
 # Project Context
 
-- **Owner:** Jeffrey T. Fritz (csharpfritz@users.noreply.github.com)
+- **Owner:** Jeffrey T. Fritz
 - **Project:** VS Code extension for visualizing Squad team members and their tasks
 - **Stack:** TypeScript, VS Code Extension API, potentially GitHub Copilot integration
 - **Created:** 2026-02-13
@@ -58,6 +58,7 @@ The SquadUI extension emerged from initial scaffolding through a rapid sequence 
 ### Active Status Redesign (2026-02-24, Issue #73)
 - **Rich contextual status:** Replaced binary `'working' | 'idle'` with `MemberStatus` enum: `'working-on-issue' | 'reviewing-pr' | 'waiting-review' | 'working' | 'idle'`. Added `isActiveStatus()` helper and `ActivityContext` interface with `description`, `shortLabel`, `issueNumber?`, `prNumber?`.
 - **OrchestrationLogService.getMemberActivity():** New method parses log entries to derive per-member activity context. Detects issue work vs PR review vs waiting status from log content. Falls back to generic `'working'` when no specific context is available. Original `getMemberStates()` preserved for backward compat.
+- **Decision merged (2026-03-27):** Rich Status Redesign formally merged to decisions.md — codifies that status display should show contextual information (⚙️ Issue #N, 🔍 PR #N, ⏳ Awaiting review, ⚡ Working, —) rather than simple active/idle indicators. — decided by Rusty
 - **SquadDataProvider:** Uses `getMemberActivity()` to populate `activityContext` on each `SquadMember`. GitHub-aware status now sets `'working-on-issue'` (not generic `'working'`).
 - **Tree view:** Working members get `sync~spin` icon with green color. Description shows `role • ⚙️ Issue #42` style. Tooltip shows full context description.
 - **Dashboard:** Member cards show status badge below name. "Working" summary card restored. Uses `isActiveStatus()` for counting.
@@ -66,3 +67,31 @@ The SquadUI extension emerged from initial scaffolding through a rapid sequence 
 - **Key files:** `src/models/index.ts` (MemberStatus, ActivityContext, isActiveStatus), `src/services/OrchestrationLogService.ts` (getMemberActivity), `src/views/SquadTreeProvider.ts` (rich status display), `src/views/dashboard/htmlTemplate.ts` (status badges).
 - **Tests:** Updated 8 test files to accept rich status values. 1093 tests passing (up from 1056).
 
+### SDK Phase 3 — UI Layer Harmonization (2026-03-27)
+- **Issue:** SDK Migration Phase 3 — UI compatibility verification
+- **Audit:** All UI components (TeamTreeProvider, SkillsTreeProvider, DecisionsTreeProvider, SquadStatusBar, SquadDashboardWebview, WorkDetailsWebview, StandupReportWebview, IssueDetailWebview) consume typed interfaces (`SquadMember`, `DecisionEntry`, `Task`, `GitHubIssue`, etc.) through `SquadDataProvider` and services. No `instanceof` model checks, no hard-coded field accesses that would break with SDK-adapted data. Serialization via `postMessage` uses plain objects only — safe.
+- **SDK version in status bar tooltip:** Added `getSquadSdkVersion()` call to `SquadStatusBar.update()`. When Squad SDK is installed, tooltip footer shows `SDK v{version}`. Graceful no-op when unavailable.
+- **SDK version health check:** Added `checkSdkVersion()` to `HealthCheckService` and included it in `runAll()`. Reports pass with version string when SDK found, warn when missing.
+- **Key constraint:** No direct `@bradygaster/squad-sdk` imports — all through `src/sdk-adapter/`.
+- **Tests:** 3 new tests added (2 health check, 1 status bar). 1175 passing, 55 pending.
+- **Key files:** `src/views/SquadStatusBar.ts`, `src/services/HealthCheckService.ts`, test files updated.
+📌 Team update (2026-03-27): SDK Phase 3 UI — all UI components verified compatible with SDK-adapted data. SDK version now visible in status bar tooltip and health check diagnostics. — decided by Rusty
+
+### SDK Phase 4 — SDK-Enabled Features (2026-03-27)
+- **Issue:** SDK Migration Phase 4 — Optional SDK Enhancements
+- **Features implemented:** Routing Rules Viewer (Option A) and Quick Status command (Option C).
+- **Routing Rules Viewer:**
+  - Added `parseRoutingRules()` and `adaptRoutingRules()` to `src/sdk-adapter/index.ts` — wraps SDK's `parseRoutingRulesMarkdown()` from `@bradygaster/squad-sdk/parsers`.
+  - Added `ParsedRoutingRule` SDK type mirror and `RoutingRule` UI model in `src/models/index.ts`.
+  - Created `RoutingRulesTreeProvider` in `src/views/RoutingRulesTreeProvider.ts` — shows work types as collapsible nodes with agent and example children.
+  - Registered `squadRouting` tree view in `package.json` under the `squadui` sidebar container. Appears when `squadui.hasTeam` is true.
+  - Registered `squadui.showRoutingRules` command that focuses the routing tree view.
+  - Tree view refreshes on file changes and manual refresh alongside other providers.
+- **Quick Status Command:**
+  - Registered `squadui.quickStatus` command that uses `getSquadMetadata()` from sdk-adapter.
+  - Shows VS Code QuickPick with team members (with status icons), recent decisions (top 5), SDK version, and any warnings.
+  - Graceful degradation — shows error message if metadata load fails. Empty workspace gets informative placeholders.
+- **Key constraint:** All SDK imports go through `src/sdk-adapter/index.ts` — no direct `@bradygaster/squad-sdk` imports.
+- **Tests:** 24 new tests (14 routing viewer, 10 quick status). 1233 passing, 57 pending.
+- **Key files:** `src/sdk-adapter/index.ts`, `src/views/RoutingRulesTreeProvider.ts`, `src/extension.ts`, `src/models/index.ts`, `package.json`, test fixtures `routing.md`.
+📌 Team update (2026-03-27): SDK Phase 4 complete — routing rules viewer (tree view with SDK parsing) and quick status command (QuickPick with getSquadMetadata) shipped. SDK migration fully complete across all 4 phases. — decided by Rusty
