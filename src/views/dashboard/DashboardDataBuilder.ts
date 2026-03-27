@@ -3,7 +3,7 @@
  * Builds data for velocity charts, activity timelines, and decision browser.
  */
 
-import { OrchestrationLogEntry, Task, SquadMember, DashboardData, VelocityDataPoint, ActivityHeatmapPoint, ActivitySwimlane, TimelineTask, DecisionEntry, TeamMemberOverview, TeamSummary, MemberIssueMap, GitHubIssue, MilestoneBurndown, BurndownDataPoint, isActiveStatus } from '../../models';
+import { OrchestrationLogEntry, Task, SquadMember, DashboardData, VelocityDataPoint, ActivityHeatmapPoint, ActivitySwimlane, TimelineTask, DecisionEntry, TeamMemberOverview, TeamSummary, MemberIssueMap, GitHubIssue, MilestoneBurndown, BurndownDataPoint, MemberDrilldownData, isActiveStatus } from '../../models';
 import { parseDateAsLocal, toLocalDateKey } from '../../utils/dateUtils';
 
 export class DashboardDataBuilder {
@@ -235,6 +235,10 @@ export class DashboardDataBuilder {
             totalActiveTasks += memberTasks.length;
             if (isActiveStatus(member.status)) { activeMembers++; }
 
+            const drilldown = this.buildMemberDrilldown(
+                member, tasks, logEntries, memberOpenIssues, memberClosedIssues
+            );
+
             return {
                 name: member.name,
                 role: member.role,
@@ -248,6 +252,7 @@ export class DashboardDataBuilder {
                 closedIssueCount: memberClosedIssues.length,
                 activeTaskCount: memberTasks.length,
                 recentActivityCount: recentParticipation.get(member.name) ?? 0,
+                drilldown,
             };
         });
 
@@ -260,6 +265,100 @@ export class DashboardDataBuilder {
         };
 
         return { members: memberOverviews, summary };
+    }
+
+    /**
+     * Builds drill-down data for a single member: completed tasks, blockers,
+     * topic frequency (skill usage proxy), and recent activity timeline.
+     */
+    private buildMemberDrilldown(
+        member: SquadMember,
+        tasks: Task[],
+        logEntries: OrchestrationLogEntry[],
+        openIssues: GitHubIssue[],
+        closedIssues: GitHubIssue[]
+    ): MemberDrilldownData {
+        const lowerName = member.name.toLowerCase();
+
+        // Completed tasks: from closed issues + completed log tasks
+        const completedTasks: MemberDrilldownData['completedTasks'] = [];
+        const seenIds = new Set<string>();
+
+        for (const issue of closedIssues) {
+            const id = `#${issue.number}`;
+            if (!seenIds.has(id)) {
+                seenIds.add(id);
+                completedTasks.push({
+                    id,
+                    title: issue.title,
+                    completedDate: issue.closedAt ?? undefined,
+                });
+            }
+        }
+
+        for (const task of tasks) {
+            if (task.status === 'completed' && task.assignee === member.name && !seenIds.has(task.id)) {
+                seenIds.add(task.id);
+                completedTasks.push({
+                    id: task.id,
+                    title: task.title,
+                    completedDate: task.completedAt
+                        ? (task.completedAt instanceof Date ? toLocalDateKey(task.completedAt) : String(task.completedAt))
+                        : undefined,
+                });
+            }
+        }
+
+        // Sort by date descending, cap at 10
+        completedTasks.sort((a, b) => (b.completedDate ?? '').localeCompare(a.completedDate ?? ''));
+        completedTasks.splice(10);
+
+        // Blockers: open issues with blocker/blocked labels, or member in waiting-review state
+        const blockers: MemberDrilldownData['blockers'] = [];
+        const blockerLabels = ['blocked', 'blocker', 'waiting', 'needs-review'];
+        for (const issue of openIssues) {
+            const hasBlockerLabel = issue.labels.some(l =>
+                blockerLabels.some(bl => l.name.toLowerCase().includes(bl))
+            );
+            if (hasBlockerLabel) {
+                blockers.push({
+                    id: `#${issue.number}`,
+                    title: issue.title,
+                    url: issue.htmlUrl,
+                });
+            }
+        }
+        if (member.status === 'waiting-review' && blockers.length === 0) {
+            blockers.push({
+                id: 'status',
+                title: member.activityContext?.description ?? 'Awaiting review',
+            });
+        }
+
+        // Topic frequency from log entries where this member participated
+        const topicCounts = new Map<string, number>();
+        const memberLogs: OrchestrationLogEntry[] = [];
+        for (const entry of logEntries) {
+            const isParticipant = entry.participants.some(p => p.toLowerCase() === lowerName);
+            if (!isParticipant) { continue; }
+            memberLogs.push(entry);
+            const topic = entry.topic.replace(/-/g, ' ');
+            topicCounts.set(topic, (topicCounts.get(topic) ?? 0) + 1);
+        }
+        const skillUsage = Array.from(topicCounts.entries())
+            .map(([name, count]) => ({ name, count }))
+            .sort((a, b) => b.count - a.count)
+            .slice(0, 8);
+
+        // Recent activity: last 10 log entries where member participated
+        const sortedLogs = [...memberLogs].sort((a, b) => b.date.localeCompare(a.date));
+        const recentActivity = sortedLogs.slice(0, 10).map(entry => ({
+            date: entry.date,
+            topic: entry.topic.replace(/-/g, ' '),
+            summary: entry.summary ?? '',
+        }));
+
+        return { completedTasks, blockers, skillUsage, recentActivity };
     }
 
     // Stable color palette for member-colored chart areas

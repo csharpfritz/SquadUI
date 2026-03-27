@@ -392,6 +392,20 @@ export interface ActivitySwimlane {
 }
 
 /**
+ * Drill-down data for a single team member, shown when clicking a member card.
+ */
+export interface MemberDrilldownData {
+    /** Recently completed tasks/issues for this member */
+    completedTasks: { id: string; title: string; completedDate?: string }[];
+    /** Current blockers or waiting items */
+    blockers: { id: string; title: string; url?: string }[];
+    /** Topic frequency from log entries (proxy for skill/area usage) */
+    skillUsage: { name: string; count: number }[];
+    /** Recent activity timeline from orchestration logs */
+    recentActivity: { date: string; topic: string; summary: string }[];
+}
+
+/**
  * Overview data for a single team member on the Team dashboard tab.
  */
 export interface TeamMemberOverview {
@@ -415,6 +429,8 @@ export interface TeamMemberOverview {
     activeTaskCount: number;
     /** Recent log participation count (last 7 days) */
     recentActivityCount: number;
+    /** Drill-down data shown when the member card is expanded */
+    drilldown?: MemberDrilldownData;
 }
 
 /**
