@@ -9,6 +9,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { TeamMdService } from './TeamMdService';
 import { OrchestrationLogService } from './OrchestrationLogService';
+import { parseTeamMarkdown, loadSquadConfig } from '../sdk-adapter';
 
 /**
  * Result of a single health check.
@@ -68,10 +69,22 @@ export class HealthCheckService {
                 };
             }
 
+            // Supplementary SDK structural validation
+            let sdkNote = '';
+            try {
+                const teamMdContent = await fs.promises.readFile(teamMdPath, 'utf-8');
+                const sdkResult = await parseTeamMarkdown(teamMdContent);
+                if (sdkResult.warnings && sdkResult.warnings.length > 0) {
+                    sdkNote = ` (SDK: ${sdkResult.warnings.length} warning(s))`;
+                }
+            } catch {
+                // SDK validation unavailable — non-fatal
+            }
+
             return {
                 name: 'team.md',
                 status: 'pass',
-                message: `team.md OK — ${roster.members.length} member(s) found`,
+                message: `team.md OK — ${roster.members.length} member(s) found${sdkNote}`,
             };
         } catch (error) {
             return {
@@ -231,6 +244,47 @@ export class HealthCheckService {
         ]);
 
         return results;
+    }
+
+    /**
+     * Validates the Squad SDK configuration file (squad.config.ts/.js/.json).
+     * Uses the SDK's loadConfig() for structural validation.
+     * This is an optional check — not included in runAll() by default.
+     */
+    async checkSquadConfig(workspaceRoot: string): Promise<HealthCheckResult> {
+        try {
+            const result = await loadSquadConfig(workspaceRoot);
+
+            if (!result) {
+                return {
+                    name: 'Squad Config',
+                    status: 'warn',
+                    message: 'SDK unavailable — config validation skipped',
+                    fix: 'Ensure @bradygaster/squad-sdk is installed.',
+                };
+            }
+
+            if (result.isDefault) {
+                return {
+                    name: 'Squad Config',
+                    status: 'pass',
+                    message: 'No config file found — using SDK defaults',
+                };
+            }
+
+            return {
+                name: 'Squad Config',
+                status: 'pass',
+                message: `Config loaded from ${result.source ?? 'unknown source'}`,
+            };
+        } catch (error) {
+            return {
+                name: 'Squad Config',
+                status: 'fail',
+                message: `Config validation error: ${error instanceof Error ? error.message : String(error)}`,
+                fix: 'Check squad.config.ts/.js/.json for syntax or schema errors.',
+            };
+        }
     }
 
     /**

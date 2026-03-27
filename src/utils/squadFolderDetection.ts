@@ -8,7 +8,7 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
-import { resolveSquadPath } from '../sdk-adapter';
+import { resolveSquadPath, scanWorkspacesForSquad } from '../sdk-adapter';
 
 // Cache for SDK-resolved results to avoid repeated async lookups
 let _sdkResolvedCache: Map<string, '.squad' | '.ai-team'> = new Map();
@@ -94,4 +94,50 @@ export function hasSquadTeam(workspaceRoot: string, squadFolder: '.squad' | '.ai
 export function getSquadWatchPattern(): string {
     // Watch both folders to handle migration scenarios where both might exist temporarily
     return '**/{.squad,.ai-team}/**/*.md';
+}
+
+/** Result of scanning a single workspace root for Squad configuration. */
+export interface WorkspaceScanResult {
+    /** Workspace root directory */
+    workspaceRoot: string;
+    /** Detected squad folder name, or null if none found */
+    squadFolder: '.squad' | '.ai-team' | null;
+    /** Whether a team.md file was found */
+    hasTeam: boolean;
+}
+
+/**
+ * Scans multiple workspace roots for Squad team configurations using the SDK.
+ * Iterates workspace paths and uses the SDK's resolveSquad() for folder detection,
+ * falling back to built-in detection if SDK is unavailable.
+ *
+ * This replaces manual directory scanning with the SDK's walk-up algorithm
+ * which handles worktrees, nested projects, and both folder conventions.
+ *
+ * @param workspaceRoots - Array of workspace root paths to scan
+ * @returns Array of scan results for each workspace root
+ */
+export async function scanWorkspaces(workspaceRoots: string[]): Promise<WorkspaceScanResult[]> {
+    // Try SDK batch scan first
+    let sdkResults: Map<string, '.squad' | '.ai-team'>;
+    try {
+        sdkResults = await scanWorkspacesForSquad(workspaceRoots);
+    } catch {
+        sdkResults = new Map();
+    }
+
+    return workspaceRoots.map((root) => {
+        // SDK result takes priority
+        const sdkFolder = sdkResults.get(root);
+        const folder = sdkFolder ?? detectSquadFolder(root);
+        const folderExists = sdkFolder
+            ? true
+            : fs.existsSync(path.join(root, folder));
+
+        return {
+            workspaceRoot: root,
+            squadFolder: folderExists ? folder : null,
+            hasTeam: folderExists ? hasSquadTeam(root, folder) : false,
+        };
+    });
 }
