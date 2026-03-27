@@ -3,7 +3,7 @@ import * as path from 'path';
 import * as fs from 'fs';
 import { GitHubIssue } from './models';
 import { SquadDataProvider, FileWatcherService, GitHubIssuesService, SquadVersionService, HealthCheckService } from './services';
-import { TeamTreeProvider, SkillsTreeProvider, DecisionsTreeProvider, WorkDetailsWebview, IssueDetailWebview, SquadStatusBar, SquadDashboardWebview, StandupReportWebview } from './views';
+import { TeamTreeProvider, SkillsTreeProvider, DecisionsTreeProvider, WorkDetailsWebview, IssueDetailWebview, SquadStatusBar, SquadDashboardWebview, StandupReportWebview, SquadBacklogTreeProvider } from './views';
 import { registerInitSquadCommand, registerUpgradeSquadCommand, registerAddMemberCommand, registerRemoveMemberCommand, registerAddSkillCommand } from './commands';
 import { detectSquadFolder, hasSquadTeam } from './utils/squadFolderDetection';
 
@@ -62,6 +62,8 @@ export function activate(context: vscode.ExtensionContext): void {
         teamProvider.refresh();
         skillsProvider.refresh();
         decisionsProvider.refresh();
+        backlogProvider.setWorkspaceRoot(newRoot);
+        backlogProvider.refresh();
         statusBar?.update();
         const teamExists = hasSquadTeam(currentRoot, squadFolderName);
         vscode.commands.executeCommand('setContext', 'squadui.hasTeam', teamExists);
@@ -80,9 +82,13 @@ export function activate(context: vscode.ExtensionContext): void {
     const skillsProvider = new SkillsTreeProvider(dataProvider, squadFolderName);
     const decisionsProvider = new DecisionsTreeProvider(dataProvider, squadFolderName);
 
+    // Create backlog tree provider
+    const backlogProvider = new SquadBacklogTreeProvider(workspaceRoot);
+
     // Wire up GitHub Issues service
     const issuesService = new GitHubIssuesService({ squadFolder: squadFolderName });
     teamProvider.setIssuesService(issuesService);
+    backlogProvider.setIssuesService(issuesService);
 
     // Create dashboard webview
     dashboardWebview = new SquadDashboardWebview(context.extensionUri, dataProvider);
@@ -99,7 +105,11 @@ export function activate(context: vscode.ExtensionContext): void {
     const decisionsView = vscode.window.createTreeView('squadDecisions', {
         treeDataProvider: decisionsProvider
     });
-    context.subscriptions.push(teamView, skillsView, decisionsView);
+    const backlogView = vscode.window.createTreeView('squadBacklog', {
+        treeDataProvider: backlogProvider,
+        showCollapseAll: true
+    });
+    context.subscriptions.push(teamView, skillsView, decisionsView, backlogView);
 
     // Create status bar
     statusBar = new SquadStatusBar(dataProvider);
@@ -156,6 +166,13 @@ export function activate(context: vscode.ExtensionContext): void {
                 });
             }
             vscode.window.showInformationMessage('Squad tree refreshed');
+        })
+    );
+
+    context.subscriptions.push(
+        vscode.commands.registerCommand('squadui.refreshBacklog', () => {
+            backlogProvider.refresh();
+            vscode.window.showInformationMessage('Issue backlog refreshed');
         })
     );
 

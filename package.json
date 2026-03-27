@@ -45,6 +45,11 @@
           "id": "squadDecisions",
           "name": "Decisions",
           "when": "squadui.hasTeam"
+        },
+        {
+          "id": "squadBacklog",
+          "name": "Issue Backlog",
+          "when": "squadui.hasTeam"
         }
       ]
     },
@@ -146,6 +151,12 @@
         "title": "Health Check",
         "category": "Squad",
         "icon": "$(checklist)"
+      },
+      {
+        "command": "squadui.refreshBacklog",
+        "title": "Refresh Issue Backlog",
+        "category": "Squad",
+        "icon": "$(refresh)"
       }
     ],
     "viewsWelcome": [
@@ -175,6 +186,11 @@
         {
           "command": "squadui.addSkill",
           "when": "view == squadSkills && squadui.hasTeam",
+          "group": "navigation"
+        },
+        {
+          "command": "squadui.refreshBacklog",
+          "when": "view == squadBacklog",
           "group": "navigation"
         },
         {
@@ -208,6 +224,11 @@
           "command": "squadui.removeSkill",
           "when": "view == squadSkills && viewItem == skill",
           "group": "inline"
+        },
+        {
+          "command": "squadui.openIssue",
+          "when": "view == squadBacklog && viewItem == backlog-issue",
+          "group": "inline"
         }
       ],
       "commandPalette": [
@@ -229,6 +250,10 @@
         },
         {
           "command": "squadui.removeSkill",
+          "when": "false"
+        },
+        {
+          "command": "squadui.refreshBacklog",
           "when": "false"
         }
       ]
