@@ -1,6 +1,6 @@
 # Project Context
 
-- **Owner:** Jeffrey T. Fritz (csharpfritz@users.noreply.github.com)
+- **Owner:** Jeffrey T. Fritz
 - **Project:** VS Code extension for visualizing Squad team members and their tasks
 - **Stack:** TypeScript, VS Code Extension API, potentially GitHub Copilot integration
 - **Created:** 2026-02-13
@@ -58,6 +58,7 @@ The SquadUI extension emerged from initial scaffolding through a rapid sequence 
 ### Active Status Redesign (2026-02-24, Issue #73)
 - **Rich contextual status:** Replaced binary `'working' | 'idle'` with `MemberStatus` enum: `'working-on-issue' | 'reviewing-pr' | 'waiting-review' | 'working' | 'idle'`. Added `isActiveStatus()` helper and `ActivityContext` interface with `description`, `shortLabel`, `issueNumber?`, `prNumber?`.
 - **OrchestrationLogService.getMemberActivity():** New method parses log entries to derive per-member activity context. Detects issue work vs PR review vs waiting status from log content. Falls back to generic `'working'` when no specific context is available. Original `getMemberStates()` preserved for backward compat.
+- **Decision merged (2026-03-27):** Rich Status Redesign formally merged to decisions.md — codifies that status display should show contextual information (⚙️ Issue #N, 🔍 PR #N, ⏳ Awaiting review, ⚡ Working, —) rather than simple active/idle indicators. — decided by Rusty
 - **SquadDataProvider:** Uses `getMemberActivity()` to populate `activityContext` on each `SquadMember`. GitHub-aware status now sets `'working-on-issue'` (not generic `'working'`).
 - **Tree view:** Working members get `sync~spin` icon with green color. Description shows `role • ⚙️ Issue #42` style. Tooltip shows full context description.
 - **Dashboard:** Member cards show status badge below name. "Working" summary card restored. Uses `isActiveStatus()` for counting.

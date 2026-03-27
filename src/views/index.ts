@@ -8,3 +8,4 @@ export { IssueDetailWebview } from './IssueDetailWebview';
 export { SquadStatusBar } from './SquadStatusBar';
 export { SquadDashboardWebview } from './SquadDashboardWebview';
 export { StandupReportWebview } from './StandupReportWebview';
+export { SquadBacklogTreeProvider, BacklogTreeItem } from './SquadBacklogTreeProvider';
