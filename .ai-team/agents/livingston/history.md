@@ -3,7 +3,7 @@
 ## Project Context
 
 - **Project:** SquadUI — VS Code extension for visualizing Squad team members and their tasks
-- **Owner:** Jeffrey T. Fritz (csharpfritz@users.noreply.github.com)
+- **Owner:** Jeffrey T. Fritz
 - **Stack:** TypeScript, VS Code Extension API, npm
 - **Repository:** github.com/csharpfritz/SquadUI
 

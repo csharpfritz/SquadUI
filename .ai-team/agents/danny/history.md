@@ -1,6 +1,6 @@
 # Project Context
 
-- **Owner:** Jeffrey T. Fritz (csharpfritz@users.noreply.github.com)
+- **Owner:** Jeffrey T. Fritz
 - **Project:** VS Code extension for visualizing Squad team members and their tasks
 - **Stack:** TypeScript, VS Code Extension API, potentially GitHub Copilot integration
 - **Created:** 2026-02-13

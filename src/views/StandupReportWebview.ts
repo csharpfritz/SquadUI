@@ -8,7 +8,7 @@ import * as vscode from 'vscode';
 import { StandupReport, StandupPeriod, StandupReportService } from '../services/StandupReportService';
 import { SquadDataProvider, GitHubIssuesService } from '../services';
 import { DashboardDataBuilder } from './dashboard/DashboardDataBuilder';
-import { MilestoneBurndown, DecisionEntry } from '../models';
+import { GitHubMilestone, MilestoneBurndown, DecisionEntry } from '../models';
 
 export class StandupReportWebview {
     public static readonly viewType = 'squadui.standupReport';
@@ -19,6 +19,7 @@ export class StandupReportWebview {
     private readonly standupService: StandupReportService;
     private readonly dataBuilder: DashboardDataBuilder;
     private issuesService: GitHubIssuesService | undefined;
+    private selectedMilestoneNumber: number | undefined;
 
     constructor(extensionUri: vscode.Uri, dataProvider: SquadDataProvider) {
         this.extensionUri = extensionUri;
@@ -79,6 +80,10 @@ export class StandupReportWebview {
                 case 'refresh':
                     await this.updateContent(message.period as StandupPeriod);
                     break;
+                case 'selectMilestone':
+                    this.selectedMilestoneNumber = message.milestoneNumber ?? undefined;
+                    await this.updateContent(message.period as StandupPeriod);
+                    break;
                 case 'openDecision':
                     await vscode.commands.executeCommand('squadui.openDecision', message.filePath, message.lineNumber ?? 0);
                     break;
@@ -121,8 +126,16 @@ export class StandupReportWebview {
                 period
             );
 
-            // Build milestone burndown for current milestone
-            const burndown = await this.buildCurrentMilestoneBurndown(workspaceRoot);
+            // Build milestone burndown for selected or first open milestone
+            let milestones: GitHubMilestone[] = [];
+            if (this.issuesService) {
+                try {
+                    milestones = await this.issuesService.getMilestones(workspaceRoot);
+                } catch {
+                    // Milestones unavailable
+                }
+            }
+            const burndown = await this.buildMilestoneBurndown(workspaceRoot, milestones);
 
             // Generate AI summaries (non-blocking)
             const [executiveSummary, decisionsSummary] = await Promise.all([
@@ -131,7 +144,7 @@ export class StandupReportWebview {
             ]);
 
             if (!this.panel) { return; }
-            this.panel.webview.html = this.getHtml(report, burndown, executiveSummary, decisionsSummary);
+            this.panel.webview.html = this.getHtml(report, milestones, burndown, executiveSummary, decisionsSummary);
         } catch (error) {
             const errorMessage = error instanceof Error ? error.message : 'Unknown error';
             if (this.panel) {
@@ -141,18 +154,24 @@ export class StandupReportWebview {
     }
 
     /**
-     * Builds burndown data for the first open milestone.
+     * Builds burndown data for the selected milestone, or the first open milestone if none selected.
      */
-    private async buildCurrentMilestoneBurndown(workspaceRoot: string): Promise<MilestoneBurndown | undefined> {
-        if (!this.issuesService) { return undefined; }
+    private async buildMilestoneBurndown(workspaceRoot: string, milestones: GitHubMilestone[]): Promise<MilestoneBurndown | undefined> {
+        if (!this.issuesService || milestones.length === 0) { return undefined; }
         try {
-            const milestones = await this.issuesService.getMilestones(workspaceRoot);
-            const openMilestone = milestones.find(ms => ms.state === 'open');
-            if (!openMilestone) { return undefined; }
-            const issues = await this.issuesService.getMilestoneIssues(workspaceRoot, openMilestone.number);
+            let target: GitHubMilestone | undefined;
+            if (this.selectedMilestoneNumber !== undefined) {
+                target = milestones.find(ms => ms.number === this.selectedMilestoneNumber);
+            }
+            if (!target) {
+                target = milestones.find(ms => ms.state === 'open');
+                if (target) { this.selectedMilestoneNumber = target.number; }
+            }
+            if (!target) { return undefined; }
+            const issues = await this.issuesService.getMilestoneIssues(workspaceRoot, target.number);
             if (issues.length === 0) { return undefined; }
             return this.dataBuilder.buildMilestoneBurndown(
-                openMilestone.title, openMilestone.number, issues, openMilestone.dueOn
+                target.title, target.number, issues, target.dueOn
             );
         } catch {
             return undefined;
@@ -272,7 +291,7 @@ ${decisionList}`;
         return `${decisions.length} decision${decisions.length !== 1 ? 's were' : ' was'} made recently: ${titles}.`;
     }
 
-    private getHtml(report: StandupReport, burndown?: MilestoneBurndown, executiveSummary?: string, decisionsSummary?: string): string {
+    private getHtml(report: StandupReport, milestones: GitHubMilestone[], burndown?: MilestoneBurndown, executiveSummary?: string, decisionsSummary?: string): string {
         const periodLabel = report.period === 'day' ? 'Daily' : 'Weekly';
         const altPeriod = report.period === 'day' ? 'week' : 'day';
         const altLabel = report.period === 'day' ? 'Weekly' : 'Daily';
@@ -438,6 +457,31 @@ ${decisionList}`;
             border-radius: 4px;
             transition: width 0.3s;
         }
+        .milestone-selector {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+        .milestone-selector label {
+            font-size: 0.9em;
+            font-weight: 600;
+            color: var(--vscode-descriptionForeground);
+        }
+        .milestone-selector select {
+            background-color: var(--vscode-input-background);
+            color: var(--vscode-input-foreground);
+            border: 1px solid var(--vscode-input-border, var(--vscode-border));
+            border-radius: 2px;
+            padding: 4px 8px;
+            font-family: var(--vscode-font-family);
+            font-size: 0.9em;
+            flex: 1;
+            max-width: 400px;
+        }
+        .milestone-selector select:focus {
+            outline: 1px solid var(--vscode-focusBorder);
+        }
         .charts-container {
             display: flex;
             gap: 16px;
@@ -512,7 +556,7 @@ ${decisionList}`;
         ${this.formatDate(report.summary.periodStart)} – ${this.formatDate(report.summary.periodEnd)}
     </div>
 
-    ${this.renderMilestoneSection(burndown, report)}
+    ${this.renderMilestoneSection(milestones, burndown, report)}
 
     <div class="summary-grid">
         <div class="summary-card success">
@@ -555,6 +599,10 @@ ${decisionList}`;
 
         function openDecision(filePath, lineNumber) {
             vscode.postMessage({ command: 'openDecision', filePath, lineNumber });
+        }
+
+        function selectMilestone(milestoneNumber) {
+            vscode.postMessage({ command: 'selectMilestone', milestoneNumber: milestoneNumber || null, period: currentPeriod });
         }
 
         ${this.getBurndownChartScript(burndown)}
@@ -665,9 +713,29 @@ ${decisionList}`;
         `;
     }
 
-    private renderMilestoneSection(burndown: MilestoneBurndown | undefined, report: StandupReport): string {
+    private renderMilestoneSection(milestones: GitHubMilestone[], burndown: MilestoneBurndown | undefined, report: StandupReport): string {
         const hasVelocity = report.closedIssues.length > 0 || report.newIssues.length > 0;
-        if ((!burndown || burndown.totalIssues === 0) && !hasVelocity) { return ''; }
+        if ((!burndown || burndown.totalIssues === 0) && !hasVelocity && milestones.length === 0) { return ''; }
+
+        // Milestone selector dropdown
+        let selectorHtml = '';
+        if (milestones.length > 0) {
+            const options = milestones.map(ms => {
+                const selected = burndown && ms.number === burndown.number ? 'selected' : '';
+                const stateIcon = ms.state === 'open' ? '🟢' : '✅';
+                const total = ms.openIssues + ms.closedIssues;
+                const pct = total > 0 ? Math.round((ms.closedIssues / total) * 100) : 0;
+                const dueLabel = ms.dueOn ? ` · Due ${ms.dueOn.substring(0, 10)}` : '';
+                return `<option value="${ms.number}" ${selected}>${stateIcon} ${this.escapeHtml(ms.title)} (${pct}% done${dueLabel})</option>`;
+            }).join('');
+            selectorHtml = `
+                <div class="milestone-selector">
+                    <label for="milestone-select">Milestone:</label>
+                    <select id="milestone-select" onchange="selectMilestone(Number(this.value))">
+                        ${options}
+                    </select>
+                </div>`;
+        }
 
         let burndownHtml = '';
         if (burndown && burndown.totalIssues > 0) {
@@ -711,6 +779,7 @@ ${decisionList}`;
 
         return `
             <div class="milestone-section">
+                ${selectorHtml}
                 ${burndownHtml}
                 ${chartsHtml}
             </div>

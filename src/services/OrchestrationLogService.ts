@@ -485,12 +485,18 @@ export class OrchestrationLogService {
             }
         }
 
-        // Filter out stale tasks (>30 days old and still in_progress)
+        // Filter out stale tasks (>30 days older than the newest entry, and still in_progress).
+        // Uses newest-entry-relative staleness so historical datasets aren't penalised
+        // by wall-clock drift — a task is "stale" relative to the team's latest activity.
+        const newestDate = sortedEntries.length > 0
+            ? parseDateAsLocal(sortedEntries[0].date).getTime()
+            : Date.now();
         return tasks.filter(task => {
             if (task.status !== 'in_progress' || !task.startedAt) {
                 return true;
             }
-            return !this.isStaleDate(task.startedAt.toISOString());
+            const age = newestDate - task.startedAt.getTime();
+            return age <= OrchestrationLogService.STALE_THRESHOLD_MS;
         });
     }
 
@@ -859,15 +865,6 @@ export class OrchestrationLogService {
 
     /** Staleness threshold in milliseconds (30 days). */
     private static readonly STALE_THRESHOLD_MS = 30 * 24 * 60 * 60 * 1000;
-
-    /**
-     * Returns true if the given date string is older than 30 days from now.
-     */
-    private isStaleDate(dateStr: string): boolean {
-        const entryDate = parseDateAsLocal(dateStr);
-        if (isNaN(entryDate.getTime())) { return false; }
-        return (Date.now() - entryDate.getTime()) > OrchestrationLogService.STALE_THRESHOLD_MS;
-    }
 
     /**
      * Generates a deterministic task ID from date and agent name.
