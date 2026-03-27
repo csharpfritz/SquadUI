@@ -173,16 +173,25 @@ suite('Orchestration Task Pipeline — getActiveTasks()', () => {
         oldDate.setDate(oldDate.getDate() - 45);
         const oldDateStr = oldDate.toISOString().split('T')[0];
 
+        const recentDate = new Date();
+        recentDate.setDate(recentDate.getDate() - 1);
+        const recentDateStr = recentDate.toISOString().split('T')[0];
+
         const entries: OrchestrationLogEntry[] = [
             makeEntry({
                 date: oldDateStr,
                 participants: ['OldMember'],
                 relatedIssues: ['#99'],
             }),
+            makeEntry({
+                date: recentDateStr,
+                participants: ['RecentMember'],
+                summary: 'Recent activity establishes staleness reference',
+            }),
         ];
         const tasks = service.getActiveTasks(entries);
 
-        // Stale in-progress tasks (>30 days) are filtered out
+        // Stale in-progress tasks (>30 days older than newest entry) are filtered out
         const task99 = tasks.find(t => t.id === '99');
         assert.ok(!task99, 'In-progress tasks older than 30 days should be filtered out');
     });
