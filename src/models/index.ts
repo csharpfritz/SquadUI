@@ -311,6 +311,12 @@ export type MemberIssueMap = Map<string, GitHubIssue[]>;
  * GitHubIssuesService (#18) implements this interface.
  */
 export interface IGitHubIssuesService {
+    /** Whether the last API call failed due to missing authentication */
+    readonly authRequired: boolean;
+
+    /** Whether a token is currently configured */
+    readonly hasToken: boolean;
+
     /**
      * Returns open issues mapped to squad members by label convention (squad:{name}).
      * @param workspaceRoot - Workspace root for reading issue source config

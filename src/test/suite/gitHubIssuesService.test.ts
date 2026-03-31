@@ -743,4 +743,97 @@ suite('GitHubIssuesService', () => {
             assert.strictEqual(parseUpstream('', baseConfig), null, 'Should reject empty string');
         });
     });
+
+    suite('token management', () => {
+        test('constructor stores provided token', () => {
+            const service = new GitHubIssuesService({ token: 'test-token' });
+
+            const token = (service as unknown as { token: string }).token;
+            assert.strictEqual(token, 'test-token');
+        });
+
+        test('constructor defaults token to undefined when not provided', () => {
+            const service = new GitHubIssuesService();
+
+            const token = (service as unknown as { token: string | undefined }).token;
+            assert.strictEqual(token, undefined);
+        });
+
+        test('setToken updates the token after construction', () => {
+            const service = new GitHubIssuesService({ token: 'initial-token' });
+
+            service.setToken('new-token');
+
+            const token = (service as unknown as { token: string }).token;
+            assert.strictEqual(token, 'new-token');
+        });
+
+        test('setToken(undefined) clears the token', () => {
+            const service = new GitHubIssuesService({ token: 'existing-token' });
+
+            service.setToken(undefined);
+
+            const token = (service as unknown as { token: string | undefined }).token;
+            assert.strictEqual(token, undefined);
+        });
+
+        test('setToken invalidates both open and closed issue caches', () => {
+            const service = new GitHubIssuesService({ token: 'old-token' });
+
+            // Populate both caches
+            (service as unknown as { cache: object }).cache = {
+                issues: [{ number: 1, title: 'cached open issue' }],
+                fetchedAt: Date.now(),
+            };
+            (service as unknown as { closedCache: object }).closedCache = {
+                issues: [{ number: 2, title: 'cached closed issue' }],
+                fetchedAt: Date.now(),
+            };
+
+            service.setToken('new-token');
+
+            assert.strictEqual(
+                (service as unknown as { cache: null }).cache,
+                null,
+                'Open issue cache should be cleared after setToken'
+            );
+            assert.strictEqual(
+                (service as unknown as { closedCache: null }).closedCache,
+                null,
+                'Closed issue cache should be cleared after setToken'
+            );
+        });
+
+        test('setToken causes getIssues to re-fetch instead of using stale cache', async () => {
+            const service = new GitHubIssuesService({ token: 'old-token' });
+
+            // Populate cache with stale data
+            const staleIssues = [
+                {
+                    number: 99,
+                    title: 'Stale issue',
+                    state: 'open' as const,
+                    labels: [],
+                    htmlUrl: 'https://github.com/test/repo/issues/99',
+                    createdAt: '2026-01-01T00:00:00Z',
+                    updatedAt: '2026-01-01T00:00:00Z',
+                },
+            ];
+            (service as unknown as { cache: { issues: typeof staleIssues; fetchedAt: number } }).cache = {
+                issues: staleIssues,
+                fetchedAt: Date.now(),
+            };
+
+            // Verify cache is populated
+            const cachedResult = await service.getIssues('/nonexistent/path');
+            assert.strictEqual(cachedResult.length, 1, 'Should return cached data before setToken');
+
+            // Changing token clears cache — next getIssues should not use stale data
+            service.setToken('new-token');
+
+            // After setToken, getIssues on a path with no team.md returns [] (no issue source)
+            const freshResult = await service.getIssues('/nonexistent/path');
+            assert.deepStrictEqual(freshResult, [], 'Should re-fetch (not use stale cache) after setToken');
+        });
+    });
 });

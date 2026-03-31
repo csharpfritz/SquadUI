@@ -104,15 +104,19 @@ export class SquadDashboardWebview {
         try {
             // Fetch GitHub issues first so they can inform member status
             const workspaceRoot = this.dataProvider.getWorkspaceRoot();
+            console.log(`SquadUI Dashboard: workspaceRoot=${workspaceRoot}, hasIssuesService=${!!this.issuesService}, hasToken=${this.issuesService?.hasToken ?? 'N/A'}`);
             let openIssues, closedIssues, allClosedIssues;
             if (this.issuesService) {
                 try {
                     openIssues = await this.issuesService.getIssuesByMember(workspaceRoot);
                     closedIssues = await this.issuesService.getClosedIssuesByMember(workspaceRoot);
                     allClosedIssues = await this.issuesService.getClosedIssues(workspaceRoot);
+                    console.log(`SquadUI Dashboard: fetched ${openIssues?.size ?? 0} open member buckets, ${allClosedIssues?.length ?? 0} closed issues`);
                     // Feed issues into data provider for status computation
                     this.dataProvider.setOpenIssues(openIssues);
-                } catch { /* issues optional */ }
+                } catch (issueError) {
+                    console.error('SquadUI Dashboard: Error fetching issues:', issueError);
+                }
             }
 
             // Fetch data from services (members now use GitHub issues for status)

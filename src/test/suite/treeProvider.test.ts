@@ -133,6 +133,8 @@ suite('TeamTreeProvider Test Suite', () => {
 
             // Mock issues service that returns issue #87 and #88 for Danny
             const mockIssuesService: IGitHubIssuesService = {
+                authRequired: false,
+                hasToken: true,
                 async getIssuesByMember(): Promise<MemberIssueMap> {
                     const map = new Map<string, GitHubIssue[]>();
                     map.set('danny', [
