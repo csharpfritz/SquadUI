@@ -64,6 +64,9 @@ export class GitHubIssuesService {
     private token?: string;
     private apiBaseUrl: string;
 
+    /** Whether the last API call failed due to missing authentication */
+    private _authRequired = false;
+
     private cache: IssueCache | null = null;
     private closedCache: IssueCache | null = null;
     private issueSourceCache: IssueSourceConfig | null = null;
@@ -74,6 +77,11 @@ export class GitHubIssuesService {
         this.cacheTtlMs = options.cacheTtlMs ?? DEFAULT_CACHE_TTL_MS;
         this.token = options.token;
         this.apiBaseUrl = (options.apiBaseUrl ?? 'https://api.github.com').replace(/\/+$/, '');
+    }
+
+    /** Returns true if the service needs authentication to access the configured repo */
+    get authRequired(): boolean {
+        return this._authRequired;
     }
 
     /**
@@ -158,8 +166,12 @@ export class GitHubIssuesService {
                 this.effectiveConfigCache = upstream;
                 return upstream;
             }
-        } catch {
-            // API error — fall back to configured repo
+        } catch (error) {
+            // API error — check if this is an auth issue
+            if (error instanceof GitHubApiError && error.statusCode === 404 && !this.token) {
+                this._authRequired = true;
+            }
+            // Fall back to configured repo
         }
 
         // 3. Not a fork, use configured repo
@@ -440,11 +452,19 @@ export class GitHubIssuesService {
         this.effectiveConfigCache = null;
     }
 
+    /** Whether a token is currently configured */
+    get hasToken(): boolean {
+        return !!this.token;
+    }
+
     /**
      * Updates the auth token at runtime (e.g., after VS Code auth flow).
      */
     setToken(token: string | undefined): void {
         this.token = token;
+        if (token) {
+            this._authRequired = false;
+        }
         // Token change means cached data might include different results
         this.invalidateCache();
     }
@@ -678,6 +698,10 @@ export class GitHubIssuesService {
                             reject(new Error(`Failed to parse GitHub API response: ${parseError}`));
                         }
                     } else {
+                        // 404 without auth likely means private repo
+                        if (res.statusCode === 404 && !this.token) {
+                            this._authRequired = true;
+                        }
                         reject(new GitHubApiError(
                             res.statusCode ?? 0,
                             `GitHub API returned ${res.statusCode}: ${body.substring(0, 200)}`

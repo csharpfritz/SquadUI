@@ -82,6 +82,51 @@ export function activate(context: vscode.ExtensionContext): void {
 
     // Wire up GitHub Issues service
     const issuesService = new GitHubIssuesService({ squadFolder: squadFolderName });
+
+    // Acquire GitHub auth token for private repo support
+    async function acquireGitHubToken(promptIfNeeded = false): Promise<void> {
+        try {
+            console.log(`SquadUI: Requesting GitHub session (prompt=${promptIfNeeded})`);
+            const session = await vscode.authentication.getSession(
+                'github',
+                ['repo'],
+                { createIfNone: promptIfNeeded }
+            );
+            console.log(`SquadUI: Session result — ${session ? 'got token' : 'no session returned'}`);
+            issuesService.setToken(session?.accessToken);
+        } catch (error) {
+            console.error('SquadUI: GitHub auth error:', error);
+            vscode.window.showWarningMessage(`SquadUI: GitHub sign-in failed — ${error instanceof Error ? error.message : String(error)}`);
+        }
+    }
+    // Silent on startup — if no token acquired, prompt the user for repo scope
+    acquireGitHubToken(false).then(() => {
+        if (issuesService.hasToken) {
+            console.log('SquadUI: Token acquired silently, refreshing tree');
+            teamProvider.refresh();
+        } else {
+            console.log('SquadUI: No silent token, prompting user');
+            // No session with 'repo' scope exists — prompt for it
+            acquireGitHubToken(true).then(() => {
+                if (issuesService.hasToken) {
+                    console.log('SquadUI: Token acquired after prompt, refreshing tree');
+                    teamProvider.refresh();
+                } else {
+                    console.log('SquadUI: Still no token after prompt');
+                }
+            });
+        }
+    });
+
+    // Refresh token when user signs in/out of GitHub
+    context.subscriptions.push(
+        vscode.authentication.onDidChangeSessions(e => {
+            if (e.provider.id === 'github') {
+                acquireGitHubToken(false).then(() => teamProvider.refresh());
+            }
+        })
+    );
+
     teamProvider.setIssuesService(issuesService);
 
     // Create dashboard webview
@@ -100,6 +145,24 @@ export function activate(context: vscode.ExtensionContext): void {
         treeDataProvider: decisionsProvider
     });
     context.subscriptions.push(teamView, skillsView, decisionsView);
+
+    // Prompt for GitHub auth when private repo access is detected
+    async function checkAuthRequired(): Promise<void> {
+        if (issuesService.authRequired && !issuesService.hasToken) {
+            const action = await vscode.window.showInformationMessage(
+                'SquadUI: Sign in to GitHub to access private repository issues.',
+                'Sign In',
+                'Dismiss'
+            );
+            if (action === 'Sign In') {
+                await acquireGitHubToken(true);
+                teamProvider.refresh();
+            }
+        }
+    }
+
+    // Check if auth is needed after initial data fetch attempt
+    setTimeout(() => checkAuthRequired(), 5000);
 
     // Create status bar
     statusBar = new SquadStatusBar(dataProvider);
