@@ -1192,7 +1192,7 @@ suite('getVelocityTasks() — SquadDataProvider integration', () => {
     const SESSION_LOG_ISSUES_FIXTURES = path.resolve(__dirname, '../../../test-fixtures/session-log-issues');
 
     test('getVelocityTasks() returns tasks from session log entries that getTasks() does not', async () => {
-        const dataProvider = new SquadDataProvider(SESSION_LOG_ISSUES_FIXTURES, '.ai-team', 0);
+        const dataProvider = new SquadDataProvider(SESSION_LOG_ISSUES_FIXTURES, '.ai-team', 0, Infinity);
 
         const orchestrationTasks = await dataProvider.getTasks();
         const velocityTasks = await dataProvider.getVelocityTasks();

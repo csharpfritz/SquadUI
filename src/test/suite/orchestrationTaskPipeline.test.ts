@@ -23,7 +23,7 @@ suite('Orchestration Task Pipeline — getMemberStates()', () => {
     let service: OrchestrationLogService;
 
     setup(() => {
-        service = new OrchestrationLogService();
+        service = new OrchestrationLogService('.ai-team', Infinity);
     });
 
     test('returns empty map for empty entries', () => {
@@ -91,7 +91,7 @@ suite('Orchestration Task Pipeline — getActiveTasks()', () => {
     let service: OrchestrationLogService;
 
     setup(() => {
-        service = new OrchestrationLogService();
+        service = new OrchestrationLogService('.ai-team', Infinity);
     });
 
     test('extracts tasks from relatedIssues (e.g. "#42")', () => {

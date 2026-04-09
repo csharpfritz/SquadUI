@@ -17,10 +17,14 @@ import { parseDateAsLocal, toLocalDateKey } from '../utils/dateUtils';
 export class OrchestrationLogService {
     /** Log directory names to search (in order of preference) */
     private static readonly LOG_DIRECTORIES = ['orchestration-log', 'log'];
+    /** Default staleness threshold: 30 days in milliseconds. */
+    private static readonly DEFAULT_STALE_THRESHOLD_MS = 30 * 24 * 60 * 60 * 1000;
     private squadFolder: '.squad' | '.ai-team';
+    private readonly staleThresholdMs: number;
 
-    constructor(squadFolder: '.squad' | '.ai-team' = '.ai-team') {
+    constructor(squadFolder: '.squad' | '.ai-team' = '.ai-team', staleThresholdMs?: number) {
         this.squadFolder = squadFolder;
+        this.staleThresholdMs = staleThresholdMs ?? OrchestrationLogService.DEFAULT_STALE_THRESHOLD_MS;
     }
 
     /**
@@ -857,16 +861,13 @@ export class OrchestrationLogService {
                lower.includes('succeeds');
     }
 
-    /** Staleness threshold in milliseconds (30 days). */
-    private static readonly STALE_THRESHOLD_MS = 30 * 24 * 60 * 60 * 1000;
-
     /**
-     * Returns true if the given date string is older than 30 days from now.
+     * Returns true if the given date string is older than the stale threshold from now.
      */
     private isStaleDate(dateStr: string): boolean {
         const entryDate = parseDateAsLocal(dateStr);
         if (isNaN(entryDate.getTime())) { return false; }
-        return (Date.now() - entryDate.getTime()) > OrchestrationLogService.STALE_THRESHOLD_MS;
+        return (Date.now() - entryDate.getTime()) > this.staleThresholdMs;
     }
 
     /**

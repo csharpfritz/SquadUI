@@ -25,8 +25,8 @@ suite('Session Log Isolation: Sensei scenario', () => {
     let logService: OrchestrationLogService;
 
     setup(() => {
-        dataProvider = new SquadDataProvider(SENSEI_FIXTURES, '.ai-team', 0);
-        logService = new OrchestrationLogService('.ai-team');
+        dataProvider = new SquadDataProvider(SENSEI_FIXTURES, '.ai-team', 0, Infinity);
+        logService = new OrchestrationLogService('.ai-team', Infinity);
     });
 
     test('members from session logs only should be idle', async () => {
@@ -41,7 +41,7 @@ suite('Session Log Isolation: Sensei scenario', () => {
 
     test('members from orchestration-log entries should have correct status', async () => {
         // First, verify orchestration log is being read correctly
-        const logService = new OrchestrationLogService('.ai-team');
+        const logService = new OrchestrationLogService('.ai-team', Infinity);
         const orchestrationEntries = await logService.parseOrchestrationLogs(SENSEI_FIXTURES);
         
         assert.strictEqual(orchestrationEntries.length, 1, 'Should have 1 orchestration log entry');
@@ -108,7 +108,7 @@ suite('Session Log Isolation: Issue reference scenario', () => {
     let dataProvider: SquadDataProvider;
 
     setup(() => {
-        dataProvider = new SquadDataProvider(SESSION_LOG_ISSUES_FIXTURES, '.ai-team', 0);
+        dataProvider = new SquadDataProvider(SESSION_LOG_ISSUES_FIXTURES, '.ai-team', 0, Infinity);
     });
 
     test('issues from session log should NOT appear as in-progress tasks', async () => {
@@ -153,7 +153,7 @@ suite('Session Log Isolation: Issue reference scenario', () => {
 suite('parseOrchestrationLogs vs parseAllLogs isolation', () => {
 
     test('discoverOrchestrationLogFiles() returns only orchestration-log/ files', async () => {
-        const logService = new OrchestrationLogService('.ai-team');
+        const logService = new OrchestrationLogService('.ai-team', Infinity);
         const orchestrationFiles = await logService.discoverOrchestrationLogFiles(SENSEI_FIXTURES);
         
         // Should only find files from orchestration-log/
@@ -169,7 +169,7 @@ suite('parseOrchestrationLogs vs parseAllLogs isolation', () => {
     });
 
     test('discoverLogFiles() returns files from both directories', async () => {
-        const logService = new OrchestrationLogService('.ai-team');
+        const logService = new OrchestrationLogService('.ai-team', Infinity);
         const allFiles = await logService.discoverLogFiles(SENSEI_FIXTURES);
         
         // Should find files from both orchestration-log/ and log/
@@ -183,7 +183,7 @@ suite('parseOrchestrationLogs vs parseAllLogs isolation', () => {
     });
 
     test('parseOrchestrationLogs() returns fewer entries than parseAllLogs()', async () => {
-        const logService = new OrchestrationLogService('.ai-team');
+        const logService = new OrchestrationLogService('.ai-team', Infinity);
         const orchestrationEntries = await logService.parseOrchestrationLogs(SENSEI_FIXTURES);
         const allEntries = await logService.parseAllLogs(SENSEI_FIXTURES);
         

@@ -37,15 +37,17 @@ export class SquadDataProvider {
     private cachedTasks: Task[] | null = null;
     private cachedDecisions: DecisionEntry[] | null = null;
     private retryDelayMs: number;
+    private staleThresholdMs: number | undefined;
 
     // GitHub issues for status computation (set externally)
     private openIssuesByMember: MemberIssueMap | null = null;
 
-    constructor(teamRoot: string, squadFolder: '.squad' | '.ai-team', retryDelayMs: number = 1500) {
+    constructor(teamRoot: string, squadFolder: '.squad' | '.ai-team', retryDelayMs: number = 1500, staleThresholdMs?: number) {
         this.teamRoot = teamRoot;
         this.squadFolder = squadFolder;
         this.retryDelayMs = retryDelayMs;
-        this.orchestrationService = new OrchestrationLogService(squadFolder);
+        this.staleThresholdMs = staleThresholdMs;
+        this.orchestrationService = new OrchestrationLogService(squadFolder, staleThresholdMs);
         this.teamMdService = new TeamMdService(squadFolder);
         this.decisionService = new DecisionService(squadFolder);
     }
@@ -296,7 +298,7 @@ export class SquadDataProvider {
     setRoot(teamRoot: string, squadFolder: '.squad' | '.ai-team'): void {
         this.teamRoot = teamRoot;
         this.squadFolder = squadFolder;
-        this.orchestrationService = new OrchestrationLogService(squadFolder);
+        this.orchestrationService = new OrchestrationLogService(squadFolder, this.staleThresholdMs);
         this.teamMdService = new TeamMdService(squadFolder);
         this.decisionService = new DecisionService(squadFolder);
         this.refresh();

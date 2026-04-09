@@ -158,7 +158,7 @@ suite('E2E MVP Validation (Issue #14)', () => {
     let renderer: TestableWebviewRenderer;
 
     setup(() => {
-        dataProvider = new SquadDataProvider(ACCEPTANCE_FIXTURES, '.ai-team');
+        dataProvider = new SquadDataProvider(ACCEPTANCE_FIXTURES, '.ai-team', 1500, Infinity);
         treeProvider = new TeamTreeProvider(dataProvider as never);
         renderer = new TestableWebviewRenderer();
     });

@@ -39,7 +39,7 @@ suite('SquadDataProvider — Extended Coverage', () => {
         });
 
         test('returns actual path for test fixtures', () => {
-            const provider = new SquadDataProvider(TEST_FIXTURES_ROOT, '.ai-team');
+            const provider = new SquadDataProvider(TEST_FIXTURES_ROOT, '.ai-team', 1500, Infinity);
             assert.strictEqual(provider.getWorkspaceRoot(), TEST_FIXTURES_ROOT);
         });
     });
