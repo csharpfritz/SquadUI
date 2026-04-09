@@ -16,7 +16,7 @@ suite('OrchestrationLogService', () => {
     let service: OrchestrationLogService;
 
     setup(() => {
-        service = new OrchestrationLogService();
+        service = new OrchestrationLogService('.ai-team', Infinity);
     });
 
     suite('discoverLogFiles()', () => {
@@ -270,7 +270,7 @@ suite('SquadDataProvider', () => {
     let provider: SquadDataProvider;
 
     setup(() => {
-        provider = new SquadDataProvider(TEST_FIXTURES_ROOT, '.ai-team');
+        provider = new SquadDataProvider(TEST_FIXTURES_ROOT, '.ai-team', 1500, Infinity);
     });
 
     suite('getSquadMembers()', () => {
@@ -447,7 +447,7 @@ suite('Edge Cases', () => {
     let tempDir: string;
 
     setup(() => {
-        logService = new OrchestrationLogService();
+        logService = new OrchestrationLogService('.ai-team', Infinity);
         tempDir = path.join(TEST_FIXTURES_ROOT, 'temp-edge-cases');
     });
 

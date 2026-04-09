@@ -16,7 +16,7 @@ suite('OrchestrationLogService — Table Format Extraction', () => {
     let service: OrchestrationLogService;
 
     setup(() => {
-        service = new OrchestrationLogService();
+        service = new OrchestrationLogService('.ai-team', Infinity);
     });
 
     suite('extractOutcomeFromTable()', () => {
@@ -97,7 +97,7 @@ suite('OrchestrationLogService — Table Format Extraction', () => {
                 '| **Outcome** | Completed |',
             ].join('\n');
 
-            const service = new OrchestrationLogService();
+            const service = new OrchestrationLogService('.ai-team', Infinity);
             // Access private method via any cast for testing
             const result = (service as any).extractSummaryFallback(content);
             // Should not contain table pipe characters

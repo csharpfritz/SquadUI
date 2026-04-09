@@ -23,7 +23,7 @@ suite('Acceptance: Orchestration Logs → Tree View', () => {
     let treeProvider: TeamTreeProvider;
 
     setup(() => {
-        dataProvider = new SquadDataProvider(ACCEPTANCE_FIXTURES, '.ai-team');
+        dataProvider = new SquadDataProvider(ACCEPTANCE_FIXTURES, '.ai-team', 1500, Infinity);
         treeProvider = new TeamTreeProvider(dataProvider as never);
     });
 
