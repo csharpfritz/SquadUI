@@ -14,6 +14,13 @@ import { isActiveStatus } from '../../models';
 
 const TEST_FIXTURES_ROOT = path.resolve(__dirname, '../../../test-fixtures');
 
+/** Returns a YYYY-MM-DD string for `daysAgo` days before today, staying within the 30-day staleness window. */
+function recentDateStr(daysAgo: number = 5): string {
+    const d = new Date();
+    d.setDate(d.getDate() - daysAgo);
+    return d.toISOString().split('T')[0];
+}
+
 suite('SquadDataProvider — Extended Coverage', () => {
     let tempDir: string;
 
@@ -114,7 +121,7 @@ suite('SquadDataProvider — Extended Coverage', () => {
             // Create log with task assigned to "Ghost" (not in roster)
             const logDir = path.join(tempDir, '.ai-team', 'orchestration-log');
             fs.mkdirSync(logDir, { recursive: true });
-            fs.writeFileSync(path.join(logDir, '2026-03-01-ghost-task.md'), [
+            fs.writeFileSync(path.join(logDir, `${recentDateStr()}-ghost-task.md`), [
                 '# Ghost Task',
                 '',
                 '**Participants:** Ghost',
@@ -171,7 +178,7 @@ suite('SquadDataProvider — Extended Coverage', () => {
             // but with completed tasks only (issue reference with completion signal)
             const logDir = path.join(tempDir, '.ai-team', 'orchestration-log');
             fs.mkdirSync(logDir, { recursive: true });
-            fs.writeFileSync(path.join(logDir, '2026-03-01-completed.md'), [
+            fs.writeFileSync(path.join(logDir, `${recentDateStr()}-completed.md`), [
                 '# Completed Work',
                 '',
                 '**Participants:** Alice',
@@ -206,7 +213,7 @@ suite('SquadDataProvider — Extended Coverage', () => {
             // Create log that marks Bob as participant but NO tasks or issue refs at all
             const logDir = path.join(tempDir, '.ai-team', 'orchestration-log');
             fs.mkdirSync(logDir, { recursive: true });
-            fs.writeFileSync(path.join(logDir, '2026-03-01-chat.md'), [
+            fs.writeFileSync(path.join(logDir, `${recentDateStr()}-chat.md`), [
                 '# Copilot Chat Session',
                 '',
                 '**Participants:** Bob',
@@ -238,7 +245,7 @@ suite('SquadDataProvider — Extended Coverage', () => {
             // Create log that marks Carol as participant with in-progress task
             const logDir = path.join(tempDir, '.ai-team', 'orchestration-log');
             fs.mkdirSync(logDir, { recursive: true });
-            fs.writeFileSync(path.join(logDir, '2026-03-01-in-progress.md'), [
+            fs.writeFileSync(path.join(logDir, `${recentDateStr()}-in-progress.md`), [
                 '# Active Work',
                 '',
                 '**Participants:** Carol',
@@ -343,7 +350,7 @@ suite('SquadDataProvider — Extended Coverage', () => {
             // Create log that marks Frank as working
             const logDir = path.join(tempDir, '.ai-team', 'orchestration-log');
             fs.mkdirSync(logDir, { recursive: true });
-            fs.writeFileSync(path.join(logDir, '2026-03-01-working.md'), [
+            fs.writeFileSync(path.join(logDir, `${recentDateStr()}-working.md`), [
                 '# Session',
                 '',
                 '**Participants:** Frank',
@@ -434,12 +441,9 @@ suite('SquadDataProvider — Extended Coverage', () => {
 
             // Create log with in-progress task for Henry
             // Use a recent date so the entry is not filtered out by the 30-day staleness threshold
-            const recentDate = new Date();
-            recentDate.setDate(recentDate.getDate() - 5);
-            const recentDateStr = recentDate.toISOString().split('T')[0];
             const logDir = path.join(tempDir, '.ai-team', 'orchestration-log');
             fs.mkdirSync(logDir, { recursive: true });
-            fs.writeFileSync(path.join(logDir, `${recentDateStr}-henry.md`), [
+            fs.writeFileSync(path.join(logDir, `${recentDateStr()}-henry.md`), [
                 '# Session',
                 '',
                 '**Participants:** Henry',
