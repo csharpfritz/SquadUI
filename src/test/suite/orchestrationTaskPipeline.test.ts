@@ -169,6 +169,9 @@ suite('Orchestration Task Pipeline — getActiveTasks()', () => {
     });
 
     test('marks tasks from old entries (>30 days) — staleness awareness', () => {
+        // Use a service with the default 30-day stale threshold (not Infinity)
+        const defaultService = new OrchestrationLogService('.ai-team');
+
         const oldDate = new Date();
         oldDate.setDate(oldDate.getDate() - 45);
         const oldDateStr = oldDate.toISOString().split('T')[0];
@@ -180,7 +183,7 @@ suite('Orchestration Task Pipeline — getActiveTasks()', () => {
                 relatedIssues: ['#99'],
             }),
         ];
-        const tasks = service.getActiveTasks(entries);
+        const tasks = defaultService.getActiveTasks(entries);
 
         // Stale in-progress tasks (>30 days) are filtered out
         const task99 = tasks.find(t => t.id === '99');

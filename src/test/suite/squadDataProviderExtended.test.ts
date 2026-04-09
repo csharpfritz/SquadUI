@@ -433,9 +433,13 @@ suite('SquadDataProvider — Extended Coverage', () => {
             ].join('\n'));
 
             // Create log with in-progress task for Henry
+            // Use a recent date so the entry is not filtered out by the 30-day staleness threshold
+            const recentDate = new Date();
+            recentDate.setDate(recentDate.getDate() - 5);
+            const recentDateStr = recentDate.toISOString().split('T')[0];
             const logDir = path.join(tempDir, '.ai-team', 'orchestration-log');
             fs.mkdirSync(logDir, { recursive: true });
-            fs.writeFileSync(path.join(logDir, '2026-03-01-henry.md'), [
+            fs.writeFileSync(path.join(logDir, `${recentDateStr}-henry.md`), [
                 '# Session',
                 '',
                 '**Participants:** Henry',
